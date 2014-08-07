@@ -405,6 +405,30 @@ wl_connection_put_fd(struct wl_connection *connection, int32_t fd)
 	return wl_buffer_put(&connection->fds_out, &fd, sizeof fd);
 }
 
+/*
+ * pipe fds from one connection to another, it will remove the fds from
+ * the first connection
+ */
+int
+wl_connection_copy_fds(struct wl_connection *conn1, struct wl_connection *conn2)
+{
+	uint32_t size = wl_buffer_size(&conn1->fds_in);
+
+	if (size == 0)
+		return 0;
+
+	if (size + wl_buffer_size(&conn2->fds_out)
+		>= MAX_FDS_OUT * sizeof(int32_t)) {
+		conn2->want_flush = 1;
+		if (wl_connection_flush(conn2) < 0)
+			return -1;
+	}
+
+	conn1->fds_in.tail += size;
+
+	return wl_buffer_put(&conn2->fds_out, &conn1->fds_in.data, size);
+}
+
 const char *
 get_next_argument(const char *signature, struct argument_details *details)
 {

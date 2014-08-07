@@ -89,6 +89,7 @@ struct wl_connection *wl_connection_create(int fd);
 void wl_connection_destroy(struct wl_connection *connection);
 void wl_connection_copy(struct wl_connection *connection, void *data, size_t size);
 void wl_connection_consume(struct wl_connection *connection, size_t size);
+int wl_connection_copy_fds(struct wl_connection *conn1, struct wl_connection *conn2);
 
 int wl_connection_flush(struct wl_connection *connection);
 int wl_connection_read(struct wl_connection *connection);
