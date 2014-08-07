@@ -241,7 +241,7 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 }
 
 static int
-run(struct wldbg *wldbg)
+wldbg_run(struct wldbg *wldbg)
 {
 	struct epoll_event ev;
 	struct wl_connection *conn;
@@ -278,6 +278,19 @@ run(struct wldbg *wldbg)
 	return 0;
 }
 
+static int
+wldbg_init(struct wldbg *wldbg)
+{
+	memset(wldbg, 0, sizeof *wldbg);
+	wl_list_init(&wldbg->passes);
+
+	wldbg->epoll_fd = epoll_create1(0);
+	if (wldbg->epoll_fd == -1) {
+		perror("epoll_create failed");
+		return -1;
+	}
+}
+
 static void
 wldbg_destroy(struct wldbg *wldbg)
 {
@@ -295,12 +308,10 @@ wldbg_destroy(struct wldbg *wldbg)
 int main(int argc, char *argv[])
 {
 	struct wldbg wldbg;
-	memset(&wldbg, 0, sizeof wldbg);
 
-	wldbg.epoll_fd = epoll_create1(0);
-	if (wldbg.epoll_fd == -1) {
-		perror("epoll_create failed");
-		return EXIT_FAILURE;
+	wldbg_init(&wldbg);
+
+
 	}
 
 	if (init_wayland_socket(&wldbg) < 0)
@@ -310,8 +321,7 @@ int main(int argc, char *argv[])
 	if (spawn_client(&wldbg, argv[1]) < 0)
 		goto err;
 
-	run(&wldbg);
-
+	wldbg_run(&wldbg);
 	wldbg_destroy(&wldbg);
 
 	return EXIT_SUCCESS;
