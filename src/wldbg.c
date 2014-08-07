@@ -228,7 +228,7 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 	message.data = buffer;
 	message.size = len;
 
-	/* process filters */
+	/* process passes */
 	wl_list_for_each(pass, &wldbg->passes, link) {
 		if (connection == wldbg->server.connection) {
 			if (pass->wldbg_pass.server_pass(pass->wldbg_pass.user_data,
@@ -303,12 +303,20 @@ wldbg_init(struct wldbg *wldbg)
 static void
 wldbg_destroy(struct wldbg *wldbg)
 {
+	struct pass *pass, *tmp;
+
 	close(wldbg->epoll_fd);
 
 	if (wldbg->server.connection)
 		wl_connection_destroy(wldbg->server.connection);
 	if (wldbg->client.connection)
 		wl_connection_destroy(wldbg->client.connection);
+
+	wl_list_for_each_safe(pass, tmp, &wldbg->passes, link) {
+		if (pass->wldbg_pass.destroy)
+			pass->wldbg_pass.destroy(pass->wldbg_pass.user_data);
+		free(pass);
+	}
 
 	close(wldbg->server.fd);
 	close(wldbg->client.fd);
