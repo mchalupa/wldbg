@@ -32,6 +32,8 @@ struct wldbg_pass_data {
 	int client_fd;
 };
 
+struct message;
+
 struct wldbg_pass {
 	void (*init)(struct wldbg_pass_data *data,
 			int argc, char *argv[]);

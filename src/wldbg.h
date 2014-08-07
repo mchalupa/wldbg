@@ -23,6 +23,35 @@
 #ifndef _WLDBG_H_
 #define _WLDBG_H_
 
+#include <unistd.h>
+
+#include "wayland/wayland-util.h"
+#include "wldbg-pass.h"
+
+struct wldbg {
+	struct {
+		int fd;
+		/* TODO get rid of connection??? */
+		struct wl_connection *connection;
+	} server;
+
+	struct {
+		int fd;
+		struct wl_connection *connection;
+
+		pid_t pid;
+	} client;
+
+	int epoll_fd;
+
+	struct wl_list passes;
+};
+
+struct pass {
+	struct wldbg_pass pass;
+	struct wl_list link;
+};
+
 struct message {
 	void *data;
 	size_t size;

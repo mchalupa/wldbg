@@ -22,6 +22,8 @@
 
 #define _GNU_SOURCE
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -41,29 +43,6 @@
 #include "wayland/wayland-os.h"
 
 
-struct wldbg {
-	struct {
-		int fd;
-		/* TODO get rid of connection??? */
-		struct wl_connection *connection;
-	} server;
-
-	struct {
-		int fd;
-		struct wl_connection *connection;
-
-		pid_t pid;
-	} client;
-
-	int epoll_fd;
-
-	struct wl_list passes;
-};
-
-struct pass {
-	struct wldbg_pass pass;
-	struct wl_list link;
-};
 
 /* copied out from wayland-client.c */
 /* renamed from connect_to_socket -> connect_to_wayland_socket */
