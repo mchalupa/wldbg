@@ -36,7 +36,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <time.h>
-#include <ffi.h>
 
 #include "wayland-util.h"
 #include "wayland-private.h"
@@ -846,100 +845,6 @@ wl_closure_lookup_objects(struct wl_closure *closure, struct wl_map *objects)
 	}
 
 	return 0;
-}
-
-static void
-convert_arguments_to_ffi(const char *signature, uint32_t flags,
-			 union wl_argument *args,
-			 int count, ffi_type **ffi_types, void** ffi_args)
-{
-	int i;
-	const char *sig_iter;
-	struct argument_details arg;
-
-	sig_iter = signature;
-	for (i = 0; i < count; i++) {
-		sig_iter = get_next_argument(sig_iter, &arg);
-
-		switch(arg.type) {
-		case 'i':
-			ffi_types[i] = &ffi_type_sint32;
-			ffi_args[i] = &args[i].i;
-			break;
-		case 'u':
-			ffi_types[i] = &ffi_type_uint32;
-			ffi_args[i] = &args[i].u;
-			break;
-		case 'f':
-			ffi_types[i] = &ffi_type_sint32;
-			ffi_args[i] = &args[i].f;
-			break;
-		case 's':
-			ffi_types[i] = &ffi_type_pointer;
-			ffi_args[i] = &args[i].s;
-			break;
-		case 'o':
-			ffi_types[i] = &ffi_type_pointer;
-			ffi_args[i] = &args[i].o;
-			break;
-		case 'n':
-			if (flags & WL_CLOSURE_INVOKE_CLIENT) {
-				ffi_types[i] = &ffi_type_pointer;
-				ffi_args[i] = &args[i].o;
-			} else {
-				ffi_types[i] = &ffi_type_uint32;
-				ffi_args[i] = &args[i].n;
-			}
-			break;
-		case 'a':
-			ffi_types[i] = &ffi_type_pointer;
-			ffi_args[i] = &args[i].a;
-			break;
-		case 'h':
-			ffi_types[i] = &ffi_type_sint32;
-			ffi_args[i] = &args[i].h;
-			break;
-		default:
-			wl_log("unknown type\n");
-			assert(0);
-			break;
-		}
-	}
-}
-
-void
-wl_closure_invoke(struct wl_closure *closure, uint32_t flags,
-		  struct wl_object *target, uint32_t opcode, void *data)
-{
-	int count;
-	ffi_cif cif;
-	ffi_type *ffi_types[WL_CLOSURE_MAX_ARGS + 2];
-	void * ffi_args[WL_CLOSURE_MAX_ARGS + 2];
-	void (* const *implementation)(void);
-
-	count = arg_count_for_signature(closure->message->signature);
-
-	ffi_types[0] = &ffi_type_pointer;
-	ffi_args[0] = &data;
-	ffi_types[1] = &ffi_type_pointer;
-	ffi_args[1] = &target;
-
-	convert_arguments_to_ffi(closure->message->signature, flags, closure->args,
-				 count, ffi_types + 2, ffi_args + 2);
-
-	ffi_prep_cif(&cif, FFI_DEFAULT_ABI,
-		     count + 2, &ffi_type_void, ffi_types);
-
-	implementation = target->implementation;
-	ffi_call(&cif, implementation[opcode], NULL, ffi_args);
-}
-
-void
-wl_closure_dispatch(struct wl_closure *closure, wl_dispatcher_func_t dispatcher,
-		    struct wl_object *target, uint32_t opcode)
-{
-	dispatcher(target->implementation, target, opcode, closure->message,
-		   closure->args);
 }
 
 static int

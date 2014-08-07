@@ -144,17 +144,6 @@ wl_connection_demarshal(struct wl_connection *connection,
 int
 wl_closure_lookup_objects(struct wl_closure *closure, struct wl_map *objects);
 
-enum wl_closure_invoke_flag {
-	WL_CLOSURE_INVOKE_CLIENT = (1 << 0),
-	WL_CLOSURE_INVOKE_SERVER = (1 << 1)
-};
-
-void
-wl_closure_invoke(struct wl_closure *closure, uint32_t flags,
-		  struct wl_object *target, uint32_t opcode, void *data);
-void
-wl_closure_dispatch(struct wl_closure *closure, wl_dispatcher_func_t dispatcher,
-		    struct wl_object *target, uint32_t opcode);
 int
 wl_closure_send(struct wl_closure *closure, struct wl_connection *connection);
 int
