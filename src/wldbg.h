@@ -67,6 +67,12 @@ struct wldbg {
 		int fd;
 		struct wl_connection *connection;
 
+		/* path to the binary */
+		const char *path;
+		/* pointer to arguments and number of arguments */
+		int argc;
+		char * const *argv;
+
 		pid_t pid;
 	} client;
 

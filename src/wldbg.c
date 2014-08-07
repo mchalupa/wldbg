@@ -110,7 +110,7 @@ connect_to_wayland_socket(const char *name)
 }
 
 static pid_t
-spawn_client(struct wldbg *wldbg, const char *path)
+spawn_client(struct wldbg *wldbg)
 {
 	struct epoll_event ev;
 	int sock[2];
@@ -159,8 +159,7 @@ spawn_client(struct wldbg *wldbg, const char *path)
 	if (wldbg->client.pid == 0) {
 		close(sock[0]);
 
-		/* XXX add arguments */
-		execlp(path, path, NULL);
+		execvp(wldbg->client.path, wldbg->client.argv);
 
 		perror("Exec failed");
 		abort();
@@ -353,7 +352,7 @@ int main(int argc, char *argv[])
 		goto err;
 
 	/* XXX check argument and add arguments */
-	if (spawn_client(&wldbg, argv[1]) < 0)
+	if (spawn_client(&wldbg) < 0)
 		goto err;
 
 	wldbg_run(&wldbg);
