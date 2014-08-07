@@ -76,14 +76,39 @@ create_pass(const char *name)
 	if (strcmp(name, "dump") == 0) {
 		wldbg_pass = &wldbg_pass_dump;
 	} else {
-		/* XXX make it relative path */
-		len = snprintf(path, sizeof path, "../passes/%s.so", name);
+		/* try root dir */
+		len = snprintf(path, sizeof path, "passes/%s%s.so",
+				LT_OBJDIR, name);
 		if (len >= sizeof path) {
 			fprintf(stderr, "Pass name too long\n");
 			return NULL;
 		}
 
 		wldbg_pass = load_pass(path);
+
+		if (!wldbg_pass) {
+			/* try src dir */
+			len = snprintf(path, sizeof path, "../passes/%s%s.so",
+					LT_OBJDIR, name);
+			if (len >= sizeof path) {
+				fprintf(stderr, "Pass name too long\n");
+				return NULL;
+			}
+
+			wldbg_pass = load_pass(path);
+		}
+
+		if (!wldbg_pass) {
+			/* try default paths */
+			len = snprintf(path, sizeof path, "%s.so", name);
+			if (len >= sizeof path) {
+				fprintf(stderr, "Pass name too long\n");
+				return NULL;
+			}
+
+			wldbg_pass = load_pass(path);
+		}
+
 		if (!wldbg_pass)
 			return NULL;
 	}
