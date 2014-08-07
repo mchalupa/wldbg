@@ -231,12 +231,12 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 	/* process filters */
 	wl_list_for_each(pass, &wldbg->passes, link) {
 		if (connection == wldbg->server.connection) {
-			if (pass->pass.server_pass(pass->pass.user_data, &message)
-				== PASS_STOP)
+			if (pass->wldbg_pass.server_pass(pass->wldbg_pass.user_data,
+				&message) == PASS_STOP)
 				break;
 		} else {
-			if (pass->pass.client_pass(pass->pass.user_data, &message)
-				== PASS_STOP)
+			if (pass->wldbg_pass.client_pass(pass->wldbg_pass.user_data,
+				&message) == PASS_STOP)
 				break;
 		}
 	}

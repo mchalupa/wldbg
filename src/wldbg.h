@@ -82,7 +82,7 @@ struct wldbg {
 };
 
 struct pass {
-	struct wldbg_pass pass;
+	struct wldbg_pass wldbg_pass;
 	struct wl_list link;
 };
 

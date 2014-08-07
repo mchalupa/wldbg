@@ -9,6 +9,8 @@ wayland_files =				\
 	../wayland/wayland-util.h	\
 	../wayland/wayland-private.h
 
+hardcoded_passes = ../passes/dump.c
+
 AM_CPPFLAGS = -I..
 AM_CFLAGS = $(CFLAGS)
 
@@ -17,4 +19,6 @@ wldbg_SOURCES =			\
 	wldbg.h			\
 	interactive.c		\
 	passes.c		\
-	$(wayland_files)
+	$(wayland_files)	\
+	$(hardcoded_passes)
+wldbg_LDFLAGS = -ldl

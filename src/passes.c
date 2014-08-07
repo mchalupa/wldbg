@@ -27,14 +27,88 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <assert.h>
+#include <dlfcn.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
 
-static int
-load_pass(struct wldbg *wldbg, const char *path)
+extern struct wldbg_pass wldbg_pass_dump;
+
+static struct wldbg_pass *
+load_pass(const char *path)
 {
-	return -1;
+	void *handle;
+	struct wldbg_pass *ret;
+
+	handle = dlopen(path, RTLD_NOW | RTLD_NOLOAD);
+	if (handle) {
+		fprintf(stderr, "Pass already loaded\n");
+		dlclose(handle);
+		return NULL;
+	}
+
+	handle = dlopen(path, RTLD_NOW);
+	if (!handle) {
+		fprintf(stderr, "Loading pass: %s\n", dlerror());
+		return NULL;
+	}
+
+	ret = dlsym(handle, "wldbg_pass");
+	if (!ret) {
+		fprintf(stderr, "Failed loading wldbg_pass struct: %s\n",
+			dlerror());
+		dlclose(handle);
+		return NULL;
+	}
+
+	return ret;
+}
+
+static struct pass *
+create_pass(const char *name)
+{
+	struct pass *pass;
+	struct wldbg_pass *wldbg_pass;
+	char path[256];
+	size_t len;
+
+	/* hardcoded passes */
+	if (strcmp(name, "dump") == 0) {
+		wldbg_pass = &wldbg_pass_dump;
+	} else {
+		/* XXX make it relative path */
+		len = snprintf(path, sizeof path, "../passes/%s.so", name);
+		if (len >= sizeof path) {
+			fprintf(stderr, "Pass name too long\n");
+			return NULL;
+		}
+
+		wldbg_pass = load_pass(path);
+		if (!wldbg_pass)
+			return NULL;
+	}
+
+	pass = malloc(sizeof *pass);
+	if (!pass)
+		return NULL;
+
+	wl_list_init(&pass->link);
+	pass->wldbg_pass = *wldbg_pass;
+
+	return pass;
+}
+
+static int
+pass_init(struct wldbg *wldbg, struct pass *pass,
+		int argc, const char *argv[])
+{
+	struct wldbg_pass_data data;
+
+	data.server_fd = wldbg->server.fd;
+	data.client_fd = wldbg->client.fd;
+	data.user_data = &pass->wldbg_pass.user_data;
+
+	return pass->wldbg_pass.init(&data, argc, argv);
 }
 
 static int
@@ -57,7 +131,8 @@ count_args(int argc, const char *argv[])
 int
 load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 {
-	int i, rest, count, pass_num = 0;
+	int i, rest, count, pass_num = 0, pass_created = 0;
+	struct pass *pass;
 	char *comma;
 
 	dbg("Loading passes\n");
@@ -100,7 +175,25 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 			}
 #endif
 
+			pass = create_pass(argv[argc - rest]);
+			if (pass) {
+				if (pass_init(wldbg, pass, count,
+						argv + argc - rest) != 0) {
+					free(pass);
+					continue;
+				}
+
+				++pass_created;
+				wl_list_insert(wldbg->passes.next, &pass->link);
+				dbg("Pass '%s' loaded\n", argv[argc - rest]);
+			} else {
+				dbg("Loading pass '%s' failed\n", argv[argc - rest]);
+			}
+
 			rest -= count;
 		}
 	}
+
+	dbg("Loaded %d passes\n", pass_created);
+	return pass_created;
 }

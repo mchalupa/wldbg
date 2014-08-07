@@ -23,20 +23,21 @@
 #ifndef _WLDBG_PASS_H_
 #define _WLDBG_PASS_H_
 
-#include "wldbg.h"
-
 /* struct with some data from wldbg (i. e. fds of connections etc.)
  * in the case the pass would like to use it */
 struct wldbg_pass_data {
 	int server_fd;
 	int client_fd;
+
+	/* will point to user data in wldbg_pass */
+	void **user_data;
 };
 
 struct message;
 
 struct wldbg_pass {
-	void (*init)(struct wldbg_pass_data *data,
-			int argc, char *argv[]);
+	int (*init)(struct wldbg_pass_data *data,
+			int argc, const char *argv[]);
 
 	/* function that will be run for messages from server */
 	int (*server_pass)(void *user_data, struct message *message);
