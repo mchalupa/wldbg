@@ -116,6 +116,11 @@ spawn_client(struct wldbg *wldbg)
 	int sock[2];
 	char sockstr[8];
 
+	if (!wldbg->client.path) {
+		fprintf(stderr, "No client to run.\n");
+		return -1;
+	}
+
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) != 0) {
 		perror("socketpair");
 		return -1;
@@ -359,7 +364,6 @@ int main(int argc, char *argv[])
 	if (init_wayland_socket(&wldbg) < 0)
 		goto err;
 
-	/* XXX check argument and add arguments */
 	if (spawn_client(&wldbg) < 0)
 		goto err;
 
