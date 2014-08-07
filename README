@@ -1,0 +1,18 @@
+wldbg
+-----------------------------
+
+* What is wldbg
+
+wldbg is a tool, that allows you to hijack wayland's connection
+and do whatever you want with it. It can be easily extended
+by passes or it can run in interactive gdb-like mode.
+
+* What is pass?
+
+The calling pass is inspired by LLVM passes.
+Pass is a plugin that defines two functions - one for incoming
+messages from client and the other for messages from server.
+It can modify, print or take arbitrary action with the message and
+then pass the message to another pass and so on..
+
+Author: Marek Chalupa <mchqwerty@gmail.com>
