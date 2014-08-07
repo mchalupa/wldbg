@@ -15,4 +15,6 @@ AM_CFLAGS = $(CFLAGS)
 wldbg_SOURCES =			\
 	wldbg.c			\
 	wldbg.h			\
+	interactive.c		\
+	passes.c		\
 	$(wayland_files)

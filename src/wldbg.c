@@ -46,6 +46,13 @@
 int debug = 0;
 #endif
 
+/* defined in interactive.c */
+int
+run_interactive(struct wldbg *wldbg, int argc, const char *argv[]);
+
+/* defined in passes.c */
+int
+load_passes(struct wldbg *wldbg, int argc, const char *argv[]);
 
 /* copied out from wayland-client.c */
 /* renamed from connect_to_socket -> connect_to_wayland_socket */
@@ -308,16 +315,38 @@ wldbg_destroy(struct wldbg *wldbg)
 	close(wldbg->client.fd);
 }
 
+static void
+help(void)
+{
+	fprintf(stderr, "wldbg v %s\n", PACKAGE_VERSION);
+	fprintf(stderr, "\nUsage:\n");
+	fprintf(stderr, "\twldbg [-i|--interactive] ARGUMENTS [PROGRAM]\n");
+	fprintf(stderr, "\twldbg pass ARGUMENTS, pass ARGUMENTS,... -- PROGRAM\n");
+	fprintf(stderr, "\nFor interactive mode description see documentation.\n");
+}
+
 int main(int argc, char *argv[])
 {
 	struct wldbg wldbg;
 
-	wldbg_init(&wldbg);
+	if (argc == 1) {
+		help();
+		exit(1);
+	}
 
 #ifdef DEBUG
 	debug = !!getenv("WLDBG_DEBUG");
 #endif
 
+	wldbg_init(&wldbg);
+
+	/* I know about getopt, but we need different behaviour,
+	 * so use our own arguments parsing */
+	if (strcmp(argv[1], "--interactive") == 0 ||
+		strcmp(argv[1], "-i") == 0) {
+		run_interactive(&wldbg, argc - 2, (const char **) argv + 2);
+	} else {
+		load_passes(&wldbg, argc - 1, (const char **) argv + 1);
 	}
 
 	if (init_wayland_socket(&wldbg) < 0)
