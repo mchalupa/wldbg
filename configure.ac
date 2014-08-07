@@ -53,6 +53,15 @@ if test "x$HAVE_WAYLAND_CLIENT" != "xyes"; then
 	AC_MSG_ERROR([Need wayland-client libraries to compile])
 fi
 
+AC_ARG_ENABLE(debug,
+              [AC_HELP_STRING([--disable-debug],
+                              [Disable debugging macros])],
+		,,enable_debug=yes)
+if test "x$enable_debug" != "xno"; then
+	AC_DEFINE(DEBUG, 1, [Enable debugging macros])
+	CFLAGS="$CFLAGS -g -O"
+fi
+
 #export options to makefiles
 AC_SUBST([TESTS_LIBS])
 AC_SUBST([TESTS_CFLAGS])

@@ -10,7 +10,7 @@ wayland_files =				\
 	../wayland/wayland-private.h
 
 AM_CPPFLAGS = -I..
-AM_CFLAGS = $(GCC_CFLAGS)
+AM_CFLAGS = $(CFLAGS)
 
 wldbg_SOURCES =			\
 	wldbg.c			\

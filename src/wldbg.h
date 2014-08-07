@@ -25,8 +25,36 @@
 
 #include <unistd.h>
 
+#include "config.h"
+
 #include "wayland/wayland-util.h"
 #include "wldbg-pass.h"
+
+#ifdef DEBUG
+
+extern int debug;
+
+#define dbg(...) 								\
+	do {									\
+		if (!debug) break;						\
+		fprintf(stderr, "[%d | %s: %d] ", getpid(),			\
+				__FILE__, __LINE__);				\
+		fprintf(stderr,	__VA_ARGS__);					\
+	} while (0)
+
+#define ifdbg(cond, ...)			\
+	do {					\
+		if (!debug) break;						\
+		if (cond)			\
+			dbg(__VA_ARGS__);	\
+	} while (0)
+
+#else
+
+#define dbg(...)
+#define ifdbg(cond, ...)
+
+#endif /* DEBUG */
 
 struct wldbg {
 	struct {

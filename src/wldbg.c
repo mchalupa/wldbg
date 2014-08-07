@@ -42,6 +42,9 @@
 #include "wayland/wayland-util.h"
 #include "wayland/wayland-os.h"
 
+#ifdef DEBUG
+int debug = 0;
+#endif
 
 
 /* copied out from wayland-client.c */
@@ -311,6 +314,9 @@ int main(int argc, char *argv[])
 
 	wldbg_init(&wldbg);
 
+#ifdef DEBUG
+	debug = !!getenv("WLDBG_DEBUG");
+#endif
 
 	}
 
