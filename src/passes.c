@@ -68,48 +68,96 @@ load_pass(const char *path)
 	return ret;
 }
 
+#define PATH_LENGTH 256
+
+static int
+build_path(char *path, const char *prefix,
+		const char *middle, const char *name)
+{
+	size_t len;
+
+	/* we must have name */
+	assert(name);
+
+	len = snprintf(path, PATH_LENGTH, "%s%s%s.so",
+			prefix ? prefix : "",
+			middle ? middle : "",
+			name);
+	if (len >= PATH_LENGTH) {
+		fprintf(stderr, "Pass name too long\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/* searching for .so file in folders (in this order)
+ *   ./passes/.libs/file.so
+ *   $HOME/.wldbg/file.so
+ *   /usr/local/lib/wldbg/file.so
+ *   /usr/lib/wldbg/file.so
+ *   /lib/wldbg/file.so
+ */
 static struct pass *
 create_pass(const char *name)
 {
 	struct pass *pass;
 	struct wldbg_pass *wldbg_pass;
-	char path[256];
+	char path[PATH_LENGTH];
+	const char *env;
 	size_t len;
 
 	/* hardcoded passes */
 	if (strcmp(name, "dump") == 0) {
 		wldbg_pass = &wldbg_pass_dump;
 	} else {
-		/* try root dir */
-		len = snprintf(path, sizeof path, "passes/%s%s.so",
-				LT_OBJDIR, name);
-		if (len >= sizeof path) {
-			fprintf(stderr, "Pass name too long\n");
+		/* try root dir, its nice when developing */
+		if (build_path(path, "passes/", LT_OBJDIR, name) < 0)
 			return NULL;
-		}
 
+		dbg("Trying '%s'\n", path);
 		wldbg_pass = load_pass(path);
 
+		/* home dir */
 		if (!wldbg_pass) {
-			/* try src dir */
-			len = snprintf(path, sizeof path, "../passes/%s%s.so",
-					LT_OBJDIR, name);
-			if (len >= sizeof path) {
-				fprintf(stderr, "Pass name too long\n");
-				return NULL;
-			}
+			env = getenv("HOME");
+			if (!env) {
+				fprintf(stderr, "$HOME is not set!\n");
+			} else {
+				if (build_path(path, env,
+						"/.wldbg/", name) < 0)
+					return NULL;
 
+				dbg("Trying '%s'\n", path);
+				wldbg_pass = load_pass(path);
+			}
+		}
+
+		/* default paths */
+		if (!wldbg_pass) {
+			if (build_path(path, "/usr/local/lib/wldbg",
+					NULL, name) < 0)
+				return NULL;
+
+			dbg("Trying '%s'\n", path);
 			wldbg_pass = load_pass(path);
 		}
 
 		if (!wldbg_pass) {
-			/* try default paths */
-			len = snprintf(path, sizeof path, "%s.so", name);
-			if (len >= sizeof path) {
-				fprintf(stderr, "Pass name too long\n");
+			if (build_path(path, "/usr/lib/wldbg",
+					NULL, name) < 0)
 				return NULL;
-			}
 
+			dbg("Trying '%s'\n", path);
+			wldbg_pass = load_pass(path);
+		}
+
+		if (!wldbg_pass) {
+			if (build_path(path, "/lib/wldbg",
+					NULL, name) < 0)
+				return NULL;
+
+			dbg("Trying '%s'\n", path);
 			wldbg_pass = load_pass(path);
 		}
 
