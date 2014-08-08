@@ -243,8 +243,13 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 		} else {
 			++pass_num;
 
-			dbg("Pass %d:\n", pass_num);
+			/* Delete the comma from arguments for the pass
+			 * if present */
+			if ((comma = strrchr(argv[argc - rest + count - 1], ',')))
+				*comma = '\0';
+
 #ifdef DEBUG
+			dbg("Pass %d:\n", pass_num);
 			for (i = 0; i < count; ++i) {
 				dbg("\targ[%d]: %s\n", i, argv[argc - rest + i]);
 			}
