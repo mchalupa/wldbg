@@ -22,17 +22,89 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include "wldbg.h"
+#include "wldbg-pass.h"
+
+struct wldbg_interactive {
+	struct wldbg *wldbg;
+
+	struct {
+		uint64_t client_msg_no;
+		uint64_t server_msg_no;
+	} statistics;
+};
+
+static int
+process_message(struct wldbg_interactive *wldbgi, struct message *message)
+{
+}
+
+static int
+process_interactive(void *user_data, struct message *message)
+{
+	struct wldbg_interactive *wldbgi = user_data;
+	struct message msg;
+	size_t rest = message->size;
+
+	dbg("Mesagge from %s\n", message->from == SERVER ?
+		"SERVER" : "CLIENT");
+
+	process_message(wldbgi, message);
+
+	/* This is always the last pass. Even when user will add
+	 * some passes interactively, they will be added before
+	 * this one */
+	return PASS_STOP;
+}
 
 int
 run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 {
-	dbg("Starting interactive mode. !! Not implemented yet !!\n");
+	struct pass *pass;
+	struct wldbg_interactive *wldbgi;
 
-	int i;
-	for (i = 0; i < argc; ++i)
-		dbg("\targ: %s\n", argv[i]);
+	dbg("Starting interactive mode.\n");
 
-	exit(1);
+	if (argc == 0) {
+		fprintf(stderr, "Need specify client\n");
+		return -1;
+	}
+
+	/* TODO use getopt */
+	if (strcmp(argv[0], "--") == 0) {
+		wldbg->client.path = argv[1];
+		wldbg->client.argc = argc - 1;
+		wldbg->client.argv = (char * const *) argv + 2;
+	} else {
+		wldbg->client.path = argv[0];
+		wldbg->client.argc = argc;
+		wldbg->client.argv = (char * const *) argv + 1;
+	}
+
+	wldbgi = malloc(sizeof *wldbgi);
+	if (!wldbgi)
+		return -1;
+
+	wldbgi->wldbg = wldbg;
+
+	/* Interactive mode must be isolated - at least on startup */
+	assert(wl_list_empty(&wldbg->passes));
+
+	pass = malloc(sizeof *pass);
+	if (!pass) {
+		free(wldbgi);
+		return -1;
+	}
+
+	wl_list_insert(wldbg->passes.next, &pass->link);
+
+	pass->wldbg_pass.init = NULL;
+	pass->wldbg_pass.destroy = free;
+	pass->wldbg_pass.server_pass = process_interactive;
+	pass->wldbg_pass.client_pass = process_interactive;
+	pass->wldbg_pass.user_data = wldbgi;
+
+	return 0;
 }

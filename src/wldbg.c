@@ -363,7 +363,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	} else if (strcmp(argv[1], "--interactive") == 0 ||
 		strcmp(argv[1], "-i") == 0) {
-		run_interactive(&wldbg, argc - 2, (const char **) argv + 2);
+		if (run_interactive(&wldbg, argc - 2,
+					(const char **) argv + 2) < 0)
+			goto err;
 	} else {
 		if (load_passes(&wldbg, argc - 1, (const char **) argv + 1) <= 0) {
 			fprintf(stderr, "No passes loaded, exiting...\n");
