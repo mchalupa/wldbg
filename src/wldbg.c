@@ -213,10 +213,27 @@ err:
 	return -1;
 }
 
+static void
+run_passes(struct wldbg *wldbg, struct message *message)
+{
+	struct pass *pass;
+
+	wl_list_for_each(pass, &wldbg->passes, link) {
+		if (message->from == SERVER) {
+			if (pass->wldbg_pass.server_pass(pass->wldbg_pass.user_data,
+				message) == PASS_STOP)
+				break;
+		} else {
+			if (pass->wldbg_pass.client_pass(pass->wldbg_pass.user_data,
+				message) == PASS_STOP)
+				break;
+		}
+	}
+}
+
 static int
 process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 {
-	struct pass *pass;
 	char buffer[4096];
 	struct message message;
 	struct wl_connection *write_conn;
@@ -236,17 +253,7 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 	message.size = len;
 
 	/* process passes */
-	wl_list_for_each(pass, &wldbg->passes, link) {
-		if (connection == wldbg->server.connection) {
-			if (pass->wldbg_pass.server_pass(pass->wldbg_pass.user_data,
-				&message) == PASS_STOP)
-				break;
-		} else {
-			if (pass->wldbg_pass.client_pass(pass->wldbg_pass.user_data,
-				&message) == PASS_STOP)
-				break;
-		}
-	}
+	run_passes(wldbg, &message);
 
 	/* resend the data */
 	wl_connection_copy_fds(connection, write_conn);
