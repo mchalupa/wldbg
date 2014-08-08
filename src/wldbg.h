@@ -89,6 +89,11 @@ struct pass {
 struct message {
 	void *data;
 	size_t size;
+
+	enum {
+		SERVER,
+		CLIENT
+	} from;
 };
 
 #endif /* _WLDBG_H_ */

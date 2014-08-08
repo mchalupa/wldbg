@@ -226,8 +226,10 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 
 	if (connection == wldbg->server.connection) {
 		write_conn = wldbg->client.connection;
+		message.from = SERVER;
 	} else {
 		write_conn = wldbg->server.connection;
+		message.from = CLIENT;
 	}
 
 	message.data = buffer;
