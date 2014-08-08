@@ -40,6 +40,10 @@ load_pass(const char *path)
 	void *handle;
 	struct wldbg_pass *ret;
 
+	/* check if file exists */
+	if (access(path, F_OK) == -1)
+		return NULL;
+
 	handle = dlopen(path, RTLD_NOW | RTLD_NOLOAD);
 	if (handle) {
 		fprintf(stderr, "Pass already loaded\n");
