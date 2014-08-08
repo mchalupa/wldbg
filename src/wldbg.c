@@ -334,7 +334,8 @@ help(void)
 	fprintf(stderr, "\nUsage:\n");
 	fprintf(stderr, "\twldbg [-i|--interactive] ARGUMENTS [PROGRAM]\n");
 	fprintf(stderr, "\twldbg pass ARGUMENTS, pass ARGUMENTS,... -- PROGRAM\n");
-	fprintf(stderr, "\nFor interactive mode description see documentation.\n");
+	fprintf(stderr, "\nTry 'wldbg help' too.\n"
+		"For interactive mode description see documentation.\n");
 }
 
 int main(int argc, char *argv[])
