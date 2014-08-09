@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <signal.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
@@ -301,19 +302,6 @@ wldbg_run(struct wldbg *wldbg)
 	return 0;
 }
 
-static int
-wldbg_init(struct wldbg *wldbg)
-{
-	memset(wldbg, 0, sizeof *wldbg);
-	wl_list_init(&wldbg->passes);
-
-	wldbg->epoll_fd = epoll_create1(0);
-	if (wldbg->epoll_fd == -1) {
-		perror("epoll_create failed");
-		return -1;
-	}
-}
-
 static void
 wldbg_destroy(struct wldbg *wldbg)
 {
@@ -334,6 +322,61 @@ wldbg_destroy(struct wldbg *wldbg)
 
 	close(wldbg->server.fd);
 	close(wldbg->client.fd);
+}
+
+/* This global struct will point to the local one.
+ * It's for use in signal handlers */
+static struct wldbg *_wldbg = NULL;
+
+static void
+sighandler(int signum)
+{
+	int status;
+
+	assert(_wldbg);
+
+	if (signum == SIGCHLD) {
+		waitpid(_wldbg->client.pid, &status, WNOHANG);
+		fprintf(stderr, "Client %s exited with code %d, exiting too\n",
+			WIFEXITED(status) ? "" : "abnormally",
+			WEXITSTATUS(status));
+		wldbg_destroy(_wldbg);
+		exit(!(!WEXITSTATUS(status) && WIFEXITED(status)));
+	} else if (signum == SIGINT) {
+		fprintf(stderr, "Interrupted, exiting...\n");
+		wldbg_destroy(_wldbg);
+		exit(0);
+	}
+}
+
+static int
+wldbg_init(struct wldbg *wldbg)
+{
+	struct sigaction sa;
+
+	memset(wldbg, 0, sizeof *wldbg);
+	wl_list_init(&wldbg->passes);
+
+	_wldbg = wldbg;
+
+	sa.sa_handler = sighandler;
+	sigemptyset(&sa.sa_mask);
+
+	if (sigaction(SIGINT, &sa, NULL) == -1) {
+		perror("SIGINT sigaction");
+		return -1;
+	}
+
+	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+		perror("SIGINT sigaction");
+		return -1;
+	}
+
+	wldbg->epoll_fd = epoll_create1(0);
+	if (wldbg->epoll_fd == -1) {
+		perror("epoll_create failed");
+		return -1;
+	}
 }
 
 static void
