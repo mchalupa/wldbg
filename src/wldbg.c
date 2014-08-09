@@ -233,6 +233,37 @@ run_passes(struct wldbg *wldbg, struct message *message)
 }
 
 static int
+process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
+			struct message *message)
+{
+	size_t rest = message->size;
+
+	while (rest > 0) {
+		message->size = ((uint32_t *) message->data)[1] >> 16;
+
+		run_passes(wldbg, message);
+
+		if (wl_connection_write(write_conn, message->data,
+					message->size) < 0) {
+			perror("wl_connection_write");
+			return -1;
+		}
+
+		if (wl_connection_flush(write_conn) < 0) {
+			perror("wl_connection_flush");
+			return -1;
+		}
+
+		message->data = message->data + message->size;
+		rest -= message->size;
+	}
+
+	assert(rest == 0 && "Bug!");
+
+	return 0;
+}
+
+static int
 process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 {
 	char buffer[4096];
@@ -250,16 +281,28 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 		message.from = CLIENT;
 	}
 
+	wl_connection_copy_fds(connection, write_conn);
+
 	message.data = buffer;
 	message.size = len;
 
-	/* process passes */
-	run_passes(wldbg, &message);
+	if (wldbg->flags.one_by_one) {
+		if (process_one_by_one(wldbg, write_conn, &message) < 0)
+			return -1;
+	} else {
+		/* process passes */
+		run_passes(wldbg, &message);
 
-	/* resend the data */
-	wl_connection_copy_fds(connection, write_conn);
-	wl_connection_write(write_conn, message.data, message.size);
-	wl_connection_flush(write_conn);
+		/* resend the data */
+		if (wl_connection_write(write_conn, message.data, message.size) < 0) {
+			perror("wl_connection_write");
+			return -1;
+		}
+		if (wl_connection_flush(write_conn) < 0) {
+			perror("wl_connection_flush");
+			return -1;
+		}
+	}
 
 	return 0;
 }
@@ -296,7 +339,8 @@ wldbg_run(struct wldbg *wldbg)
 		} else if (len < 0 && errno == EAGAIN)
 			continue;
 
-		process_data(wldbg, conn, len);
+		if (process_data(wldbg, conn, len) < 0)
+			return -1;
 	}
 
 	return 0;
@@ -429,7 +473,9 @@ int main(int argc, char *argv[])
 	if (spawn_client(&wldbg) < 0)
 		goto err;
 
-	wldbg_run(&wldbg);
+	if (wldbg_run(&wldbg) < 0)
+		goto err;
+
 	wldbg_destroy(&wldbg);
 
 	return EXIT_SUCCESS;

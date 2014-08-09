@@ -77,8 +77,11 @@ struct wldbg {
 	} client;
 
 	int epoll_fd;
-
 	struct wl_list passes;
+
+	struct {
+		unsigned int one_by_one : 1;
+	} flags;
 };
 
 struct pass {
