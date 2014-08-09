@@ -440,6 +440,8 @@ help(void)
 	fprintf(stderr, "\nUsage:\n");
 	fprintf(stderr, "\twldbg [-i|--interactive] ARGUMENTS [PROGRAM]\n");
 	fprintf(stderr, "\twldbg pass ARGUMENTS, pass ARGUMENTS,... -- PROGRAM\n");
+	fprintf(stderr, "\twldbg [-s|--one-by-one] pass ARGUMENTS,"
+			" pass ARGUMENTS,... -- PROGRAM\n");
 	fprintf(stderr, "\nTry 'wldbg help' too.\n"
 		"For interactive mode description see documentation.\n");
 }
@@ -470,6 +472,14 @@ int main(int argc, char *argv[])
 		if (run_interactive(&wldbg, argc - 2,
 					(const char **) argv + 2) < 0)
 			goto err;
+	} else if (strcmp(argv[1], "--one-by-one") == 0 ||
+		strcmp(argv[1], "-s" /* separate/split */) == 0) {
+
+		wldbg.flags.one_by_one = 1;
+		if (load_passes(&wldbg, argc - 2, (const char **) argv + 2) <= 0) {
+			fprintf(stderr, "No passes loaded, exiting...\n");
+			goto err;
+		}
 	} else {
 		if (load_passes(&wldbg, argc - 1, (const char **) argv + 1) <= 0) {
 			fprintf(stderr, "No passes loaded, exiting...\n");
