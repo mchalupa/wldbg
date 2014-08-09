@@ -280,7 +280,7 @@ wldbg_run(struct wldbg *wldbg)
 		}
 
 		if (ev.events & EPOLLERR) {
-			fprintf(stderr, "epoll event error");
+			fprintf(stderr, "epoll event error\n");
 			return -1;
 		} else if (ev.events & EPOLLHUP) {
 			fprintf(stderr, "epoll hup\n");
