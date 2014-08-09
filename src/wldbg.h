@@ -80,7 +80,8 @@ struct wldbg {
 	struct wl_list passes;
 
 	struct {
-		unsigned int one_by_one : 1;
+		unsigned int one_by_one	: 1;
+		unsigned int running	: 1;
 	} flags;
 };
 

@@ -314,10 +314,20 @@ wldbg_run(struct wldbg *wldbg)
 	struct wl_connection *conn;
 	int n, len;
 
+	wldbg->flags.running = 1;
+
 	while (1) {
+		if (!wldbg->flags.running)
+			return 0;
+
 		n = epoll_wait(wldbg->epoll_fd, &ev, 1, -1);
 
 		if (n < 0) {
+			/* don't print error when we has been interrupted
+			 * by user */
+			if (errno == EINTR && !wldbg->flags.running)
+				return 0;
+
 			perror("epoll_wait");
 			return -1;
 		}
@@ -375,21 +385,21 @@ static struct wldbg *_wldbg = NULL;
 static void
 sighandler(int signum)
 {
-	int status;
+	int s;
 
 	assert(_wldbg);
 
 	if (signum == SIGCHLD) {
-		waitpid(_wldbg->client.pid, &status, WNOHANG);
-		fprintf(stderr, "Client %s exited with code %d, exiting too\n",
-			WIFEXITED(status) ? "" : "abnormally",
-			WEXITSTATUS(status));
-		wldbg_destroy(_wldbg);
-		exit(!(!WEXITSTATUS(status) && WIFEXITED(status)));
+		/* Just print message and let epoll exit with
+		 * the right exit code according to if it was HUP or ERR */
+		waitpid(_wldbg->client.pid, &s, WNOHANG);
+		fprintf(stderr, "Client %s exited...\n",
+			WIFEXITED(s) ? "" : "abnormally");
 	} else if (signum == SIGINT) {
-		fprintf(stderr, "Interrupted, exiting...\n");
-		wldbg_destroy(_wldbg);
-		exit(0);
+		kill(_wldbg->client.pid, SIGTERM);
+		_wldbg->flags.running = 0;
+
+		fprintf(stderr, "Interrupted...\n");
 	}
 }
 
