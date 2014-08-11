@@ -317,6 +317,9 @@ wldbg_run(struct wldbg *wldbg)
 	wldbg->flags.running = 1;
 
 	while (1) {
+		if (wldbg->flags.error)
+			return -1;
+
 		if (!wldbg->flags.running)
 			return 0;
 

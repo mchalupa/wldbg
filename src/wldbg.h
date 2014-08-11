@@ -82,6 +82,7 @@ struct wldbg {
 	struct {
 		unsigned int one_by_one	: 1;
 		unsigned int running	: 1;
+		unsigned int error	: 1;
 	} flags;
 };
 
