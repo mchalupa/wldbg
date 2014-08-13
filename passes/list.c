@@ -49,6 +49,8 @@ list_dir(const char *path)
 				printf("    %s\n", entry->d_name);
 		}
 	}
+
+	closedir(dir);
 }
 
 static void
