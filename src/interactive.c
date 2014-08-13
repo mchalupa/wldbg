@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 #include "wldbg.h"
@@ -36,9 +37,85 @@ struct wldbg_interactive {
 	} statistics;
 };
 
+static void
+cmd_pass(struct wldbg_interactive *wldbgi, struct message *message,
+		char *buf)
+{
+	vdbg("cmd: pass\n");
+}
+
+static char *
+skip_ws(char *str)
+{
+	int i = 0;
+	while (isspace(*(str + i)) && *(str + i) != 0)
+		++i;
+
+	return str + i;
+}
+
+static int
+run_cmd(char *buf, const char *opt,
+	struct wldbg_interactive *wldbgi, struct message *message,
+	void (*func)(struct wldbg_interactive *wldbgi,
+			struct message *message,
+			char *buf))
+{
+	int len = strlen(opt);
+	assert(len);
+
+	if (strncmp(buf, opt, len) == 0
+		&& (isspace(buf[len]) || buf[len] == '\0')) {
+		func(wldbgi, message, skip_ws(buf + len));
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+static void
+query_user(struct wldbg_interactive *wldbgi, struct message *message)
+{
+	char buf[1024];
+	int chr;
+
+#define CMD(opt, func)							\
+		if (run_cmd(buf, (opt), wldbgi, message, (func)))	\
+			continue
+
+	while (1) {
+
+		printf("wldbg: ");
+
+		if (fgets(buf, sizeof buf, stdin) == NULL) {
+			printf("Do you really want to quit? (y)\n");
+
+			chr = getchar();
+			if (chr == 'y') {
+				wldbgi->wldbg->flags.running = 0;
+				wldbgi->wldbg->flags.exit = 1;
+				break;
+			} else {
+				/* clear buffer */
+				while (getchar() != '\n')
+					;
+
+				continue;
+			}
+		}
+
+		CMD("pass", cmd_pass);
+
+		if (buf[0] != '\n')
+			printf("Unknown command: %s", buf);
+	}
+
+}
+
 static int
 process_message(struct wldbg_interactive *wldbgi, struct message *message)
 {
+
 }
 
 static int
@@ -50,6 +127,15 @@ process_interactive(void *user_data, struct message *message)
 
 	dbg("Mesagge from %s\n", message->from == SERVER ?
 		"SERVER" : "CLIENT");
+
+	if (message->from == SERVER)
+		++wldbgi->statistics.server_msg_no;
+	else
+		++wldbgi->statistics.client_msg_no;
+
+	if (wldbgi->statistics.server_msg_no
+		+ wldbgi->statistics.client_msg_no == 1)
+		query_user(wldbgi, message);
 
 	process_message(wldbgi, message);
 
@@ -67,9 +153,39 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 
 	dbg("Starting interactive mode.\n");
 
-	if (argc == 0) {
-		fprintf(stderr, "Need specify client\n");
+	/* Interactive mode must be isolated - at least on startup */
+	assert(wl_list_empty(&wldbg->passes)
+		&& "Interactive mode must not be used with other passes");
+
+	wldbgi = malloc(sizeof *wldbgi);
+	if (!wldbgi)
 		return -1;
+
+	wldbgi->wldbg = wldbg;
+
+	pass = malloc(sizeof *pass);
+	if (!pass) {
+		free(wldbgi);
+		return -1;
+	}
+
+	wl_list_insert(wldbg->passes.next, &pass->link);
+
+	pass->wldbg_pass.init = NULL;
+	/* XXX ! */
+	pass->wldbg_pass.help = NULL;
+	pass->wldbg_pass.destroy = free;
+	pass->wldbg_pass.server_pass = process_interactive;
+	pass->wldbg_pass.client_pass = process_interactive;
+	pass->wldbg_pass.user_data = wldbgi;
+	pass->wldbg_pass.description
+		= "Interactive pass for wldbg (hardcoded)";
+
+	wldbg->flags.one_by_one = 1;
+
+	if (argc == 0) {
+		query_user(wldbgi, NULL);
+		return 0;
 	}
 
 	/* TODO use getopt */
@@ -82,31 +198,6 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 		wldbg->client.argc = argc;
 		wldbg->client.argv = (char * const *) argv + 1;
 	}
-
-	wldbgi = malloc(sizeof *wldbgi);
-	if (!wldbgi)
-		return -1;
-
-	wldbgi->wldbg = wldbg;
-
-	/* Interactive mode must be isolated - at least on startup */
-	assert(wl_list_empty(&wldbg->passes));
-
-	pass = malloc(sizeof *pass);
-	if (!pass) {
-		free(wldbgi);
-		return -1;
-	}
-
-	wl_list_insert(wldbg->passes.next, &pass->link);
-
-	pass->wldbg_pass.init = NULL;
-	pass->wldbg_pass.destroy = free;
-	pass->wldbg_pass.server_pass = process_interactive;
-	pass->wldbg_pass.client_pass = process_interactive;
-	pass->wldbg_pass.user_data = wldbgi;
-
-	wldbg->flags.one_by_one = 1;
 
 	return 0;
 }
