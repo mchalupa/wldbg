@@ -109,6 +109,24 @@ cmd_pass(struct wldbg_interactive *wldbgi,
 }
 
 static int
+cmd_info(struct wldbg_interactive *wldbgi,
+		struct message *message, char *buf)
+{
+	if (strncmp(buf, "message", 7) == 0
+		&& buf[7] == '\n') {
+		printf("Sender: %s (no. %u), size: %u\n",
+			message->from == SERVER ? "server" : "client",
+			message->from == SERVER ? wldbgi->statistics.server_msg_no
+						: wldbgi->statistics.client_msg_no,
+			message->size);
+	} else {
+		printf("Unknown arguments\n");
+	}
+
+	return 0;
+}
+
+static int
 cmd_run(struct wldbg_interactive *wldbgi, char *buf)
 {
 	char *nl;
@@ -183,6 +201,7 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 		CMD("quit", cmd_quit);
 		CMD("help", cmd_help);
 		CMD("pass", cmd_pass);
+		CMD("info", cmd_info);
 
 		/* we need the extra break, so we cannot use CMD */
 		if (strncmp(buf, "run", 3) == 0
@@ -230,8 +249,10 @@ process_interactive(void *user_data, struct message *message)
 
 	if (!wldbgi->skip_first_query
 		&& (wldbgi->statistics.server_msg_no
-		+ wldbgi->statistics.client_msg_no == 1))
+		+ wldbgi->statistics.client_msg_no == 1)) {
+		printf("Stopped on the first message\n");
 		query_user(wldbgi, message);
+	}
 
 	process_message(wldbgi, message);
 
