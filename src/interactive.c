@@ -106,5 +106,7 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	pass->wldbg_pass.client_pass = process_interactive;
 	pass->wldbg_pass.user_data = wldbgi;
 
+	wldbg->flags.one_by_one = 1;
+
 	return 0;
 }
