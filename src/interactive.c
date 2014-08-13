@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <assert.h>
 
 #include "wldbg.h"
@@ -37,11 +38,63 @@ struct wldbg_interactive {
 	} statistics;
 };
 
-static void
-cmd_pass(struct wldbg_interactive *wldbgi, struct message *message,
-		char *buf)
+static int
+cmd_help(struct wldbg_interactive *wldbgi,
+		struct message *message, char *buf)
+{
+	printf("-----\n");
+	printf("wldbg interactive:\n\n");
+
+	/* XXX automatizite it */
+	printf("    help\n");
+	printf("    quit (Ctrl+^D)\n");
+	printf("    pass\n");
+
+	printf("-----\n");
+}
+
+static int
+cmd_quit(struct wldbg_interactive *wldbgi,
+		struct message *message, char *buf)
+{
+	int chr;
+
+	if (wldbgi->wldbg->flags.running
+		&& !wldbgi->wldbg->flags.error
+		&& wldbgi->wldbg->client.pid > 0) {
+
+		printf("Program seems running."
+			"Do you really want to quit? (y)\n");
+
+			chr = getchar();
+			if (chr == 'y') {
+				dbg("Killing the client\n");
+				kill(wldbgi->wldbg->client.pid, SIGTERM);
+				dbg("Waiting for the client to terminate\n");
+				waitpid(wldbgi->wldbg->client.pid, NULL, 0);
+			} else {
+				/* clear buffer */
+				while (getchar() != '\n')
+					;
+
+				return 0;
+			}
+	}
+
+	dbg("Exiting...\n");
+
+	wldbgi->wldbg->flags.running = 0;
+	wldbgi->wldbg->flags.exit = 1;
+
+	return 1;
+}
+
+static int
+cmd_pass(struct wldbg_interactive *wldbgi,
+		struct message *message, char *buf)
 {
 	vdbg("cmd: pass\n");
+	return 0;
 }
 
 static char *
@@ -57,7 +110,7 @@ skip_ws(char *str)
 static int
 run_cmd(char *buf, const char *opt,
 	struct wldbg_interactive *wldbgi, struct message *message,
-	void (*func)(struct wldbg_interactive *wldbgi,
+	int (*func)(struct wldbg_interactive *wldbgi,
 			struct message *message,
 			char *buf))
 {
@@ -84,26 +137,21 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 			continue
 
 	while (1) {
+		if (wldbgi->wldbg->flags.exit
+			|| wldbgi->wldbg->flags.error)
+			break;
 
 		printf("wldbg: ");
 
 		if (fgets(buf, sizeof buf, stdin) == NULL) {
-			printf("Do you really want to quit? (y)\n");
-
-			chr = getchar();
-			if (chr == 'y') {
-				wldbgi->wldbg->flags.running = 0;
-				wldbgi->wldbg->flags.exit = 1;
+			if(cmd_quit(wldbgi, NULL, NULL))
 				break;
-			} else {
-				/* clear buffer */
-				while (getchar() != '\n')
-					;
-
+			else
 				continue;
-			}
 		}
 
+		CMD("quit", cmd_quit);
+		CMD("help", cmd_help);
 		CMD("pass", cmd_pass);
 
 		if (buf[0] != '\n')
