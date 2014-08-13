@@ -507,6 +507,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/* if some pass created
+	 * an error while initializing, do not proceed */
+	if (wldbg.flags.error)
+		goto err;
+
 	if (init_wayland_socket(&wldbg) < 0)
 		goto err;
 
