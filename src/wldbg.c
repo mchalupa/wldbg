@@ -118,6 +118,9 @@ spawn_client(struct wldbg *wldbg)
 	int sock[2];
 	char sockstr[8];
 
+	assert(!wldbg->flags.error);
+	assert(!wldbg->flags.exit);
+
 	if (!wldbg->client.path) {
 		fprintf(stderr, "No client to run.\n");
 		return -1;
@@ -187,6 +190,9 @@ static int
 init_wayland_socket(struct wldbg *wldbg)
 {
 	struct epoll_event ev;
+
+	assert(!wldbg->flags.error);
+	assert(!wldbg->flags.exit);
 
 	wldbg->server.fd = connect_to_wayland_socket(NULL);
 	if (wldbg->server.fd == -1) {
@@ -320,6 +326,9 @@ wldbg_run(struct wldbg *wldbg)
 	struct wl_connection *conn;
 	int n, len;
 
+	assert(!wldbg->flags.exit);
+	assert(!wldbg->flags.error);
+
 	wldbg->flags.running = 1;
 
 	while (1) {
@@ -345,7 +354,6 @@ wldbg_run(struct wldbg *wldbg)
 			fprintf(stderr, "epoll event error\n");
 			return -1;
 		} else if (ev.events & EPOLLHUP) {
-			fprintf(stderr, "epoll hup\n");
 			return 0;
 		}
 
@@ -361,6 +369,8 @@ wldbg_run(struct wldbg *wldbg)
 		if (process_data(wldbg, conn, len) < 0)
 			return -1;
 	}
+
+	wldbg->flags.running = 0;
 
 	return 0;
 }
@@ -407,6 +417,7 @@ sighandler(int signum)
 	} else if (signum == SIGINT) {
 		kill(_wldbg->client.pid, SIGTERM);
 		_wldbg->flags.running = 0;
+		_wldbg->flags.exit = 1;
 
 		fprintf(stderr, "Interrupted...\n");
 	}
