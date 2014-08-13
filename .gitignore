@@ -1,0 +1,15 @@
+*.swp
+src/*.swp
+src/*.o
+src/*.la
+src/*.lo
+passes/*.swp
+passes/*.lo
+passes/*.o
+passes/*.la
+*.o *.lo
+src/wldbg
+m4/
+config*
+.gitignore
+
