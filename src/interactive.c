@@ -154,6 +154,17 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 		CMD("help", cmd_help);
 		CMD("pass", cmd_pass);
 
+		if (strncmp(buf, "continue\n", 10) == 0
+			|| strncmp(buf, "c\n", 3) == 0) {
+			if (!wldbgi->wldbg->flags.running) {
+				printf("No client is running\n");
+				continue;
+			} else {
+				printf("Continuing...\n");
+				break;
+			}
+		}
+
 		if (buf[0] != '\n')
 			printf("Unknown command: %s", buf);
 	}
