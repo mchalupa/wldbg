@@ -59,6 +59,10 @@ list_passes(int lng)
 	const char *env;
 	char path[256];
 
+	if (lng)
+		printf("hardcoded:\n");
+	printf("    dump (hardcoded)\n    list (hardcoded)\n");
+
 	snprintf(path, sizeof path, "passes/%s", LT_OBJDIR);
 	if (lng)
 		printf("%s:\n", path);
@@ -93,8 +97,9 @@ list_init(struct wldbg *wldbg, void **data, int argc, const char *argv[])
 		|| strcmp(argv[1], "l") == 0)) {
 		list_passes(1);
 	} else {
-		printf("\nUsage: wldbg list [long]\n");
-		exit(1);
+		printf("Usage: wldbg list [long]\n\n");
+		wldbg->flags.error = 1;
+		exit(-1);
 	}
 
 	exit(0);
