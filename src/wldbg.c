@@ -45,6 +45,7 @@
 
 #ifdef DEBUG
 int debug = 0;
+int debug_verbose = 0;
 #endif
 
 /* defined in interactive.c */
@@ -452,6 +453,9 @@ help(void)
 int main(int argc, char *argv[])
 {
 	struct wldbg wldbg;
+#ifdef DEBUG
+	const char *dbg_env;
+#endif
 
 	if (argc == 1) {
 		help();
@@ -459,7 +463,14 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef DEBUG
-	debug = !!getenv("WLDBG_DEBUG");
+	dbg_env = getenv("WLDBG_DEBUG");
+	if (dbg_env) {
+		debug = 1;
+
+		if (strcmp(dbg_env, "verbose") == 0
+			|| strcmp(dbg_env, "v") == 0)
+			debug_verbose = 1;
+	}
 #endif
 
 	wldbg_init(&wldbg);

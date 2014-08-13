@@ -33,6 +33,17 @@
 #ifdef DEBUG
 
 extern int debug;
+extern int debug_verbose;
+
+#define vdbg(...) 								\
+	do {									\
+		if (!debug_verbose) break;					\
+		fprintf(stderr, "[%d | %s: %d] ", getpid(),			\
+				__FILE__, __LINE__);				\
+		fprintf(stderr,	__VA_ARGS__);					\
+	} while (0)
+
+
 
 #define dbg(...) 								\
 	do {									\
