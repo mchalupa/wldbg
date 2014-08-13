@@ -469,6 +469,38 @@ help(void)
 		"For interactive mode description see documentation.\n");
 }
 
+static int
+parse_opts(struct wldbg *wldbg, int argc, char *argv[])
+{
+	/* I know about getopt, but we need different behaviour,
+	 * so use our own arguments parsing */
+	if (strcmp(argv[1], "--help") == 0 ||
+		strcmp(argv[1], "-h") == 0) {
+		help();
+		exit(1);
+	} else if (strcmp(argv[1], "--interactive") == 0 ||
+		strcmp(argv[1], "-i") == 0) {
+		if (run_interactive(wldbg, argc - 2,
+					(const char **) argv + 2) < 0)
+			return -1;
+	} else if (strcmp(argv[1], "--one-by-one") == 0 ||
+		strcmp(argv[1], "-s" /* separate/split */) == 0) {
+
+		wldbg->flags.one_by_one = 1;
+		if (load_passes(wldbg, argc - 2, (const char **) argv + 2) <= 0) {
+			fprintf(stderr, "No passes loaded, exiting...\n");
+			return -1;
+		}
+	} else {
+		if (load_passes(wldbg, argc - 1, (const char **) argv + 1) <= 0) {
+			fprintf(stderr, "No passes loaded, exiting...\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	struct wldbg wldbg;
@@ -494,31 +526,8 @@ int main(int argc, char *argv[])
 
 	wldbg_init(&wldbg);
 
-	/* I know about getopt, but we need different behaviour,
-	 * so use our own arguments parsing */
-	if (strcmp(argv[1], "--help") == 0 ||
-		strcmp(argv[1], "-h") == 0) {
-		help();
-		exit(1);
-	} else if (strcmp(argv[1], "--interactive") == 0 ||
-		strcmp(argv[1], "-i") == 0) {
-		if (run_interactive(&wldbg, argc - 2,
-					(const char **) argv + 2) < 0)
-			goto err;
-	} else if (strcmp(argv[1], "--one-by-one") == 0 ||
-		strcmp(argv[1], "-s" /* separate/split */) == 0) {
-
-		wldbg.flags.one_by_one = 1;
-		if (load_passes(&wldbg, argc - 2, (const char **) argv + 2) <= 0) {
-			fprintf(stderr, "No passes loaded, exiting...\n");
-			goto err;
-		}
-	} else {
-		if (load_passes(&wldbg, argc - 1, (const char **) argv + 1) <= 0) {
-			fprintf(stderr, "No passes loaded, exiting...\n");
-			goto err;
-		}
-	}
+	if (parse_opts(&wldbg, argc, argv) < 0)
+		goto err;
 
 	/* if some pass created
 	 * an error while initializing, do not proceed */
@@ -540,10 +549,8 @@ int main(int argc, char *argv[])
 		goto err;
 
 	wldbg_destroy(&wldbg);
-
 	return EXIT_SUCCESS;
 err:
 	wldbg_destroy(&wldbg);
-
 	return EXIT_FAILURE;
 }
