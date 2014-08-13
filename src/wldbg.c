@@ -221,6 +221,7 @@ run_passes(struct wldbg *wldbg, struct message *message)
 	struct pass *pass;
 
 	wl_list_for_each(pass, &wldbg->passes, link) {
+		vdbg("Running pass\n");
 		if (message->from == SERVER) {
 			if (pass->wldbg_pass.server_pass(pass->wldbg_pass.user_data,
 				message) == PASS_STOP)
@@ -244,12 +245,14 @@ process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
 
 		run_passes(wldbg, message);
 
+		vdbg("Writning connection\n");
 		if (wl_connection_write(write_conn, message->data,
 					message->size) < 0) {
 			perror("wl_connection_write");
 			return -1;
 		}
 
+		vdbg("Flushing connection\n");
 		if (wl_connection_flush(write_conn) < 0) {
 			perror("wl_connection_flush");
 			return -1;
@@ -295,10 +298,12 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 		run_passes(wldbg, &message);
 
 		/* resend the data */
+		vdbg("Writning connection\n");
 		if (wl_connection_write(write_conn, message.data, message.size) < 0) {
 			perror("wl_connection_write");
 			return -1;
 		}
+		vdbg("Flushing connection\n");
 		if (wl_connection_flush(write_conn) < 0) {
 			perror("wl_connection_flush");
 			return -1;
