@@ -74,7 +74,7 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 		&& !wldbgi->wldbg->flags.error
 		&& wldbgi->wldbg->client.pid > 0) {
 
-		printf("Program seems running."
+		printf("Program seems running. "
 			"Do you really want to quit? (y)\n");
 
 			chr = getchar();
