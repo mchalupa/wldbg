@@ -94,6 +94,7 @@ struct wldbg {
 		unsigned int one_by_one	: 1;
 		unsigned int running	: 1;
 		unsigned int error	: 1;
+		unsigned int exit	: 1;
 	} flags;
 };
 

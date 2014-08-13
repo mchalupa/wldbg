@@ -326,7 +326,7 @@ wldbg_run(struct wldbg *wldbg)
 		if (wldbg->flags.error)
 			return -1;
 
-		if (!wldbg->flags.running)
+		if (!wldbg->flags.running || wldbg->flags.exit)
 			return 0;
 
 		n = epoll_wait(wldbg->epoll_fd, &ev, 1, -1);
@@ -511,6 +511,11 @@ int main(int argc, char *argv[])
 	 * an error while initializing, do not proceed */
 	if (wldbg.flags.error)
 		goto err;
+
+	if (wldbg.flags.exit) {
+		wldbg_destroy(&wldbg);
+		return EXIT_SUCCESS;
+	}
 
 	if (init_wayland_socket(&wldbg) < 0)
 		goto err;
