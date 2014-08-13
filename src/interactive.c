@@ -132,9 +132,9 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 	char buf[1024];
 	int chr;
 
-#define CMD(opt, func)							\
-		if (run_cmd(buf, (opt), wldbgi, message, (func)))	\
-			continue
+#define CMD(opt, func)						\
+	if (run_cmd(buf, (opt), wldbgi, message, (func)))	\
+		continue
 
 	while (1) {
 		if (wldbgi->wldbg->flags.exit
@@ -157,7 +157,6 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 		if (buf[0] != '\n')
 			printf("Unknown command: %s", buf);
 	}
-
 }
 
 static int
