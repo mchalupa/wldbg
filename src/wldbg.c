@@ -422,6 +422,7 @@ wldbg_init(struct wldbg *wldbg)
 
 	_wldbg = wldbg;
 
+	sa.sa_flags = 0;
 	sa.sa_handler = sighandler;
 	sigemptyset(&sa.sa_mask);
 
