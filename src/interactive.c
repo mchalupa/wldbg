@@ -36,6 +36,17 @@ struct wldbg_interactive {
 		uint64_t client_msg_no;
 		uint64_t server_msg_no;
 	} statistics;
+
+	int skip_first_query;
+
+	/* when we run client from interactive mode,
+	 * we need to store it's credential here, so that
+	 * we can free the allocated memory */
+	struct {
+		char *path;
+		/* XXX
+		 * add arguments */
+	} client;
 };
 
 static int
@@ -97,6 +108,25 @@ cmd_pass(struct wldbg_interactive *wldbgi,
 	return 0;
 }
 
+static int
+cmd_run(struct wldbg_interactive *wldbgi, char *buf)
+{
+	char *nl;
+
+	vdbg("cmd: run\n");
+
+	nl = strrchr(buf, '\n');
+	assert(nl);
+
+	*nl = '\0';
+	wldbgi->wldbg->client.path
+		= wldbgi->client.path = strdup(buf);
+
+	wldbgi->skip_first_query = 1;
+
+	return 0;
+}
+
 static char *
 skip_ws(char *str)
 {
@@ -154,6 +184,13 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 		CMD("help", cmd_help);
 		CMD("pass", cmd_pass);
 
+		/* we need the extra break, so we cannot use CMD */
+		if (strncmp(buf, "run", 3) == 0
+			&& (isspace(buf[3]) || buf[3] == '\0')) {
+			cmd_run(wldbgi, skip_ws(buf + 3));
+			break;
+		}
+
 		if (strncmp(buf, "continue\n", 10) == 0
 			|| strncmp(buf, "c\n", 3) == 0) {
 			if (!wldbgi->wldbg->flags.running) {
@@ -191,8 +228,9 @@ process_interactive(void *user_data, struct message *message)
 	else
 		++wldbgi->statistics.client_msg_no;
 
-	if (wldbgi->statistics.server_msg_no
-		+ wldbgi->statistics.client_msg_no == 1)
+	if (!wldbgi->skip_first_query
+		&& (wldbgi->statistics.server_msg_no
+		+ wldbgi->statistics.client_msg_no == 1))
 		query_user(wldbgi, message);
 
 	process_message(wldbgi, message);
@@ -201,6 +239,21 @@ process_interactive(void *user_data, struct message *message)
 	 * some passes interactively, they will be added before
 	 * this one */
 	return PASS_STOP;
+}
+
+static void
+wldbgi_destory(void *data)
+{
+	struct wldbg_interactive *wldbgi = data;
+
+	dbg("Destroying wldbgi\n");
+
+	wldbgi->wldbg->flags.exit = 1;
+
+	if (wldbgi->client.path)
+		free(wldbgi->client.path);
+
+	free(wldbgi);
 }
 
 int
@@ -232,7 +285,7 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	pass->wldbg_pass.init = NULL;
 	/* XXX ! */
 	pass->wldbg_pass.help = NULL;
-	pass->wldbg_pass.destroy = free;
+	pass->wldbg_pass.destroy = wldbgi_destory;
 	pass->wldbg_pass.server_pass = process_interactive;
 	pass->wldbg_pass.client_pass = process_interactive;
 	pass->wldbg_pass.user_data = wldbgi;

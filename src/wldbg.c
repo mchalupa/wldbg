@@ -126,6 +126,8 @@ spawn_client(struct wldbg *wldbg)
 		return -1;
 	}
 
+	dbg("Spawning client: '%s'\n", wldbg->client.path);
+
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) != 0) {
 		perror("socketpair");
 		return -1;
