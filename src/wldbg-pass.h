@@ -42,6 +42,7 @@ struct wldbg_pass {
 	void (*help)(void *user_data);
 
 	void *user_data;
+	const char *description;
 };
 
 enum {
