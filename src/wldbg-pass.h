@@ -27,16 +27,19 @@ struct message;
 struct wldbg;
 
 struct wldbg_pass {
-	int (*init)(struct wldbg *wldbg, void **data,
+	int (*init)(struct wldbg *wldbg, struct wldbg_pass *pass,
 			int argc, const char *argv[]);
 
-	void (*destroy)(void *data);
+	void (*destroy)(void *user_data);
 
 	/* function that will be run for messages from server */
 	int (*server_pass)(void *user_data, struct message *message);
 
 	/* function that will be run for messages from client */
 	int (*client_pass)(void *user_data, struct message *message);
+
+	/* print help for the pass */
+	void (*help)(void *user_data);
 
 	void *user_data;
 };

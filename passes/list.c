@@ -89,7 +89,8 @@ list_passes(int lng)
 }
  
 static int
-list_init(struct wldbg *wldbg, void **data, int argc, const char *argv[])
+list_init(struct wldbg *wldbg, struct wldbg_pass *pass,
+		int argc, const char *argv[])
 {
 	if (argc == 1) {
 		list_passes(0);

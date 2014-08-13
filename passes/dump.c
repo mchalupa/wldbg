@@ -100,7 +100,7 @@ print_help(int exit_st)
 }
 
 static int
-dump_init(struct wldbg *wldbg, void **data, int argc, const char *argv[])
+dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *argv[])
 {
 	int i;
 	static uint64_t flags = 0;
@@ -116,7 +116,7 @@ dump_init(struct wldbg *wldbg, void **data, int argc, const char *argv[])
 			print_help(0);
 	}
 
-	*((uint64_t **) data) = &flags;
+	pass->user_data = &flags;
 
 	return 0;
 }

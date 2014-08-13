@@ -180,7 +180,7 @@ pass_init(struct wldbg *wldbg, struct pass *pass,
 		int argc, const char *argv[])
 {
 	if (pass->wldbg_pass.init)
-		return pass->wldbg_pass.init(wldbg, &pass->wldbg_pass.user_data,
+		return pass->wldbg_pass.init(wldbg, &pass->wldbg_pass,
 						argc, argv);
 	else
 		return 0;

@@ -70,7 +70,8 @@ help_out(void *user_data, struct message *message)
 }
 
 static int
-help_init(struct wldbg *wldbg, void **data, int argc, const char *argv[])
+help_init(struct wldbg *wldbg, struct wldbg_pass *pass,
+	  int argc, const char *argv[])
 {
 	int i;
 
@@ -89,7 +90,7 @@ help_init(struct wldbg *wldbg, void **data, int argc, const char *argv[])
 		for (i = 0; i < argc; ++i)
 			printf("[%d]:\t%s\n", i, argv[i]);
 
-	*((struct wldbg **) data) = wldbg;
+	pass->user_data = wldbg;
 
 	} else {
 		printf("\nWhat to do? What to do?\n");
@@ -109,4 +110,5 @@ struct wldbg_pass wldbg_pass = {
 	.destroy = help_destroy,
 	.server_pass = help_in,
 	.client_pass = help_out,
+	.help = NULL
 };
