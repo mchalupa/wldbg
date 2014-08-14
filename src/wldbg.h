@@ -89,6 +89,8 @@ struct wldbg {
 
 	int epoll_fd;
 	int signals_fd;
+
+	sigset_t handled_signals;
 	struct wl_list passes;
 
 	struct {
@@ -113,5 +115,15 @@ struct message {
 		CLIENT
 	} from;
 };
+
+struct wldbg_fd_callback {
+	int fd;
+	void *data;
+	int (*dispatch)(int fd, void *data);
+};
+
+int
+wldbg_monitor_fd(struct wldbg *wldbg, int fd,
+			struct wldbg_fd_callback *cb);
 
 #endif /* _WLDBG_H_ */

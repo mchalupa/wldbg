@@ -112,6 +112,238 @@ connect_to_wayland_socket(const char *name)
 	return fd;
 }
 
+int
+wldbg_monitor_fd(struct wldbg *wldbg, int fd,
+			struct wldbg_fd_callback *cb)
+{
+	struct epoll_event ev;
+
+	ev.events = EPOLLIN;
+	ev.data.ptr = cb;
+	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1) {
+		perror("Failed adding fd to epoll");
+		return -1;
+	}
+
+	cb->fd = fd;
+	vdbg("Adding fd '%d' to epoll (callback: %p)\n", fd, cb);
+
+	return 0;
+}
+
+int
+wldbg_dispatch(struct wldbg *wldbg)
+{
+	struct epoll_event ev;
+	struct wldbg_fd_callback *cb;
+	int n;
+
+	assert(!wldbg->flags.exit);
+	assert(!wldbg->flags.error);
+
+	n = epoll_wait(wldbg->epoll_fd, &ev, 1, -1);
+
+	if (n < 0) {
+		/* don't print error when we has been interrupted
+		 * by user */
+		if (errno == EINTR && wldbg->flags.exit)
+			return 0;
+
+		perror("epoll_wait");
+		return -1;
+	}
+
+	if (ev.events & EPOLLERR) {
+		fprintf(stderr, "epoll event error\n");
+		return -1;
+	} else if (ev.events & EPOLLHUP) {
+		return 0;
+	}
+
+	cb = ev.data.ptr;
+	assert(cb && "No callback set in event");
+
+	vdbg("cb [%p]: dispatching %p(%d, %p)\n", cb, cb->dispatch, cb->fd, cb->data);
+	return cb->dispatch(cb->fd, cb->data);
+}
+
+static void
+run_passes(struct wldbg *wldbg, struct message *message)
+{
+	struct pass *pass;
+
+	wl_list_for_each(pass, &wldbg->passes, link) {
+		vdbg("Running pass\n");
+		if (message->from == SERVER) {
+			if (pass->wldbg_pass.server_pass(
+				pass->wldbg_pass.user_data,
+				message) == PASS_STOP)
+				break;
+		} else {
+			if (pass->wldbg_pass.client_pass(
+				pass->wldbg_pass.user_data,
+				message) == PASS_STOP)
+				break;
+		}
+	}
+}
+
+static int
+process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
+			struct message *message)
+{
+	int n = 0;
+	size_t rest = message->size;
+
+	while (rest > 0) {
+		message->size = ((uint32_t *) message->data)[1] >> 16;
+
+		run_passes(wldbg, message);
+
+		vdbg("Writning connection\n");
+		if (wl_connection_write(write_conn, message->data,
+					message->size) < 0) {
+			perror("wl_connection_write");
+			return -1;
+		}
+
+		vdbg("Flushing connection\n");
+		if (wl_connection_flush(write_conn) < 0) {
+			perror("wl_connection_flush");
+			return -1;
+		}
+
+		message->data = message->data + message->size;
+		rest -= message->size;
+		++n;
+	}
+
+	assert(rest == 0 && "Bug!");
+
+	return n;
+}
+
+static int
+process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
+{
+	int ret = 0;
+	char buffer[4096];
+	struct message message;
+	struct wl_connection *write_conn;
+
+	wl_connection_copy(connection, buffer, len);
+	wl_connection_consume(connection, len);
+
+	if (connection == wldbg->server.connection) {
+		write_conn = wldbg->client.connection;
+		message.from = SERVER;
+	} else {
+		write_conn = wldbg->server.connection;
+		message.from = CLIENT;
+	}
+
+	wl_connection_copy_fds(connection, write_conn);
+
+	message.data = buffer;
+	message.size = len;
+
+	if (wldbg->flags.one_by_one) {
+		ret = process_one_by_one(wldbg, write_conn, &message);
+	} else {
+		/* process passes */
+		run_passes(wldbg, &message);
+
+		/* resend the data */
+		vdbg("Writning connection\n");
+		if (wl_connection_write(write_conn, message.data, message.size) < 0) {
+			perror("wl_connection_write");
+			return -1;
+		}
+		vdbg("Flushing connection\n");
+		if (wl_connection_flush(write_conn) < 0) {
+			perror("wl_connection_flush");
+			return -1;
+		}
+
+		ret = 1;
+	}
+
+	return ret;
+}
+
+static int
+dispatch_messages(int fd, void *data)
+{
+	int len;
+	struct wldbg *wldbg = data;
+	struct wl_connection *conn;
+
+	if (fd == wldbg->client.fd)
+		conn = wldbg->client.connection;
+	else
+		conn = wldbg->server.connection;
+
+	vdbg("Reading connection from %s\n",
+		fd == wldbg->client.fd ? "client" : "server");
+
+	len = wl_connection_read(conn);
+	if (len < 0 && errno != EAGAIN) {
+		perror("wl_connection_read");
+		return -1;
+	} else if (len < 0 && errno == EAGAIN)
+		return 1;
+
+	return process_data(wldbg, conn, len);
+}
+
+/* must have two different structs, because each contains
+ * different fd */
+static struct wldbg_fd_callback srv_messages_cb = {
+	.dispatch = dispatch_messages,
+};
+
+static struct wldbg_fd_callback cli_messages_cb = {
+	.dispatch = dispatch_messages,
+};
+
+static int
+dispatch_signals(int fd, void *data)
+{
+	int s;
+	size_t len;
+	struct signalfd_siginfo si;
+	struct wldbg *wldbg = data;
+
+	len = read(fd, &si, sizeof si);
+	if (len != sizeof si) {
+		fprintf(stderr, "reading signal's fd failed\n");
+		return -1;
+	}
+
+	dbg("Got signal: %d\n", si.ssi_signo);
+
+	if (si.ssi_signo == SIGCHLD) {
+		/* Just print message and let epoll exit with
+		 * the right exit code according to if it was HUP or ERR */
+		waitpid(wldbg->client.pid, &s, WNOHANG);
+		fprintf(stderr, "Client '%s' exited...\n",
+			WIFEXITED(s) ? "" : "abnormally");
+	} else if (si.ssi_signo == SIGINT) {
+		kill(wldbg->client.pid, SIGTERM);
+		wldbg->flags.exit = 1;
+
+		fprintf(stderr, "Interrupted...\n");
+	} else {
+		assert(0 && "Got unhandled signal from epoll");
+	}
+
+	return 1;
+}
+
+static struct wldbg_fd_callback signals_cb = {
+	.dispatch = dispatch_signals,
+};
+
 static pid_t
 spawn_client(struct wldbg *wldbg)
 {
@@ -142,13 +374,9 @@ spawn_client(struct wldbg *wldbg)
 		goto err;
 	}
 
-	ev.events = EPOLLIN;
-	ev.data.ptr = wldbg->client.connection;
-	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_ADD,
-		      wldbg->client.fd, &ev) == -1) {
-		perror("Failed adding client's socket to epoll");
+	cli_messages_cb.data = wldbg;
+	if (wldbg_monitor_fd(wldbg, wldbg->client.fd, &cli_messages_cb) < 0)
 		goto err;
-	}
 
 	if (snprintf(sockstr, sizeof sockstr, "%d",
 		     sock[1]) == sizeof sockstr) {
@@ -209,213 +437,44 @@ init_wayland_socket(struct wldbg *wldbg)
 		goto err;
 	}
 
-	ev.events = EPOLLIN;
-	ev.data.ptr = wldbg->server.connection;
-	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_ADD,
-		      wldbg->server.fd, &ev) == -1) {
-		perror("Failed adding wayland socket to epoll");
-		goto err;
-	}
+	srv_messages_cb.data = wldbg;
+	if (wldbg_monitor_fd(wldbg, wldbg->server.fd, &srv_messages_cb) < 0)
+		goto err_conn;
 
 	return 0;
 
+err_conn:
+	wl_connection_destroy(wldbg->server.connection);
 err:
 	close(wldbg->server.fd);
 	return -1;
 }
 
-static void
-run_passes(struct wldbg *wldbg, struct message *message)
-{
-	struct pass *pass;
-
-	wl_list_for_each(pass, &wldbg->passes, link) {
-		vdbg("Running pass\n");
-		if (message->from == SERVER) {
-			if (pass->wldbg_pass.server_pass(pass->wldbg_pass.user_data,
-				message) == PASS_STOP)
-				break;
-		} else {
-			if (pass->wldbg_pass.client_pass(pass->wldbg_pass.user_data,
-				message) == PASS_STOP)
-				break;
-		}
-	}
-}
-
-static int
-process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
-			struct message *message)
-{
-	size_t rest = message->size;
-
-	while (rest > 0) {
-		message->size = ((uint32_t *) message->data)[1] >> 16;
-
-		run_passes(wldbg, message);
-
-		vdbg("Writning connection\n");
-		if (wl_connection_write(write_conn, message->data,
-					message->size) < 0) {
-			perror("wl_connection_write");
-			return -1;
-		}
-
-		vdbg("Flushing connection\n");
-		if (wl_connection_flush(write_conn) < 0) {
-			perror("wl_connection_flush");
-			return -1;
-		}
-
-		message->data = message->data + message->size;
-		rest -= message->size;
-	}
-
-	assert(rest == 0 && "Bug!");
-
-	return 0;
-}
-
-static int
-process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
-{
-	char buffer[4096];
-	struct message message;
-	struct wl_connection *write_conn;
-
-	wl_connection_copy(connection, buffer, len);
-	wl_connection_consume(connection, len);
-
-	if (connection == wldbg->server.connection) {
-		write_conn = wldbg->client.connection;
-		message.from = SERVER;
-	} else {
-		write_conn = wldbg->server.connection;
-		message.from = CLIENT;
-	}
-
-	wl_connection_copy_fds(connection, write_conn);
-
-	message.data = buffer;
-	message.size = len;
-
-	if (wldbg->flags.one_by_one) {
-		if (process_one_by_one(wldbg, write_conn, &message) < 0)
-			return -1;
-	} else {
-		/* process passes */
-		run_passes(wldbg, &message);
-
-		/* resend the data */
-		vdbg("Writning connection\n");
-		if (wl_connection_write(write_conn, message.data, message.size) < 0) {
-			perror("wl_connection_write");
-			return -1;
-		}
-		vdbg("Flushing connection\n");
-		if (wl_connection_flush(write_conn) < 0) {
-			perror("wl_connection_flush");
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-static int
-sighandler(struct wldbg *wldbg)
-{
-	int s;
-	size_t len;
-	struct signalfd_siginfo si;
-
-	len = read(wldbg->signals_fd, &si, sizeof si);
-	if (len != sizeof si) {
-		fprintf(stderr, "reading signal's fd failed\n");
-		return -1;
-	}
-
-	if (si.ssi_signo == SIGCHLD) {
-		/* Just print message and let epoll exit with
-		 * the right exit code according to if it was HUP or ERR */
-		waitpid(wldbg->client.pid, &s, WNOHANG);
-		fprintf(stderr, "Client '%s' exited...\n",
-			WIFEXITED(s) ? "" : "abnormally");
-	} else if (si.ssi_signo == SIGINT) {
-		kill(wldbg->client.pid, SIGTERM);
-		wldbg->flags.exit = 1;
-
-		fprintf(stderr, "Interrupted...\n");
-	} else {
-		assert(0 && "Got unhandled signal from epoll");
-	}
-
-	return 0;
-}
-
 static int
 wldbg_run(struct wldbg *wldbg)
 {
-	struct epoll_event ev;
-	struct wl_connection *conn;
-	int n, len;
+	int ret = 0;
 
 	assert(!wldbg->flags.exit);
 	assert(!wldbg->flags.error);
 
 	wldbg->flags.running = 1;
 
-	while (1) {
-		if (wldbg->flags.error)
-			return -1;
-
-		if (wldbg->flags.exit)
-			return 0;
-
-		n = epoll_wait(wldbg->epoll_fd, &ev, 1, -1);
-
-		if (n < 0) {
-			/* don't print error when we has been interrupted
-			 * by user */
-			if (errno == EINTR && wldbg->flags.exit)
-				return 0;
-
-			perror("epoll_wait");
-			return -1;
+	while((ret = wldbg_dispatch(wldbg)) > 0) {
+		if (wldbg->flags.error) {
+			ret = -1;
+			break;
 		}
 
-		if (ev.events & EPOLLERR) {
-			fprintf(stderr, "epoll event error\n");
-			return -1;
-		} else if (ev.events & EPOLLHUP) {
-			return 0;
-		}
-
-		conn = ev.data.ptr;
-
-		/* conn == NULL means that the
-		 * fd is signal's fd */
-		if (conn == NULL) {
-			if (sighandler(wldbg) < 0) {
-				wldbg->flags.error = 1;
-				return -1;
-			}
-		} else {
-			len = wl_connection_read(conn);
-			if (len < 0 && errno != EAGAIN) {
-				perror("wl_connection_read");
-				return -1;
-			} else if (len < 0 && errno == EAGAIN)
-				continue;
-
-			if (process_data(wldbg, conn, len) < 0)
-				return -1;
+		if (wldbg->flags.exit) {
+			ret = 0;
+			break;
 		}
 	}
 
 	wldbg->flags.running = 0;
 
-	return 0;
+	return ret;
 }
 
 static void
@@ -475,13 +534,11 @@ wldbg_init(struct wldbg *wldbg)
 		goto err_epoll;
 	}
 
-	ev.events = EPOLLIN;
-	ev.data.ptr = NULL;
-	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_ADD,
-		      wldbg->signals_fd, &ev) == -1) {
-		perror("Failed adding signals to epoll");
+	signals_cb.data = wldbg;
+	if (wldbg_monitor_fd(wldbg, wldbg->signals_fd, &signals_cb) < 0)
 		goto err_signals;
-	}
+
+	wldbg->handled_signals = signals;
 
 	return 0;
 
@@ -541,9 +598,6 @@ parse_opts(struct wldbg *wldbg, int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	struct wldbg wldbg;
-#ifdef DEBUG
-	const char *dbg_env;
-#endif
 
 	if (argc == 1) {
 		help();
@@ -551,7 +605,7 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef DEBUG
-	dbg_env = getenv("WLDBG_DEBUG");
+	const char *dbg_env = getenv("WLDBG_DEBUG");
 	if (dbg_env) {
 		debug = 1;
 
