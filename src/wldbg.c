@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <sys/signalfd.h>
 #include <signal.h>
 
 #include "wldbg.h"
@@ -322,6 +323,37 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 }
 
 static int
+sighandler(struct wldbg *wldbg)
+{
+	int s;
+	size_t len;
+	struct signalfd_siginfo si;
+
+	len = read(wldbg->signals_fd, &si, sizeof si);
+	if (len != sizeof si) {
+		fprintf(stderr, "reading signal's fd failed\n");
+		return -1;
+	}
+
+	if (si.ssi_signo == SIGCHLD) {
+		/* Just print message and let epoll exit with
+		 * the right exit code according to if it was HUP or ERR */
+		waitpid(wldbg->client.pid, &s, WNOHANG);
+		fprintf(stderr, "Client '%s' exited...\n",
+			WIFEXITED(s) ? "" : "abnormally");
+	} else if (si.ssi_signo == SIGINT) {
+		kill(wldbg->client.pid, SIGTERM);
+		wldbg->flags.exit = 1;
+
+		fprintf(stderr, "Interrupted...\n");
+	} else {
+		assert(0 && "Got unhandled signal from epoll");
+	}
+
+	return 0;
+}
+
+static int
 wldbg_run(struct wldbg *wldbg)
 {
 	struct epoll_event ev;
@@ -337,7 +369,7 @@ wldbg_run(struct wldbg *wldbg)
 		if (wldbg->flags.error)
 			return -1;
 
-		if (!wldbg->flags.running || wldbg->flags.exit)
+		if (wldbg->flags.exit)
 			return 0;
 
 		n = epoll_wait(wldbg->epoll_fd, &ev, 1, -1);
@@ -345,7 +377,7 @@ wldbg_run(struct wldbg *wldbg)
 		if (n < 0) {
 			/* don't print error when we has been interrupted
 			 * by user */
-			if (errno == EINTR && !wldbg->flags.running)
+			if (errno == EINTR && wldbg->flags.exit)
 				return 0;
 
 			perror("epoll_wait");
@@ -361,15 +393,24 @@ wldbg_run(struct wldbg *wldbg)
 
 		conn = ev.data.ptr;
 
-		len = wl_connection_read(conn);
-		if (len < 0 && errno != EAGAIN) {
-			perror("wl_connection_read");
-			return -1;
-		} else if (len < 0 && errno == EAGAIN)
-			continue;
+		/* conn == NULL means that the
+		 * fd is signal's fd */
+		if (conn == NULL) {
+			if (sighandler(wldbg) < 0) {
+				wldbg->flags.error = 1;
+				return -1;
+			}
+		} else {
+			len = wl_connection_read(conn);
+			if (len < 0 && errno != EAGAIN) {
+				perror("wl_connection_read");
+				return -1;
+			} else if (len < 0 && errno == EAGAIN)
+				continue;
 
-		if (process_data(wldbg, conn, len) < 0)
-			return -1;
+			if (process_data(wldbg, conn, len) < 0)
+				return -1;
+		}
 	}
 
 	wldbg->flags.running = 0;
@@ -382,7 +423,10 @@ wldbg_destroy(struct wldbg *wldbg)
 {
 	struct pass *pass, *tmp;
 
-	close(wldbg->epoll_fd);
+	if (wldbg->epoll_fd >= 0)
+		close(wldbg->epoll_fd);
+	if (wldbg->signals_fd >= 0)
+		close(wldbg->signals_fd);
 
 	if (wldbg->server.connection)
 		wl_connection_destroy(wldbg->server.connection);
@@ -399,61 +443,54 @@ wldbg_destroy(struct wldbg *wldbg)
 	close(wldbg->client.fd);
 }
 
-/* This global struct will point to the local one.
- * It's for use in signal handlers */
-static struct wldbg *_wldbg = NULL;
-
-static void
-sighandler(int signum)
-{
-	int s;
-
-	assert(_wldbg);
-
-	if (signum == SIGCHLD) {
-		/* Just print message and let epoll exit with
-		 * the right exit code according to if it was HUP or ERR */
-		waitpid(_wldbg->client.pid, &s, WNOHANG);
-		fprintf(stderr, "Client '%s' exited...\n",
-			WIFEXITED(s) ? "" : "abnormally");
-	} else if (signum == SIGINT) {
-		kill(_wldbg->client.pid, SIGTERM);
-		_wldbg->flags.running = 0;
-		_wldbg->flags.exit = 1;
-
-		fprintf(stderr, "Interrupted...\n");
-	}
-}
-
 static int
 wldbg_init(struct wldbg *wldbg)
 {
-	struct sigaction sa;
+	struct epoll_event ev;
+	sigset_t signals;
 
 	memset(wldbg, 0, sizeof *wldbg);
+	wldbg->signals_fd = wldbg->epoll_fd = -1;
+
 	wl_list_init(&wldbg->passes);
-
-	_wldbg = wldbg;
-
-	sa.sa_flags = 0;
-	sa.sa_handler = sighandler;
-	sigemptyset(&sa.sa_mask);
-
-	if (sigaction(SIGINT, &sa, NULL) == -1) {
-		perror("SIGINT sigaction");
-		return -1;
-	}
-
-	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-		perror("SIGINT sigaction");
-		return -1;
-	}
 
 	wldbg->epoll_fd = epoll_create1(0);
 	if (wldbg->epoll_fd == -1) {
 		perror("epoll_create failed");
 		return -1;
 	}
+
+	sigemptyset(&signals);
+	sigaddset(&signals, SIGINT);
+	sigaddset(&signals, SIGCHLD);
+
+	/* block signals, let them come to signalfd */
+	if (sigprocmask(SIG_BLOCK, &signals, NULL) < 0) {
+		perror("blocking signals");
+		goto err_epoll;
+	}
+
+	if ((wldbg->signals_fd = signalfd(-1, &signals, SFD_CLOEXEC)) < 0) {
+		perror("signalfd");
+		goto err_epoll;
+	}
+
+	ev.events = EPOLLIN;
+	ev.data.ptr = NULL;
+	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_ADD,
+		      wldbg->signals_fd, &ev) == -1) {
+		perror("Failed adding signals to epoll");
+		goto err_signals;
+	}
+
+	return 0;
+
+err_signals:
+	close(wldbg->signals_fd);
+err_epoll:
+	close(wldbg->epoll_fd);
+
+	return -1;
 }
 
 static void

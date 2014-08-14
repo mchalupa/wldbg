@@ -88,6 +88,7 @@ struct wldbg {
 	} client;
 
 	int epoll_fd;
+	int signals_fd;
 	struct wl_list passes;
 
 	struct {
