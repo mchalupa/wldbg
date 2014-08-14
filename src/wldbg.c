@@ -414,7 +414,7 @@ sighandler(int signum)
 		/* Just print message and let epoll exit with
 		 * the right exit code according to if it was HUP or ERR */
 		waitpid(_wldbg->client.pid, &s, WNOHANG);
-		fprintf(stderr, "Client %s exited...\n",
+		fprintf(stderr, "Client '%s' exited...\n",
 			WIFEXITED(s) ? "" : "abnormally");
 	} else if (signum == SIGINT) {
 		kill(_wldbg->client.pid, SIGTERM);
