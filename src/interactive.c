@@ -25,201 +25,43 @@
 #include <string.h>
 #include <signal.h>
 #include <assert.h>
+#include <sys/signalfd.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
+#include "interactive.h"
 
-struct wldbg_interactive {
-	struct wldbg *wldbg;
-
-	struct {
-		uint64_t client_msg_no;
-		uint64_t server_msg_no;
-	} statistics;
-
-	int skip_first_query;
-
-	/* when we run client from interactive mode,
-	 * we need to store it's credential here, so that
-	 * we can free the allocated memory */
-	struct {
-		char *path;
-		/* XXX
-		 * add arguments */
-	} client;
-};
-
-static int
-cmd_help(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
-{
-	printf("-----\n");
-	printf("wldbg interactive:\n\n");
-
-	/* XXX automatizite it */
-	printf("    help\n");
-	printf("    quit (Ctrl+^D)\n");
-	printf("    pass\n");
-
-	printf("-----\n");
-}
-
-static int
+/* defined in interactive-commands.c */
+int
 cmd_quit(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
-{
-	int chr;
-
-	if (wldbgi->wldbg->flags.running
-		&& !wldbgi->wldbg->flags.error
-		&& wldbgi->wldbg->client.pid > 0) {
-
-		printf("Program seems running. "
-			"Do you really want to quit? (y)\n");
-
-			chr = getchar();
-			if (chr == 'y') {
-				dbg("Killing the client\n");
-				kill(wldbgi->wldbg->client.pid, SIGTERM);
-				dbg("Waiting for the client to terminate\n");
-				waitpid(wldbgi->wldbg->client.pid, NULL, 0);
-			} else {
-				/* clear buffer */
-				while (getchar() != '\n')
-					;
-
-				return 0;
-			}
-	}
-
-	dbg("Exiting...\n");
-
-	wldbgi->wldbg->flags.running = 0;
-	wldbgi->wldbg->flags.exit = 1;
-
-	return 1;
-}
-
-static int
-cmd_pass(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
-{
-	vdbg("cmd: pass\n");
-	return 0;
-}
-
-static int
-cmd_info(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
-{
-	if (strncmp(buf, "message", 7) == 0
-		&& buf[7] == '\n') {
-		printf("Sender: %s (no. %u), size: %u\n",
-			message->from == SERVER ? "server" : "client",
-			message->from == SERVER ? wldbgi->statistics.server_msg_no
-						: wldbgi->statistics.client_msg_no,
-			message->size);
-	} else {
-		printf("Unknown arguments\n");
-	}
-
-	return 0;
-}
-
-static int
-cmd_run(struct wldbg_interactive *wldbgi, char *buf)
-{
-	char *nl;
-
-	vdbg("cmd: run\n");
-
-	nl = strrchr(buf, '\n');
-	assert(nl);
-
-	*nl = '\0';
-	wldbgi->wldbg->client.path
-		= wldbgi->client.path = strdup(buf);
-
-	wldbgi->skip_first_query = 1;
-
-	return 0;
-}
-
-static char *
-skip_ws(char *str)
-{
-	int i = 0;
-	while (isspace(*(str + i)) && *(str + i) != 0)
-		++i;
-
-	return str + i;
-}
-
-static int
-run_cmd(char *buf, const char *opt,
-	struct wldbg_interactive *wldbgi, struct message *message,
-	int (*func)(struct wldbg_interactive *wldbgi,
-			struct message *message,
-			char *buf))
-{
-	int len = strlen(opt);
-	assert(len);
-
-	if (strncmp(buf, opt, len) == 0
-		&& (isspace(buf[len]) || buf[len] == '\0')) {
-		func(wldbgi, message, skip_ws(buf + len));
-		return 1;
-	} else {
-		return 0;
-	}
-}
+		struct message *message, char *buf);
 
 static void
 query_user(struct wldbg_interactive *wldbgi, struct message *message)
 {
 	char buf[1024];
-	int chr;
-
-#define CMD(opt, func)						\
-	if (run_cmd(buf, (opt), wldbgi, message, (func)))	\
-		continue
+	int chr, n, ret;
 
 	while (1) {
 		if (wldbgi->wldbg->flags.exit
 			|| wldbgi->wldbg->flags.error)
 			break;
 
-		printf("wldbg: ");
+		printf("(wldbg) ");
 
 		if (fgets(buf, sizeof buf, stdin) == NULL) {
-			if(cmd_quit(wldbgi, NULL, NULL))
+			if(cmd_quit(wldbgi, NULL, NULL) == CMD_END_QUERY)
 				break;
 			else
 				continue;
 		}
 
-		CMD("quit", cmd_quit);
-		CMD("help", cmd_help);
-		CMD("pass", cmd_pass);
-		CMD("info", cmd_info);
+		ret = run_command(buf, wldbgi, message);
 
-		/* we need the extra break, so we cannot use CMD */
-		if (strncmp(buf, "run", 3) == 0
-			&& (isspace(buf[3]) || buf[3] == '\0')) {
-			cmd_run(wldbgi, skip_ws(buf + 3));
+		if (ret == CMD_END_QUERY)
 			break;
-		}
-
-		if (strncmp(buf, "continue\n", 10) == 0
-			|| strncmp(buf, "c\n", 3) == 0) {
-			if (!wldbgi->wldbg->flags.running) {
-				printf("No client is running\n");
-				continue;
-			} else {
-				printf("Continuing...\n");
-				break;
-			}
-		}
+		else if (ret == CMD_CONTINUE_QUERY)
+			continue;
 
 		if (buf[0] != '\n')
 			printf("Unknown command: %s", buf);
@@ -229,7 +71,11 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 static int
 process_message(struct wldbg_interactive *wldbgi, struct message *message)
 {
-
+	if (wldbgi->stop) {
+		/* reset flag */
+		wldbgi->stop = 0;
+		query_user(wldbgi, message);
+	}
 }
 
 static int
@@ -293,13 +139,12 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	if (!wldbgi)
 		return -1;
 
+	memset(wldbgi, 0, sizeof *wldbgi);
 	wldbgi->wldbg = wldbg;
 
 	pass = malloc(sizeof *pass);
-	if (!pass) {
-		free(wldbgi);
-		return -1;
-	}
+	if (!pass)
+		goto err_wldbgi;
 
 	wl_list_insert(wldbg->passes.next, &pass->link);
 
@@ -332,4 +177,11 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	}
 
 	return 0;
+
+err_pass:
+		free(pass);
+err_wldbgi:
+		free(wldbgi);
+
+		return -1;
 }

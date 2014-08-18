@@ -18,6 +18,8 @@ wldbg_SOURCES =			\
 	wldbg.c			\
 	wldbg.h			\
 	interactive.c		\
+	interactive.h		\
+	interactive-commands.c	\
 	passes.c		\
 	$(wayland_files)	\
 	$(hardcoded_passes)
