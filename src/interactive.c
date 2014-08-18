@@ -147,6 +147,8 @@ handle_sigint(int fd, void *data)
 	vdbg("Wldbgi: Got interrupt (SIGINT)\n");
 	wldbgi->stop = 1;
 
+	putchar('\n');
+
 	return 1;
 }
 
