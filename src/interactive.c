@@ -123,11 +123,32 @@ wldbgi_destory(void *data)
 	free(wldbgi);
 }
 
+static int
+handle_sigint(int fd, void *data)
+{
+	int s;
+	size_t len;
+	struct signalfd_siginfo si;
+	struct wldbg_interactive *wldbgi = data;
+
+	len = read(fd, &si, sizeof si);
+	if (len != sizeof si) {
+		fprintf(stderr, "reading signal's fd failed\n");
+		return -1;
+	}
+
+	vdbg("Wldbgi: Got interrupt (SIGINT)\n");
+	wldbgi->stop = 1;
+
+	return 1;
+}
+
 int
 run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 {
 	struct pass *pass;
 	struct wldbg_interactive *wldbgi;
+	sigset_t signals;
 
 	dbg("Starting interactive mode.\n");
 
@@ -175,6 +196,28 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 		wldbg->client.argc = argc;
 		wldbg->client.argv = (char * const *) argv + 1;
 	}
+
+	/* remove default SIGINT handler */
+	sigdelset(&wldbg->handled_signals, SIGINT);
+	wldbg->signals_fd = signalfd(wldbg->signals_fd, &wldbg->handled_signals,
+					SFD_CLOEXEC);
+
+	if (wldbg->signals_fd == -1)
+		goto err_pass;
+
+	sigemptyset(&signals);
+	sigaddset(&signals, SIGINT);
+
+	/* set our own signal handlers */
+	wldbgi->sigint_fd = signalfd(-1, &signals, SFD_CLOEXEC);
+
+	if (wldbgi->sigint_fd == -1)
+		goto err_pass;
+
+	vdbg("Adding interactive SIGINT handler (fd %d)\n", wldbgi->sigint_fd);
+	if (wldbg_monitor_fd(wldbg, wldbgi->sigint_fd,
+				handle_sigint, wldbgi) < 0)
+		goto err_pass;
 
 	return 0;
 
