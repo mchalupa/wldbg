@@ -220,6 +220,13 @@ process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
 
 		run_passes(wldbg, message);
 
+		/* in interactive mode we can quit here. Do not
+		 * write into connection if we quit */
+		if (wldbg->flags.exit)
+			return 0;
+		if (wldbg->flags.error)
+			return -1;
+
 		vdbg("Writning connection\n");
 		if (wl_connection_write(write_conn, message->data,
 					message->size) < 0) {
@@ -272,6 +279,13 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 	} else {
 		/* process passes */
 		run_passes(wldbg, &message);
+
+		/* if some pass wants exit or an error occured,
+		 * do not write into the connection */
+		if (wldbg->flags.exit)
+			return 0;
+		if (wldbg->flags.error)
+			return -1;
 
 		/* resend the data */
 		vdbg("Writning connection\n");
