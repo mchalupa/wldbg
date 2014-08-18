@@ -92,6 +92,7 @@ struct wldbg {
 
 	sigset_t handled_signals;
 	struct wl_list passes;
+	struct wl_list monitored_fds;
 
 	struct {
 		unsigned int one_by_one	: 1;
@@ -116,14 +117,9 @@ struct message {
 	} from;
 };
 
-struct wldbg_fd_callback {
-	int fd;
-	void *data;
-	int (*dispatch)(int fd, void *data);
-};
-
 int
 wldbg_monitor_fd(struct wldbg *wldbg, int fd,
-			struct wldbg_fd_callback *cb);
+			int (*dispatch)(int fd, void *data),
+			void *data);
 
 #endif /* _WLDBG_H_ */

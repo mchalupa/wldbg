@@ -112,21 +112,41 @@ connect_to_wayland_socket(const char *name)
 	return fd;
 }
 
+
+struct wldbg_fd_callback {
+	int fd;
+	void *data;
+	int (*dispatch)(int fd, void *data);
+	struct wl_list link;
+};
+
 int
 wldbg_monitor_fd(struct wldbg *wldbg, int fd,
-			struct wldbg_fd_callback *cb)
+			int (*dispatch)(int fd, void *data),
+			void *data)
 {
 	struct epoll_event ev;
+	struct wldbg_fd_callback *cb;
+
+	cb = malloc(sizeof *cb);
+	if (!cb)
+		return -1;
 
 	ev.events = EPOLLIN;
 	ev.data.ptr = cb;
 	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1) {
 		perror("Failed adding fd to epoll");
+		free(cb);
 		return -1;
 	}
 
 	cb->fd = fd;
-	vdbg("Adding fd '%d' to epoll (callback: %p)\n", fd, cb);
+	cb->data = data;
+	cb->dispatch = dispatch;
+
+	dbg("Adding fd '%d' to epoll (callback: %p)\n", fd, cb);
+
+	wl_list_insert(&wldbg->monitored_fds, &cb->link);
 
 	return 0;
 }
@@ -296,16 +316,6 @@ dispatch_messages(int fd, void *data)
 	return process_data(wldbg, conn, len);
 }
 
-/* must have two different structs, because each contains
- * different fd */
-static struct wldbg_fd_callback srv_messages_cb = {
-	.dispatch = dispatch_messages,
-};
-
-static struct wldbg_fd_callback cli_messages_cb = {
-	.dispatch = dispatch_messages,
-};
-
 static int
 dispatch_signals(int fd, void *data)
 {
@@ -340,10 +350,6 @@ dispatch_signals(int fd, void *data)
 	return 1;
 }
 
-static struct wldbg_fd_callback signals_cb = {
-	.dispatch = dispatch_signals,
-};
-
 static pid_t
 spawn_client(struct wldbg *wldbg)
 {
@@ -374,8 +380,8 @@ spawn_client(struct wldbg *wldbg)
 		goto err;
 	}
 
-	cli_messages_cb.data = wldbg;
-	if (wldbg_monitor_fd(wldbg, wldbg->client.fd, &cli_messages_cb) < 0)
+	if (wldbg_monitor_fd(wldbg, wldbg->client.fd,
+				dispatch_messages, wldbg) < 0)
 		goto err;
 
 	if (snprintf(sockstr, sizeof sockstr, "%d",
@@ -437,8 +443,8 @@ init_wayland_socket(struct wldbg *wldbg)
 		goto err;
 	}
 
-	srv_messages_cb.data = wldbg;
-	if (wldbg_monitor_fd(wldbg, wldbg->server.fd, &srv_messages_cb) < 0)
+	if (wldbg_monitor_fd(wldbg, wldbg->server.fd,
+				dispatch_messages, wldbg) < 0)
 		goto err_conn;
 
 	return 0;
@@ -480,7 +486,8 @@ wldbg_run(struct wldbg *wldbg)
 static void
 wldbg_destroy(struct wldbg *wldbg)
 {
-	struct pass *pass, *tmp;
+	struct pass *pass, *pass_tmp;
+	struct wldbg_fd_callback *cb, *cb_tmp;
 
 	if (wldbg->epoll_fd >= 0)
 		close(wldbg->epoll_fd);
@@ -492,10 +499,14 @@ wldbg_destroy(struct wldbg *wldbg)
 	if (wldbg->client.connection)
 		wl_connection_destroy(wldbg->client.connection);
 
-	wl_list_for_each_safe(pass, tmp, &wldbg->passes, link) {
+	wl_list_for_each_safe(pass, pass_tmp, &wldbg->passes, link) {
 		if (pass->wldbg_pass.destroy)
 			pass->wldbg_pass.destroy(pass->wldbg_pass.user_data);
 		free(pass);
+	}
+
+	wl_list_for_each_safe(cb, cb_tmp, &wldbg->monitored_fds, link) {
+		free(cb);
 	}
 
 	close(wldbg->server.fd);
@@ -512,6 +523,7 @@ wldbg_init(struct wldbg *wldbg)
 	wldbg->signals_fd = wldbg->epoll_fd = -1;
 
 	wl_list_init(&wldbg->passes);
+	wl_list_init(&wldbg->monitored_fds);
 
 	wldbg->epoll_fd = epoll_create1(0);
 	if (wldbg->epoll_fd == -1) {
@@ -534,8 +546,8 @@ wldbg_init(struct wldbg *wldbg)
 		goto err_epoll;
 	}
 
-	signals_cb.data = wldbg;
-	if (wldbg_monitor_fd(wldbg, wldbg->signals_fd, &signals_cb) < 0)
+	if (wldbg_monitor_fd(wldbg, wldbg->signals_fd,
+				dispatch_signals, wldbg) < 0)
 		goto err_signals;
 
 	wldbg->handled_signals = signals;
