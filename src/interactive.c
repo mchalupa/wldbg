@@ -72,6 +72,13 @@ static int
 process_message(struct wldbg_interactive *wldbgi, struct message *message)
 {
 	if (wldbgi->stop) {
+		dbg("Stopped at message no. %u from %s\n",
+			message->from == SERVER ?
+				wldbgi->statistics.server_msg_no :
+				wldbgi->statistics.client_msg_no,
+			message->from == SERVER ?
+				"server" : "client");
+
 		/* reset flag */
 		wldbgi->stop = 0;
 		query_user(wldbgi, message);
@@ -85,8 +92,8 @@ process_interactive(void *user_data, struct message *message)
 	struct message msg;
 	size_t rest = message->size;
 
-	dbg("Mesagge from %s\n", message->from == SERVER ?
-		"SERVER" : "CLIENT");
+	vdbg("Mesagge from %s\n",
+		message->from == SERVER ? "SERVER" : "CLIENT");
 
 	if (message->from == SERVER)
 		++wldbgi->statistics.server_msg_no;
