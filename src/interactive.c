@@ -181,22 +181,6 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 
 	wldbg->flags.one_by_one = 1;
 
-	if (argc == 0) {
-		query_user(wldbgi, NULL);
-		return 0;
-	}
-
-	/* TODO use getopt */
-	if (strcmp(argv[0], "--") == 0) {
-		wldbg->client.path = argv[1];
-		wldbg->client.argc = argc - 1;
-		wldbg->client.argv = (char * const *) argv + 2;
-	} else {
-		wldbg->client.path = argv[0];
-		wldbg->client.argc = argc;
-		wldbg->client.argv = (char * const *) argv + 1;
-	}
-
 	/* remove default SIGINT handler */
 	sigdelset(&wldbg->handled_signals, SIGINT);
 	wldbg->signals_fd = signalfd(wldbg->signals_fd, &wldbg->handled_signals,
@@ -218,6 +202,22 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	if (wldbg_monitor_fd(wldbg, wldbgi->sigint_fd,
 				handle_sigint, wldbgi) < 0)
 		goto err_pass;
+
+	if (argc == 0) {
+		query_user(wldbgi, NULL);
+		return 0;
+	}
+
+	/* TODO use getopt */
+	if (strcmp(argv[0], "--") == 0) {
+		wldbg->client.path = argv[1];
+		wldbg->client.argc = argc - 1;
+		wldbg->client.argv = (char * const *) argv + 2;
+	} else {
+		wldbg->client.path = argv[0];
+		wldbg->client.argc = argc;
+		wldbg->client.argv = (char * const *) argv + 1;
+	}
 
 	return 0;
 
