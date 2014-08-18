@@ -93,7 +93,8 @@ cmd_info(struct wldbg_interactive *wldbgi,
 }
 
 static int
-cmd_run(struct wldbg_interactive *wldbgi, char *buf)
+cmd_run(struct wldbg_interactive *wldbgi,
+	struct message *message, char *buf)
 {
 	char *nl;
 
@@ -115,6 +116,11 @@ static int
 cmd_next(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
 {
+	if (!wldbgi->wldbg->flags.running) {
+		printf("Client is not running\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
 	wldbgi->stop = 1;
 	return CMD_END_QUERY;
 }
@@ -123,6 +129,11 @@ static int
 cmd_continue(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
 {
+	if (!wldbgi->wldbg->flags.running) {
+		printf("Client is not running\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
 	return CMD_END_QUERY;
 }
 
@@ -144,11 +155,12 @@ cmd_help_help(int ol)
  * binary search in this array */
 const struct command commands[] = {
 	{"continue", "c", cmd_continue, NULL},
+	//{"edit", "e", cmd_exit, NULL},
 	{"help", "h",  cmd_help, cmd_help_help},
 	{"info", NULL, cmd_info, NULL},
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, NULL},
-	//{"run",  NULL, cmd_run, NULL},
+	{"run",  NULL, cmd_run, NULL},
 	{"quit", "q", cmd_quit, NULL},
 
 };

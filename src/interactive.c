@@ -97,7 +97,7 @@ process_interactive(void *user_data, struct message *message)
 		&& (wldbgi->statistics.server_msg_no
 		+ wldbgi->statistics.client_msg_no == 1)) {
 		printf("Stopped on the first message\n");
-		query_user(wldbgi, message);
+		wldbgi->stop = 1;
 	}
 
 	process_message(wldbgi, message);
