@@ -218,10 +218,9 @@ is_the_cmd(char *buf, const struct command *cmd)
 	if (cmd->shortcut)
 		len = strlen(cmd->shortcut);
 
-	vdbg("identifying command: ");
 	if (len && strncmp(buf, cmd->shortcut, len) == 0
 		&& (isspace(buf[len]) || buf[len] == '\0')) {
-		vdbg("short '%s' match\n", cmd->shortcut);
+		vdbg("identifying command: short '%s' match\n", cmd->shortcut);
 		return 1;
 	}
 
@@ -233,10 +232,11 @@ is_the_cmd(char *buf, const struct command *cmd)
 
 	if (strncmp(buf, cmd->name, len) == 0
 		&& (isspace(buf[len]) || buf[len] == '\0')) {
-		vdbg("long '%s' match\n", cmd->name);
+		vdbg("identifying command: long '%s' match\n", cmd->name);
 		return 1;
 	}
 
+	vdbg("identifying command: no match\n");
 	return 0;
 }
 
