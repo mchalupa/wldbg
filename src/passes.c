@@ -49,6 +49,9 @@ load_pass(const char *path)
 	if (handle) {
 		fprintf(stderr, "Pass already loaded\n");
 		dlclose(handle);
+		/* fake errno, so that we'll know what
+		 * happened */
+		errno = EEXIST;
 		return NULL;
 	}
 
@@ -120,7 +123,7 @@ create_pass(const char *name)
 		wldbg_pass = load_pass(path);
 
 		/* home dir */
-		if (!wldbg_pass) {
+		if (!wldbg_pass && errno != EEXIST) {
 			env = getenv("HOME");
 			if (!env) {
 				fprintf(stderr, "$HOME is not set!\n");
@@ -135,8 +138,26 @@ create_pass(const char *name)
 		}
 
 		/* default paths */
-		if (!wldbg_pass) {
-			if (build_path(path, "/usr/local/lib/wldbg",
+		if (!wldbg_pass && errno != EEXIST) {
+			if (build_path(path, "/usr/local/lib/wldbg/",
+					NULL, name) < 0)
+				return NULL;
+
+			dbg("Trying '%s'\n", path);
+			wldbg_pass = load_pass(path);
+		}
+
+		if (!wldbg_pass && errno != EEXIST) {
+			if (build_path(path, "/usr/lib/wldbg/",
+					NULL, name) < 0)
+				return NULL;
+
+			dbg("Trying '%s'\n", path);
+			wldbg_pass = load_pass(path);
+		}
+
+		if (!wldbg_pass && errno != EEXIST) {
+			if (build_path(path, "/lib/wldbg/",
 					NULL, name) < 0)
 				return NULL;
 
@@ -145,25 +166,9 @@ create_pass(const char *name)
 		}
 
 		if (!wldbg_pass) {
-			if (build_path(path, "/usr/lib/wldbg",
-					NULL, name) < 0)
-				return NULL;
-
-			dbg("Trying '%s'\n", path);
-			wldbg_pass = load_pass(path);
-		}
-
-		if (!wldbg_pass) {
-			if (build_path(path, "/lib/wldbg",
-					NULL, name) < 0)
-				return NULL;
-
-			dbg("Trying '%s'\n", path);
-			wldbg_pass = load_pass(path);
-		}
-
-		if (!wldbg_pass)
+			fprintf(stderr, "Didn't find pass '%s'\n", name);
 			return NULL;
+		}
 	}
 
 	pass = malloc(sizeof *pass);
