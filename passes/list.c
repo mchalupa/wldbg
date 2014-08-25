@@ -61,7 +61,7 @@ list_passes(int lng)
 
 	if (lng)
 		printf("hardcoded:\n");
-	printf("    dump (hardcoded)\n    list (hardcoded)\n");
+	printf("    list (hardcoded)\n");
 
 	snprintf(path, sizeof path, "passes/%s", LT_OBJDIR);
 	if (lng)
@@ -122,7 +122,7 @@ list_destroy(void *data)
 {
 }
 
-struct wldbg_pass wldbg_pass = {
+struct wldbg_pass wldbg_pass_list = {
 	.init = list_init,
 	.destroy = list_destroy,
 	.server_pass = list_in,

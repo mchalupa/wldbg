@@ -32,7 +32,8 @@
 #include "wldbg.h"
 #include "wldbg-pass.h"
 
-extern struct wldbg_pass wldbg_pass_dump;
+/* hardcoded passes */
+extern struct wldbg_pass wldbg_pass_list;
 
 static struct wldbg_pass *
 load_pass(const char *path)
@@ -108,8 +109,8 @@ create_pass(const char *name)
 	size_t len;
 
 	/* hardcoded passes */
-	if (strcmp(name, "dump") == 0) {
-		wldbg_pass = &wldbg_pass_dump;
+	if (strcmp(name, "list") == 0) {
+		wldbg_pass = &wldbg_pass_list;
 	} else {
 		/* try root dir, its nice when developing */
 		if (build_path(path, "passes/", LT_OBJDIR, name) < 0)

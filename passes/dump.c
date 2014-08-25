@@ -126,7 +126,7 @@ dump_destroy(void *data)
 {
 }
 
-struct wldbg_pass wldbg_pass_dump = {
+struct wldbg_pass wldbg_pass = {
 	.init = dump_init,
 	.destroy = dump_destroy,
 	.server_pass = dump_in,

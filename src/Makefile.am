@@ -9,7 +9,7 @@ wayland_files =				\
 	../wayland/wayland-util.h	\
 	../wayland/wayland-private.h
 
-hardcoded_passes = ../passes/dump.c
+hardcoded_passes = $(top_builddir)/passes/list.c
 
 AM_CPPFLAGS = -I..
 AM_CFLAGS = $(CFLAGS)

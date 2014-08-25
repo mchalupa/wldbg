@@ -1,8 +1,10 @@
 
-lib_LTLIBRARIES = help.la list.la
+lib_LTLIBRARIES = help.la dump.la
+
+AM_CPPFLAGS = -I$(top_builddir)/src
 
 help_la_LDFLAGS = -module -avoid-version
 help_la_SOURCES = help.c ../wayland/wayland-util.c
 
-list_la_LDFLAGS = -module -avoid-version
-list_la_SOURCES = list.c
+dump_la_LDFLAGS = -module -avoid-version
+dump_la_SOURCES = dump.c
