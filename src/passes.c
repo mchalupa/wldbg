@@ -99,7 +99,7 @@ build_path(char *path, const char *prefix,
  *   /usr/lib/wldbg/file.so
  *   /lib/wldbg/file.so
  */
-static struct pass *
+struct pass *
 create_pass(const char *name)
 {
 	struct pass *pass;
@@ -170,13 +170,19 @@ create_pass(const char *name)
 	if (!pass)
 		return NULL;
 
-	wl_list_init(&pass->link);
+	pass->name = strdup(name);
+
+	if (!pass->name) {
+		free(pass);
+		return NULL;
+	}
+
 	pass->wldbg_pass = *wldbg_pass;
 
 	return pass;
 }
 
-static int
+int
 pass_init(struct wldbg *wldbg, struct pass *pass,
 		int argc, const char *argv[])
 {
@@ -260,6 +266,7 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 			if (pass) {
 				if (pass_init(wldbg, pass, count,
 						argv + argc - rest) != 0) {
+					free(pass->name);
 					free(pass);
 					continue;
 				}
@@ -268,7 +275,8 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 				wl_list_insert(wldbg->passes.next, &pass->link);
 				dbg("Pass '%s' loaded\n", argv[argc - rest]);
 			} else {
-				dbg("Loading pass '%s' failed\n", argv[argc - rest]);
+				dbg("Loading pass '%s' failed\n",
+					argv[argc - rest]);
 			}
 
 			rest -= count;

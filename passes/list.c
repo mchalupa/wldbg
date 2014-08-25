@@ -53,7 +53,7 @@ list_dir(const char *path)
 	closedir(dir);
 }
 
-static void
+void
 list_passes(int lng)
 {
 	const char *env;

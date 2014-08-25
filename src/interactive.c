@@ -176,6 +176,10 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	if (!pass)
 		goto err_wldbgi;
 
+	pass->name = strdup("interactive");
+	if (!pass->name)
+		goto err_pass;
+
 	wl_list_insert(wldbg->passes.next, &pass->link);
 
 	pass->wldbg_pass.init = NULL;

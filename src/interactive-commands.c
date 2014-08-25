@@ -30,6 +30,7 @@
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "interactive.h"
+#include "passes.h"
 
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
@@ -66,11 +67,100 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 	return CMD_END_QUERY;
 }
 
+static void
+cmd_pass_help(int oneline)
+{
+	if (oneline) {
+		printf("Add, remove, list passes\n");
+		return;
+	}
+
+	printf("Possible arguments:\n");
+	printf("\tlist\t\t- list available passes\n");
+	printf("\tloaded\t\t- list loaded passes\n");
+	printf("\tadd NAME\t- add pass NAME.so\n");
+	printf("\tremove NAME\t- remove pass NAME\n");
+}
+
+static void
+add_pass(struct wldbg *wldbg, const char *name)
+{
+	struct pass *pass;
+
+	dbg("Adding pass '%s'\n", name);
+
+	pass = create_pass(name);
+	if (pass) {
+		/* XXX add arguments */
+		if (pass_init(wldbg, pass, 0, NULL) != 0) {
+			fprintf(stderr, "Failed initializing pass '%s'\n",
+				name);
+			free(pass->name);
+			free(pass);
+		} else {
+			/* insert always at the head */
+			wl_list_insert(&wldbg->passes, &pass->link);
+
+			dbg("Added pass '%s'\n", name);
+		}
+	} else {
+		fprintf(stderr, "Failed adding pass '%s'\n", name);
+	}
+}
+
+static void
+loaded_passes(struct wldbg *wldbg)
+{
+	struct pass *pass;
+
+	printf("Loaded passes:\n");
+	wl_list_for_each(pass, &wldbg->passes, link) {
+		printf("\t - %s\n", pass->name);
+	}
+}
+
+static void
+remove_pass(struct wldbg *wldbg, const char *name)
+{
+	struct pass *pass, *tmp;
+
+	dbg("Removing pass '%s'\n", name);
+
+	wl_list_for_each_safe(pass, tmp, &wldbg->passes, link) {
+		if (strcmp(pass->name, name) == 0) {
+			wl_list_remove(&pass->link);
+
+			free(pass->name);
+			free(pass);
+
+			dbg("Removed pass '%s'\n", name);
+			return;
+		}
+	}
+
+	fprintf(stderr, "Didn't find pass '%s'\n", name);
+}
+
+
+
 static int
 cmd_pass(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
 {
-	vdbg("cmd: pass\n");
+	if (strncmp(buf, "list\n", 5) == 0) {
+		list_passes(1);
+	} else if (strncmp(buf, "loaded\n", 5) == 0) {
+		loaded_passes(wldbgi->wldbg);
+	} else if (strncmp(buf, "add ", 4) == 0) {
+		/* remove \n from it */
+		buf[strlen(buf) - 1] = '\0';
+		add_pass(wldbgi->wldbg, buf + 4);
+	} else if (strncmp(buf, "remove ", 7) == 0) {
+		buf[strlen(buf) - 1] = '\0';
+		remove_pass(wldbgi->wldbg, buf + 7);
+	} else
+		cmd_pass_help(0);
+
 	return CMD_CONTINUE_QUERY;
 }
 
@@ -159,7 +249,7 @@ const struct command commands[] = {
 	{"help", "h",  cmd_help, cmd_help_help},
 	{"info", NULL, cmd_info, NULL},
 	{"next", "n",  cmd_next, NULL},
-	{"pass", NULL, cmd_pass, NULL},
+	{"pass", NULL, cmd_pass, cmd_pass_help},
 	{"run",  NULL, cmd_run, NULL},
 	{"quit", "q", cmd_quit, NULL},
 

@@ -516,6 +516,7 @@ wldbg_destroy(struct wldbg *wldbg)
 	wl_list_for_each_safe(pass, pass_tmp, &wldbg->passes, link) {
 		if (pass->wldbg_pass.destroy)
 			pass->wldbg_pass.destroy(pass->wldbg_pass.user_data);
+		free(pass->name);
 		free(pass);
 	}
 
