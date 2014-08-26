@@ -1,0 +1,23 @@
+---- To version 0.1:
+
+Generic:
+    document current code
+
+Interactive:
+    add arguments to run command
+    add edit command
+    add dump command
+    add x/p and similar as in gdb
+    add breakpoints
+    add help functions to all commands
+
+Resolve:
+  parse binary for debug data (dwarf) and sections, respectively (bfd)
+
+---- Future
+
+add server mode -- sit on wayland socket and hijack every connection that will
+try to connect to wayland server (rename wayland socket and replace it by
+our socket. Then rename it back)
+
+
