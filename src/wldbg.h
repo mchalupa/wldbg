@@ -29,6 +29,7 @@
 
 #include "wayland/wayland-util.h"
 #include "wldbg-pass.h"
+#include "util.h"
 
 #ifdef DEBUG
 
@@ -93,6 +94,8 @@ struct wldbg {
 	sigset_t handled_signals;
 	struct wl_list passes;
 	struct wl_list monitored_fds;
+
+	struct wldbg_ids_map resolved_objects;
 
 	struct {
 		unsigned int one_by_one	: 1;

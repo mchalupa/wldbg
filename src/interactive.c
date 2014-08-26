@@ -30,6 +30,7 @@
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "interactive.h"
+#include "resolve.h"
 
 /* defined in interactive-commands.c */
 int
@@ -164,6 +165,10 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	/* Interactive mode must be isolated - at least on startup */
 	assert(wl_list_empty(&wldbg->passes)
 		&& "Interactive mode must not be used with other passes");
+
+	/* init resolving wayland objects */
+	if (wldbg_add_resolve_pass(wldbg) < 0)
+		return -1;
 
 	wldbgi = malloc(sizeof *wldbgi);
 	if (!wldbgi)

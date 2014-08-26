@@ -524,6 +524,8 @@ wldbg_destroy(struct wldbg *wldbg)
 		free(cb);
 	}
 
+	wldbg_ids_map_release(&wldbg->resolved_objects);
+
 	close(wldbg->server.fd);
 	close(wldbg->client.fd);
 }
@@ -539,6 +541,7 @@ wldbg_init(struct wldbg *wldbg)
 
 	wl_list_init(&wldbg->passes);
 	wl_list_init(&wldbg->monitored_fds);
+	wldbg_ids_map_init(&wldbg->resolved_objects);
 
 	wldbg->epoll_fd = epoll_create1(0);
 	if (wldbg->epoll_fd == -1) {

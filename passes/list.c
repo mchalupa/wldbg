@@ -61,7 +61,7 @@ list_passes(int lng)
 
 	if (lng)
 		printf("hardcoded:\n");
-	printf("    list (hardcoded)\n");
+	printf("    list (hardcoded)\n    resolve (hardcoded)\n");
 
 	snprintf(path, sizeof path, "passes/%s", LT_OBJDIR);
 	if (lng)

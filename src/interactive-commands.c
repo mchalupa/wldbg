@@ -31,6 +31,7 @@
 #include "wldbg-pass.h"
 #include "interactive.h"
 #include "passes.h"
+#include "util.h"
 
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
@@ -164,17 +165,33 @@ cmd_pass(struct wldbg_interactive *wldbgi,
 	return CMD_CONTINUE_QUERY;
 }
 
+void
+print_objects(struct wldbg *wldbg)
+{
+	struct wldbg_ids_map *map = &wldbg->resolved_objects;
+	const struct wl_interface *intf;
+	int id;
+
+	for (id = 0; id < map->count; ++id) {
+		intf = wldbg_ids_map_get(map, id);
+		printf("\t%u -> %s\n", id, intf ? intf->name : "NULL");
+	}
+}
+
 static int
 cmd_info(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
 {
-	if (strncmp(buf, "message", 7) == 0
-		&& buf[7] == '\n') {
+	uint32_t count;
+
+	if (strncmp(buf, "message\n", 8) == 0) {
 		printf("Sender: %s (no. %u), size: %u\n",
 			message->from == SERVER ? "server" : "client",
 			message->from == SERVER ? wldbgi->statistics.server_msg_no
 						: wldbgi->statistics.client_msg_no,
 			message->size);
+	} else if (strncmp(buf, "objects\n", 8) == 0) {
+		print_objects(wldbgi->wldbg);
 	} else {
 		printf("Unknown arguments\n");
 	}
