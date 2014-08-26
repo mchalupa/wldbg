@@ -2,6 +2,7 @@
 
 Generic:
     document current code
+    make it installable (passes to $PREFIX/lib etc.)
 
 Interactive:
     add arguments to run command
