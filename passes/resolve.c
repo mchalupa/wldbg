@@ -30,6 +30,7 @@
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
+#include "passes.h"
 
 /* this pass analyze the connection and translates object id
  * to human-readable names */
@@ -380,16 +381,9 @@ create_resolve_pass(void)
 {
 	struct pass *pass;
 
-	pass = malloc(sizeof *pass);
+	pass = alloc_pass("resolve");
 	if (!pass)
 		return NULL;
-
-	pass->name = strdup("resolve");
-
-	if (!pass->name) {
-		free(pass);
-		return NULL;
-	}
 
 	pass->wldbg_pass.init = resolve_init;
 	pass->wldbg_pass.destroy = resolve_destroy;
@@ -407,8 +401,7 @@ wldbg_add_resolve_pass(struct wldbg *wldbg)
 		return -1;
 
 	if (resolve_init(wldbg, &pass->wldbg_pass, 0, NULL) < 0) {
-		free(pass->name);
-		free(pass);
+		dealloc_pass(pass);
 		return -1;
 	}
 

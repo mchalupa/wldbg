@@ -31,6 +31,7 @@
 #include "wldbg-pass.h"
 #include "interactive.h"
 #include "resolve.h"
+#include "passes.h"
 
 /* defined in interactive-commands.c */
 int
@@ -177,13 +178,9 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	memset(wldbgi, 0, sizeof *wldbgi);
 	wldbgi->wldbg = wldbg;
 
-	pass = malloc(sizeof *pass);
+	pass = alloc_pass("interactive");
 	if (!pass)
 		goto err_wldbgi;
-
-	pass->name = strdup("interactive");
-	if (!pass->name)
-		goto err_pass;
 
 	wl_list_insert(wldbg->passes.next, &pass->link);
 
@@ -240,7 +237,7 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	return 0;
 
 err_pass:
-		free(pass);
+		dealloc_pass(pass);
 err_wldbgi:
 		free(wldbgi);
 

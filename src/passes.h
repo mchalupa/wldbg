@@ -23,6 +23,12 @@
 #ifndef _PASSES_H_
 #define _PASSES_H_
 
+void
+dealloc_pass(struct pass *pass);
+
+struct pass *
+alloc_pass(const char *name);
+
 struct pass *
 create_pass(const char *);
 

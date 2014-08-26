@@ -96,8 +96,7 @@ add_pass(struct wldbg *wldbg, const char *name)
 		if (pass_init(wldbg, pass, 0, NULL) != 0) {
 			fprintf(stderr, "Failed initializing pass '%s'\n",
 				name);
-			free(pass->name);
-			free(pass);
+			dealloc_pass(pass);
 		} else {
 			/* insert always at the head */
 			wl_list_insert(&wldbg->passes, &pass->link);

@@ -95,6 +95,32 @@ build_path(char *path, const char *prefix,
 	return 0;
 }
 
+void
+dealloc_pass(struct pass *pass)
+{
+	if (pass->name)
+		free(pass->name);
+
+	free(pass);
+}
+
+struct pass *
+alloc_pass(const char *name)
+{
+	struct pass *pass = malloc(sizeof *pass);
+	if (!pass)
+		return NULL;
+
+	pass->name = strdup(name);
+
+	if (!pass->name) {
+		dealloc_pass(pass);
+		return NULL;
+	}
+
+	return pass;
+}
+
 /* searching for .so file in folders (in this order)
  *   ./passes/.libs/file.so
  *   $HOME/.wldbg/file.so
@@ -171,16 +197,9 @@ create_pass(const char *name)
 		}
 	}
 
-	pass = malloc(sizeof *pass);
+	pass = alloc_pass(name);
 	if (!pass)
 		return NULL;
-
-	pass->name = strdup(name);
-
-	if (!pass->name) {
-		free(pass);
-		return NULL;
-	}
 
 	pass->wldbg_pass = *wldbg_pass;
 
@@ -271,8 +290,7 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 			if (pass) {
 				if (pass_init(wldbg, pass, count,
 						argv + argc - rest) != 0) {
-					free(pass->name);
-					free(pass);
+					dealloc_pass(pass);
 					continue;
 				}
 
