@@ -32,6 +32,7 @@
 #include "interactive.h"
 #include "resolve.h"
 #include "passes.h"
+#include "print.h"
 
 /* defined in interactive-commands.c */
 int
@@ -80,6 +81,9 @@ process_message(struct wldbg_interactive *wldbgi, struct message *message)
 				wldbgi->statistics.client_msg_no,
 			message->from == SERVER ?
 				"server" : "client");
+		/* print message's description, so that
+		 * we know where we've stopped */
+		print_message(wldbgi->wldbg, message);
 
 		/* reset flag */
 		wldbgi->stop = 0;

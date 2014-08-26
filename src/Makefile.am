@@ -27,6 +27,8 @@ wldbg_SOURCES =			\
 	passes.c		\
 	util.c			\
 	util.h			\
+	print.c			\
+	print.h			\
 	$(wayland_files)	\
 	$(hardcoded_passes)
 wldbg_LDFLAGS = -ldl

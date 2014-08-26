@@ -24,6 +24,7 @@
 #define _WLDBG_H_
 
 #include <unistd.h>
+#include <sys/signalfd.h>
 
 #include "config.h"
 

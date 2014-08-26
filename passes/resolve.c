@@ -198,8 +198,6 @@ wl_message_new_id_pos(const char *signature)
 	return -1;
 }
 
-#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
-
 static uint32_t
 get_new_id(const char *signature, uint32_t *data)
 {

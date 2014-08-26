@@ -20,31 +20,13 @@
  * OF THIS SOFTWARE.
  */
 
-#ifndef _WLDBG_UTIL_H_
-#define _WLDBG_UTIL_H_
-
-#include "wayland-util.h"
-
-#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
-
-/* we need just something like dynamic array. Wl_map is pain in the ass
- * for our purpose - belive me, I tried it ;) */
-struct wldbg_ids_map {
-	uint32_t count;
-	struct wl_array data;
-};
+#ifndef _WLDBG_PRINT_H_
+#define _WLDBG_PRINT_H_
 
 void
-wldbg_ids_map_init(struct wldbg_ids_map *map);
+print_message(struct wldbg *wldbg, struct message *message);
 
 void
-wldbg_ids_map_release(struct wldbg_ids_map *map);
+print_bare_message(struct wldbg *wldbg, struct message *message);
 
-void
-wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
-			struct wl_interface *intf);
-
-struct wl_interface *
-wldbg_ids_map_get(struct wldbg_ids_map *map, uint32_t id);
-
-#endif /* _WLDBG_UTIL_H_ */
+#endif /* _WLDBG_PRINT_H_ */
