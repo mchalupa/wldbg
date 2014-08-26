@@ -99,7 +99,7 @@ add_pass(struct wldbg *wldbg, const char *name)
 			dealloc_pass(pass);
 		} else {
 			/* insert always at the head */
-			wl_list_insert(&wldbg->passes, &pass->link);
+			wl_list_insert(wldbg->passes.next, &pass->link);
 
 			dbg("Added pass '%s'\n", name);
 		}
