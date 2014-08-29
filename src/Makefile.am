@@ -9,14 +9,17 @@ wayland_files =				\
 	../wayland/wayland-util.h	\
 	../wayland/wayland-private.h
 
-hardcoded_passes =				\
-	$(top_builddir)/passes/list.c		\
-	$(top_builddir)/passes/resolve.c	\
-	$(top_builddir)/passes/resolve.h
+hardcoded_passes =			\
+	list.c				\
+	resolve.c			\
+	resolve.h
 
 
-AM_CPPFLAGS = -I.. -I$(top_builddir)/passes
-AM_CFLAGS = $(CFLAGS)
+AM_CPPFLAGS = -I..
+AM_CFLAGS =				\
+	$(CFLAGS)			\
+	$(WAYLAND_SERVER_CFLAGS)	\
+	$(WAYLAND_CLIENT_CFLAGS)
 
 wldbg_SOURCES =			\
 	wldbg.c			\
