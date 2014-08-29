@@ -74,6 +74,11 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 static int
 process_message(struct wldbg_interactive *wldbgi, struct message *message)
 {
+	/* print message's description
+	 * This is default behaviour. XXX add possibility to
+	 * turn it off */
+	print_message(wldbgi->wldbg, message);
+
 	if (wldbgi->stop) {
 		dbg("Stopped at message no. %lu from %s\n",
 			message->from == SERVER ?
@@ -81,10 +86,6 @@ process_message(struct wldbg_interactive *wldbgi, struct message *message)
 				wldbgi->statistics.client_msg_no,
 			message->from == SERVER ?
 				"server" : "client");
-		/* print message's description, so that
-		 * we know where we've stopped */
-		print_message(wldbgi->wldbg, message);
-
 		/* reset flag */
 		wldbgi->stop = 0;
 		query_user(wldbgi, message);
