@@ -171,11 +171,11 @@ print_objects(struct wldbg *wldbg)
 {
 	struct wldbg_ids_map *map = &wldbg->resolved_objects;
 	const struct wl_interface *intf;
-	int id;
+	uint32_t id;
 
 	for (id = 0; id < map->count; ++id) {
 		intf = wldbg_ids_map_get(map, id);
-		printf("\t%u -> %s\n", id, intf ? intf->name : "NULL");
+		printf("\t%lu -> %s\n", id, intf ? intf->name : "NULL");
 	}
 }
 
@@ -186,7 +186,7 @@ cmd_info(struct wldbg_interactive *wldbgi,
 	uint32_t count;
 
 	if (strncmp(buf, "message\n", 8) == 0) {
-		printf("Sender: %s (no. %u), size: %u\n",
+		printf("Sender: %s (no. %lu), size: %lu\n",
 			message->from == SERVER ? "server" : "client",
 			message->from == SERVER ? wldbgi->statistics.server_msg_no
 						: wldbgi->statistics.client_msg_no,
@@ -277,7 +277,8 @@ static int
 cmd_help(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
 {
-	int i, all = 0;
+	size_t i;
+	int all = 0;
 
 	if (strcmp(buf, "all\n") == 0)
 		all = 1;
@@ -298,13 +299,14 @@ cmd_help(struct wldbg_interactive *wldbgi,
 		if (all)
 			printf(" ==\n\n");
 
-		if (commands[i].help)
+		if (commands[i].help) {
 			if (all) {
 				commands[i].help(0);
 			} else {
 				printf("\t -- ");
 				commands[i].help(1);
 			}	
+		}
 
 		if (all)
 			putchar('\n');
@@ -364,7 +366,7 @@ int
 run_command(char *buf,
 		struct wldbg_interactive *wldbgi, struct message *message)
 {
-	int n;
+	size_t n;
 
 	for (n = 0; n < (sizeof commands / sizeof *commands); ++n) {
 		if (is_the_cmd(buf, &commands[n]))

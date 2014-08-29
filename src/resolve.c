@@ -223,7 +223,7 @@ get_new_id(const char *signature, uint32_t *data)
 	assert(0 && "No new id in message");
 }
 
-static int
+static void
 get_new_ids(struct resolve *resolve, uint32_t *data,
 		const struct wl_message *wl_message, const char *guess_type)
 {

@@ -109,13 +109,14 @@ list_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 static int
 list_in(void *user_data, struct message *message)
 {
+	return PASS_STOP;
 }
 
 static int
 list_out(void *user_data, struct message *message)
 {
+	return PASS_STOP;
 }
-
 
 static void
 list_destroy(void *data)

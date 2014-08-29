@@ -75,7 +75,7 @@ static int
 process_message(struct wldbg_interactive *wldbgi, struct message *message)
 {
 	if (wldbgi->stop) {
-		dbg("Stopped at message no. %u from %s\n",
+		dbg("Stopped at message no. %lu from %s\n",
 			message->from == SERVER ?
 				wldbgi->statistics.server_msg_no :
 				wldbgi->statistics.client_msg_no,
@@ -89,6 +89,8 @@ process_message(struct wldbg_interactive *wldbgi, struct message *message)
 		wldbgi->stop = 0;
 		query_user(wldbgi, message);
 	}
+
+	return 0;
 }
 
 static int

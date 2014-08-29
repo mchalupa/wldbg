@@ -34,8 +34,8 @@
 void
 print_bare_message(struct wldbg *wldbg, struct message *message)
 {
-	int i, j;
-	uint32_t id, opcode, pos, len, size, *p;
+	int i;
+	uint32_t j, id, opcode, pos, len, size, *p;
 	struct wl_interface *interface, *obj;
 	const char *signature;
 	const struct wl_message *wl_message = NULL;
@@ -53,8 +53,8 @@ print_bare_message(struct wldbg *wldbg, struct message *message)
 	/* if we do not know interface or the interface is
 	 * unknown_interface or free_entry */
 	if (!interface
-		|| message->from == SERVER && !interface->event_count
-		|| message->from == CLIENT && !interface->method_count) {
+		|| (message->from == SERVER && !interface->event_count)
+		|| (message->from == CLIENT && !interface->method_count)) {
 		/* print at least fall-back description */
 		printf("unknown@%u.[opcode %u][size %uB]", id, opcode, size);
 		return;
@@ -90,7 +90,7 @@ print_bare_message(struct wldbg *wldbg, struct message *message)
 			printf("%f", wl_fixed_to_double(p[pos]));
 			break;
 		case 's':
-			printf("%u:\"%s\"", p[pos], p + pos + 1);
+			printf("%u:\"%s\"", p[pos], (const char *) p + pos + 1);
 			pos += DIV_ROUNDUP(p[pos], sizeof(uint32_t));
 			break;
 		case 'o':
