@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "../src/wldbg.h"
 #include "../src/wldbg-pass.h"

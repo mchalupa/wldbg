@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include "wldbg.h"
 #include "wayland/wayland-util.h"

@@ -36,6 +36,7 @@
 #include <sys/epoll.h>
 #include <sys/signalfd.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"

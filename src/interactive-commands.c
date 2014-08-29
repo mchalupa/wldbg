@@ -26,6 +26,8 @@
 #include <signal.h>
 #include <assert.h>
 #include <sys/signalfd.h>
+#include <sys/wait.h>
+#include <ctype.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"

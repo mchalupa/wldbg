@@ -23,7 +23,7 @@
 #ifndef _WLDBG_UTIL_H_
 #define _WLDBG_UTIL_H_
 
-#include "wayland-util.h"
+#include "wayland/wayland-util.h"
 
 #define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
 

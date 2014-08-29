@@ -25,7 +25,6 @@
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
-#include "wayland-util.h"
 #include "util.h"
 
 void
