@@ -368,7 +368,6 @@ dispatch_signals(int fd, void *data)
 static pid_t
 spawn_client(struct wldbg *wldbg)
 {
-	struct epoll_event ev;
 	int sock[2];
 	char sockstr[8];
 
@@ -441,8 +440,6 @@ err:
 static int
 init_wayland_socket(struct wldbg *wldbg)
 {
-	struct epoll_event ev;
-
 	assert(!wldbg->flags.error);
 	assert(!wldbg->flags.exit);
 
@@ -534,7 +531,6 @@ wldbg_destroy(struct wldbg *wldbg)
 static int
 wldbg_init(struct wldbg *wldbg)
 {
-	struct epoll_event ev;
 	sigset_t signals;
 
 	memset(wldbg, 0, sizeof *wldbg);

@@ -120,7 +120,6 @@ static void
 parse_libwayland(struct resolve *resolve)
 {
 	struct interface *intf;
-	struct wl_list *interfaces = &resolve->interfaces;
 	void *handle;
 
 	handle = dlopen("libwayland-client.so", RTLD_NOW);
@@ -202,7 +201,7 @@ static uint32_t
 get_new_id(const char *signature, uint32_t *data)
 {
 	int n = 0, pos = 2;
-	uint32_t new_id, size;
+	uint32_t size;
 
 	while (signature[n] != '\0') {
 		switch(signature[n]) {
@@ -296,10 +295,10 @@ resolve_in(void *user_data, struct message *message)
 static int
 resolve_out(void *user_data, struct message *message)
 {
-	uint32_t id, opcode, new_id;
+	uint32_t id, opcode;
 	uint32_t *data = message->data;
 	struct resolve *resolve = user_data;
-	struct wl_interface *intf, *new_intf;
+	struct wl_interface *intf;
 	const struct wl_message *wl_message;
 	const char *guess_type = NULL;
 

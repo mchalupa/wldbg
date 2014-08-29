@@ -43,7 +43,7 @@ static void
 query_user(struct wldbg_interactive *wldbgi, struct message *message)
 {
 	char buf[1024];
-	int chr, n, ret;
+	int ret;
 
 	while (1) {
 		if (wldbgi->wldbg->flags.exit
@@ -95,8 +95,6 @@ static int
 process_interactive(void *user_data, struct message *message)
 {
 	struct wldbg_interactive *wldbgi = user_data;
-	struct message msg;
-	size_t rest = message->size;
 
 	vdbg("Mesagge from %s\n",
 		message->from == SERVER ? "SERVER" : "CLIENT");
@@ -139,7 +137,6 @@ wldbgi_destory(void *data)
 static int
 handle_sigint(int fd, void *data)
 {
-	int s;
 	size_t len;
 	struct signalfd_siginfo si;
 	struct wldbg_interactive *wldbgi = data;

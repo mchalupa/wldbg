@@ -135,7 +135,6 @@ create_pass(const char *name)
 	struct wldbg_pass *wldbg_pass;
 	char path[PATH_LENGTH];
 	const char *env;
-	size_t len;
 
 	/* hardcoded passes */
 	if (strcmp(name, "list") == 0) {
