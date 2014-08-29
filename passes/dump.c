@@ -53,7 +53,7 @@ dump_message(struct message *message, uint64_t options)
 						data[i], data[i + 1] & 0xffff,
 						size);
 				} else {
-					printf("\n | %u | ", size);
+					printf("\n | %2u | ", size);
 				}
 			}
 
