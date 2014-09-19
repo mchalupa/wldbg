@@ -37,7 +37,8 @@
 
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
+		WLDBG_UNUSED struct message *message,
+		WLDBG_UNUSED char *buf)
 {
 	int chr;
 
@@ -147,7 +148,8 @@ remove_pass(struct wldbg *wldbg, const char *name)
 
 static int
 cmd_pass(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
+		WLDBG_UNUSED struct message *message,
+		WLDBG_UNUSED char *buf)
 {
 	if (strncmp(buf, "list\n", 5) == 0) {
 		list_passes(1);
@@ -183,8 +185,6 @@ static int
 cmd_info(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
 {
-	uint32_t count;
-
 	if (strncmp(buf, "message\n", 8) == 0) {
 		printf("Sender: %s (no. %lu), size: %lu\n",
 			message->from == SERVER ? "server" : "client",
@@ -202,7 +202,7 @@ cmd_info(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_run(struct wldbg_interactive *wldbgi,
-	struct message *message, char *buf)
+	WLDBG_UNUSED struct message *message, char *buf)
 {
 	char *nl;
 
@@ -222,7 +222,8 @@ cmd_run(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_next(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
+		WLDBG_UNUSED struct message *message,
+		WLDBG_UNUSED char *buf)
 {
 	if (!wldbgi->wldbg->flags.running) {
 		printf("Client is not running\n");
@@ -235,7 +236,8 @@ cmd_next(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_continue(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
+		WLDBG_UNUSED struct message *message,
+		WLDBG_UNUSED char *buf)
 {
 	if (!wldbgi->wldbg->flags.running) {
 		printf("Client is not running\n");
@@ -274,8 +276,8 @@ const struct command commands[] = {
 };
 
 static int
-cmd_help(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
+cmd_help(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
+		WLDBG_UNUSED struct message *message, char *buf)
 {
 	size_t i;
 	int all = 0;
