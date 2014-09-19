@@ -177,7 +177,7 @@ print_objects(struct wldbg *wldbg)
 
 	for (id = 0; id < map->count; ++id) {
 		intf = wldbg_ids_map_get(map, id);
-		printf("\t%lu -> %s\n", id, intf ? intf->name : "NULL");
+		printf("\t%u -> %s\n", id, intf ? intf->name : "NULL");
 	}
 }
 
