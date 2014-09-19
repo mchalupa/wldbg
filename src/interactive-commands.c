@@ -327,7 +327,7 @@ const struct command commands[] = {
 	{"continue", "c", cmd_continue, NULL},
 	//{"edit", "e", cmd_exit, NULL},
 	{"help", "h",  cmd_help, cmd_help_help},
-	{"info", NULL, cmd_info, NULL},
+	{"info", "i", cmd_info, NULL},
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
 	{"run",  NULL, cmd_run, NULL},
