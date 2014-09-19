@@ -393,6 +393,10 @@ create_resolve_pass(void)
 int
 wldbg_add_resolve_pass(struct wldbg *wldbg)
 {
+	/* do not add this pass more times */
+	if (wldbg->resolving_objects)
+		return 0;
+
 	struct pass *pass = create_resolve_pass();
 	if (!pass)
 		return -1;
@@ -403,6 +407,7 @@ wldbg_add_resolve_pass(struct wldbg *wldbg)
 	}
 
 	wl_list_insert(wldbg->passes.next, &pass->link);
+	wldbg->resolving_objects = 1;
 
 	return 0;
 }

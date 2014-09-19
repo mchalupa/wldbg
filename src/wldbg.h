@@ -97,6 +97,7 @@ struct wldbg {
 	struct wl_list monitored_fds;
 
 	struct wldbg_ids_map resolved_objects;
+	unsigned int resolving_objects : 1;
 
 	struct {
 		unsigned int one_by_one	: 1;
