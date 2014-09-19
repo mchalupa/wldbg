@@ -29,6 +29,8 @@
 #include <sys/wait.h>
 #include <ctype.h>
 
+#include "wayland/wayland-private.h"
+
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "interactive.h"
@@ -261,6 +263,64 @@ cmd_help_help(int ol)
 			"comprehensive help about all commands.");
 }
 
+static int
+cmd_send(struct wldbg_interactive *wldbgi,
+		WLDBG_UNUSED struct message *message,
+		WLDBG_UNUSED char *buf)
+{
+	struct wl_connection *conn;
+	uint32_t buffer[1024]; /* size of wl_connection buffer */
+	uint32_t size, opcode;
+	int where, interactive, i = 0;
+
+	if (strncmp(buf, "server", 6) == 0
+		|| (buf[0] == 's' && isspace(buf[1]))) {
+		where = SERVER;
+	} else if (strncmp(buf, "client", 6) == 0
+		|| (buf[0] == 'c' && isspace(buf[1]))) {
+		where = CLIENT;
+	} else {
+		printf(" :: send [server|s|client|c]"
+			"[message - NOT IMPLEMENTED YET]\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
+	interactive = 1;
+
+	if (where == SERVER)
+		conn = wldbgi->wldbg->server.connection;
+	else
+		conn = wldbgi->wldbg->client.connection;
+
+	/* XXX later do translation from interface@obj.request etc.. */
+	if (interactive) {
+		printf("Id: ");
+		scanf("%u", &buffer[0]);
+
+		printf("Opcode: ");
+		scanf("%u", &opcode);
+		i = 2;
+	}
+
+	while(scanf("%x", &buffer[i]) != -1)
+		++i;
+
+	if (interactive) {
+		size = i * sizeof(uint32_t);
+		buffer[1] = (size << 16) | (opcode & 0xffff);
+	} else {
+		/* for debug */
+		opcode = buffer[1] & 0xffff;
+		size = buffer[1] >> 16;
+	}
+
+	dbg("Sending id %u, opcode %u , size %u\n", buffer[0], opcode, size);
+
+	wl_connection_write(conn, buffer, size);
+
+	return CMD_CONTINUE_QUERY;
+}
+
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
 const struct command commands[] = {
@@ -271,6 +331,7 @@ const struct command commands[] = {
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
 	{"run",  NULL, cmd_run, NULL},
+	{"send", "s", cmd_send, NULL},
 	{"quit", "q", cmd_quit, NULL},
 
 };
