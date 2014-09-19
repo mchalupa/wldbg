@@ -167,14 +167,6 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 
 	dbg("Starting interactive mode.\n");
 
-	/* Interactive mode must be isolated - at least on startup */
-	assert(wl_list_empty(&wldbg->passes)
-		&& "Interactive mode must not be used with other passes");
-
-	/* init resolving wayland objects */
-	if (wldbg_add_resolve_pass(wldbg) < 0)
-		return -1;
-
 	wldbgi = malloc(sizeof *wldbgi);
 	if (!wldbgi)
 		return -1;

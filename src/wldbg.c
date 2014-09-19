@@ -40,6 +40,7 @@
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
+#include "resolve.h"
 
 #include "wayland/wayland-private.h"
 #include "wayland/wayland-util.h"
@@ -566,6 +567,10 @@ wldbg_init(struct wldbg *wldbg)
 		goto err_signals;
 
 	wldbg->handled_signals = signals;
+
+	/* init resolving wayland objects */
+	if (wldbg_add_resolve_pass(wldbg) < 0)
+		goto err_signals;
 
 	return 0;
 
