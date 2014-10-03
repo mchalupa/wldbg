@@ -37,6 +37,7 @@ enum options {
 	CLIENTONLY		= 1 << 5,
 	SERVERONLY		= 1 << 6,
 	STATS			= 1 << 7,
+	NOOUT			= 1 << 8,
 };
 
 struct dump {
@@ -76,6 +77,9 @@ dump_message(struct message *message, struct dump *dump)
 		if (!(options & (~TOFILE)))
 			return;
 	}
+
+	if (options & NOOUT)
+		return;
 
 	if (options & DECODE)
 		options |= SEPARATE;
@@ -120,7 +124,7 @@ dump_in(void *user_data, struct message *message)
 		return PASS_NEXT;
 
 	/* if we have are _only_ dumping to file, don't print msg */
-	if (dump->options & (~TOFILE))
+	if (dump->options & (~TOFILE) && !(dump->options & NOOUT))
 		printf("SERVER: ");
 
 	dump_message(message, dump);
@@ -142,7 +146,7 @@ dump_out(void *user_data, struct message *message)
 		return PASS_NEXT;
 
 	/* if we have are _only_ dumping to file, don't print msg */
-	if (dump->options & (~TOFILE))
+	if (dump->options & (~TOFILE) && !(dump->options & NOOUT))
 		printf("CLIENT: ");
 
 	dump_message(message, dump);
@@ -187,6 +191,8 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 			flags |= STATS;
 		else if (strcmp(argv[i], "statistics") == 0)
 			flags |= STATS;
+		else if (strcmp(argv[i], "no-output") == 0)
+			flags |= NOOUT;
 		else if (strcmp(argv[i], "help") == 0)
 			print_help(0);
 		else if (strcmp(argv[i], "to-file") == 0) {
@@ -215,10 +221,11 @@ dump_destroy(void *data)
 {
 	struct dump *dump = data;
 
+	fflush(stdout);
 	if (dump->options & STATS) {
 		printf("----------------------\n"
-		       "Messages from server: %u (%u bytes)\n"
-		       "Messages from client: %u (%u bytes)\n"
+		       "Messages from server: %lu (%lu bytes)\n"
+		       "Messages from client: %lu (%lu bytes)\n"
 		       "----------------------\n",
 		       dump->stats.in_msg, dump->stats.in_bytes,
 		       dump->stats.out_msg, dump->stats.out_bytes);
