@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
@@ -30,15 +31,41 @@
 enum options {
 	SEPARATE		= 1 ,
 	DECIMAL			= 1 << 1,
-	DECODE			= 1 << 2
+	DECODE			= 1 << 2,
+	TOFILE			= 1 << 3,
+	RAW			= 1 << 4,
+};
+
+struct dump {
+	uint64_t options;
+	const char *file;
+	int file_fd;
 };
 
 static void
-dump_message(struct message *message, uint64_t options)
+dump_to_file(struct message *message, struct dump *dump)
+{
+	if (write(dump->file_fd, message->data, message->size)
+		!= message->size) {
+		perror("Dumping to file failed");
+	}
+}
+
+static void
+dump_message(struct message *message, struct dump *dump)
 {
 	int i;
 	uint32_t *data = message->data;
+	uint32_t options = dump->options;
 	size_t size = 0;
+
+	if (options & TOFILE) {
+		dump_to_file(message, dump);
+
+		/* if user want only dump to file, do not print anything */
+		if (!(options & (~TOFILE)))
+			return;
+	}
 
 	if (options & DECODE)
 		options |= SEPARATE;
@@ -72,10 +99,13 @@ dump_message(struct message *message, uint64_t options)
 static int
 dump_in(void *user_data, struct message *message)
 {
-	uint64_t *flags = user_data;
+	struct dump *dump = user_data;
 
-	printf("SERVER: ");
-	dump_message(message, *flags);
+	/* if we have are _only_ dumping to file, don't print msg */
+	if (dump->options & (~TOFILE))
+		printf("SERVER: ");
+
+	dump_message(message, dump);
 
 	return PASS_NEXT;
 }
@@ -83,10 +113,13 @@ dump_in(void *user_data, struct message *message)
 static int
 dump_out(void *user_data, struct message *message)
 {
-	uint64_t *flags = user_data;
+	struct dump *dump = user_data;
 
-	printf("CLIENT: ");
-	dump_message(message, *flags);
+	/* if we have are _only_ dumping to file, don't print msg */
+	if (dump->options & (~TOFILE))
+		printf("CLIENT: ");
+
+	dump_message(message, dump);
 
 	return PASS_NEXT;
 }
@@ -104,9 +137,16 @@ static int
 dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *argv[])
 {
 	int i;
-	static uint64_t flags = 0;
+	uint64_t flags = 0;
+	struct dump *dump = malloc(sizeof *dump);
+	if (!dump)
+		return -1;
+
+	(void) wldbg;
 
 	for (i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "raw") == 0)
+			flags |= RAW;
 		if (strcmp(argv[i], "decode") == 0)
 			flags |= DECODE;
 		else if (strcmp(argv[i], "separate") == 0)
@@ -115,9 +155,23 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 			flags |= DECIMAL;
 		else if (strcmp(argv[i], "help") == 0)
 			print_help(0);
+		else if (strcmp(argv[i], "to-file") == 0) {
+			flags |= TOFILE;
+			dump->file = argv[i + 1];
+		}
 	}
 
-	pass->user_data = &flags;
+	if (flags & TOFILE) {
+		dump->file_fd = open(dump->file, O_WRONLY | O_CREAT | O_EXCL, 0755);
+		if (dump->file_fd == -1) {
+			perror("Opening file for dumping");
+			free(dump);
+			return -1;
+		}
+	}
+
+	dump->options = flags;
+	pass->user_data = dump;
 
 	return 0;
 }
@@ -125,6 +179,13 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 static void
 dump_destroy(void *data)
 {
+	struct dump *dump = data;
+
+	if (dump->options & TOFILE) {
+		close(dump->file_fd);
+	}
+
+	free(dump);
 }
 
 struct wldbg_pass wldbg_pass = {
