@@ -34,6 +34,8 @@ enum options {
 	DECODE			= 1 << 2,
 	TOFILE			= 1 << 3,
 	RAW			= 1 << 4,
+	CLIENTONLY		= 1 << 5,
+	SERVERONLY		= 1 << 6,
 };
 
 struct dump {
@@ -101,6 +103,9 @@ dump_in(void *user_data, struct message *message)
 {
 	struct dump *dump = user_data;
 
+	if (dump->options & CLIENTONLY && !(dump->options & SERVERONLY))
+		return PASS_NEXT;
+
 	/* if we have are _only_ dumping to file, don't print msg */
 	if (dump->options & (~TOFILE))
 		printf("SERVER: ");
@@ -114,6 +119,9 @@ static int
 dump_out(void *user_data, struct message *message)
 {
 	struct dump *dump = user_data;
+
+	if (dump->options & SERVERONLY && !(dump->options & CLIENTONLY))
+		return PASS_NEXT;
 
 	/* if we have are _only_ dumping to file, don't print msg */
 	if (dump->options & (~TOFILE))
@@ -153,6 +161,10 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 			flags |= SEPARATE;
 		else if (strcmp(argv[i], "decimal") == 0)
 			flags |= DECIMAL;
+		else if (strcmp(argv[i], "client") == 0)
+			flags |= CLIENTONLY;
+		else if (strcmp(argv[i], "server") == 0)
+			flags |= SERVERONLY;
 		else if (strcmp(argv[i], "help") == 0)
 			print_help(0);
 		else if (strcmp(argv[i], "to-file") == 0) {
