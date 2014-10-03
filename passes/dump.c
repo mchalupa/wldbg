@@ -36,12 +36,20 @@ enum options {
 	RAW			= 1 << 4,
 	CLIENTONLY		= 1 << 5,
 	SERVERONLY		= 1 << 6,
+	STATS			= 1 << 7,
 };
 
 struct dump {
 	uint64_t options;
 	const char *file;
 	int file_fd;
+
+	struct {
+		uint64_t in_msg;
+		uint64_t out_msg;
+		uint64_t in_bytes;
+		uint64_t out_bytes;
+	} stats;
 };
 
 static void
@@ -103,6 +111,11 @@ dump_in(void *user_data, struct message *message)
 {
 	struct dump *dump = user_data;
 
+	if (dump->options & STATS) {
+		++dump->stats.in_msg;
+		dump->stats.in_bytes += message->size;
+	}
+
 	if (dump->options & CLIENTONLY && !(dump->options & SERVERONLY))
 		return PASS_NEXT;
 
@@ -119,6 +132,11 @@ static int
 dump_out(void *user_data, struct message *message)
 {
 	struct dump *dump = user_data;
+
+	if (dump->options & STATS) {
+		++dump->stats.out_msg;
+		dump->stats.out_bytes += message->size;
+	}
 
 	if (dump->options & SERVERONLY && !(dump->options & CLIENTONLY))
 		return PASS_NEXT;
@@ -165,6 +183,10 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 			flags |= CLIENTONLY;
 		else if (strcmp(argv[i], "server") == 0)
 			flags |= SERVERONLY;
+		else if (strcmp(argv[i], "stats") == 0)
+			flags |= STATS;
+		else if (strcmp(argv[i], "statistics") == 0)
+			flags |= STATS;
 		else if (strcmp(argv[i], "help") == 0)
 			print_help(0);
 		else if (strcmp(argv[i], "to-file") == 0) {
@@ -192,6 +214,15 @@ static void
 dump_destroy(void *data)
 {
 	struct dump *dump = data;
+
+	if (dump->options & STATS) {
+		printf("----------------------\n"
+		       "Messages from server: %u (%u bytes)\n"
+		       "Messages from client: %u (%u bytes)\n"
+		       "----------------------\n",
+		       dump->stats.in_msg, dump->stats.in_bytes,
+		       dump->stats.out_msg, dump->stats.out_bytes);
+	}
 
 	if (dump->options & TOFILE) {
 		close(dump->file_fd);
