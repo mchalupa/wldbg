@@ -57,7 +57,7 @@ static void
 dump_to_file(struct message *message, struct dump *dump)
 {
 	if (write(dump->file_fd, message->data, message->size)
-		!= message->size) {
+		!= (ssize_t) message->size) {
 		perror("Dumping to file failed");
 	}
 }
@@ -65,7 +65,7 @@ dump_to_file(struct message *message, struct dump *dump)
 static void
 dump_message(struct message *message, struct dump *dump)
 {
-	int i;
+	uint32_t i;
 	uint32_t *data = message->data;
 	uint32_t options = dump->options;
 	size_t size = 0;
@@ -90,11 +90,11 @@ dump_message(struct message *message, struct dump *dump)
 				size = data[i + 1] >> 16;
 
 				if (options & DECODE) {
-					printf("\n id: %u opcode: %u size: %u:\n\t",
+					printf("\n id: %u opcode: %u size: %lu:\n\t",
 						data[i], data[i + 1] & 0xffff,
 						size);
 				} else {
-					printf("\n | %2u | ", size);
+					printf("\n | %2lu | ", size);
 				}
 			}
 
