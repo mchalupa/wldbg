@@ -189,6 +189,7 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 	pass->wldbg_pass.user_data = wldbgi;
 	pass->wldbg_pass.description
 		= "Interactive pass for wldbg (hardcoded)";
+	pass->flags = WLDBG_PASS_LOAD_ONCE;
 
 	wldbg->flags.one_by_one = 1;
 
