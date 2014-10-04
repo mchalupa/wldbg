@@ -40,19 +40,19 @@ load_pass(const char *path)
 {
 	void *handle;
 	struct wldbg_pass *ret;
+	int loaded = 0;
 
 	/* check if file exists */
-	if (access(path, F_OK) == -1)
+	if (access(path, F_OK) == -1) {
+		fprintf(stderr, "File doesn't exists\n");
 		return NULL;
+	}
 
+	/* check if the pass is already loaded */
 	handle = dlopen(path, RTLD_NOW | RTLD_NOLOAD);
 	if (handle) {
-		fprintf(stderr, "Pass already loaded\n");
+		loaded = 1;
 		dlclose(handle);
-		/* fake errno, so that we'll know what
-		 * happened */
-		errno = EEXIST;
-		return NULL;
 	}
 
 	handle = dlopen(path, RTLD_NOW);
@@ -65,6 +65,12 @@ load_pass(const char *path)
 	if (!ret) {
 		fprintf(stderr, "Failed loading wldbg_pass struct: %s\n",
 			dlerror());
+		dlclose(handle);
+		return NULL;
+	}
+
+	if ((ret->flags & WLDBG_PASS_LOAD_ONCE) && loaded) {
+		fprintf(stderr, "This pass can be loaded only once\n");
 		dlclose(handle);
 		return NULL;
 	}

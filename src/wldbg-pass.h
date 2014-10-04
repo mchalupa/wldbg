@@ -26,6 +26,12 @@
 struct message;
 struct wldbg;
 
+/* flags for passes */
+enum {
+	/* suppress multiple loads of this pass */
+	WLDBG_PASS_LOAD_ONCE	= 1,
+};
+
 struct wldbg_pass {
 	int (*init)(struct wldbg *wldbg, struct wldbg_pass *pass,
 			int argc, const char *argv[]);
@@ -43,6 +49,9 @@ struct wldbg_pass {
 
 	void *user_data;
 	const char *description;
+
+	/* flags for the pass, i. e. WLDBG_PASS_LOAD_ONCE, etc */
+	uint64_t flags;
 };
 
 enum {
