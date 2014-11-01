@@ -329,7 +329,7 @@ resolve_out(void *user_data, struct message *message)
 
 static int
 resolve_init(struct wldbg *wldbg, struct wldbg_pass *pass,
-		int argc, const char *argv[])
+	     WLDBG_UNUSED int argc, WLDBG_UNUSED const char *argv[])
 {
 	struct resolve *resolve;
 
