@@ -14,6 +14,10 @@ hardcoded_passes =			\
 	resolve.c			\
 	resolve.h
 
+interactive_sources =				\
+	interactive/interactive.c		\
+	interactive/interactive.h		\
+	interactive/interactive-commands.c
 
 AM_CPPFLAGS = -I..
 AM_CFLAGS =				\
@@ -24,14 +28,12 @@ AM_CFLAGS =				\
 wldbg_SOURCES =			\
 	wldbg.c			\
 	wldbg.h			\
-	interactive.c		\
-	interactive.h		\
-	interactive-commands.c	\
 	passes.c		\
 	util.c			\
 	util.h			\
 	print.c			\
 	print.h			\
 	$(wayland_files)	\
-	$(hardcoded_passes)
+	$(hardcoded_passes)	\
+	$(interactive_sources)
 wldbg_LDFLAGS = -ldl
