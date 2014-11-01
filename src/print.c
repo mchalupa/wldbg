@@ -90,7 +90,7 @@ print_bare_message(struct wldbg *wldbg, struct message *message)
 			printf("%f", wl_fixed_to_double(p[pos]));
 			break;
 		case 's':
-			printf("%u:\"%s\"", p[pos], (const char *) p + pos + 1);
+			printf("%u:\"%s\"", p[pos], (const char *) (p + pos + 1));
 			pos += DIV_ROUNDUP(p[pos], sizeof(uint32_t));
 			break;
 		case 'o':
