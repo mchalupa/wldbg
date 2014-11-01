@@ -85,10 +85,10 @@ struct wldbg {
 		struct wl_connection *connection;
 
 		/* path to the binary */
-		const char *path;
+		char *path;
 		/* pointer to arguments and number of arguments */
 		int argc;
-		char * const *argv;
+		char **argv;
 
 		pid_t pid;
 	} client;

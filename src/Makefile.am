@@ -28,6 +28,8 @@ AM_CFLAGS =				\
 wldbg_SOURCES =			\
 	wldbg.c			\
 	wldbg.h			\
+	wldbg-private.c		\
+	wldbg-private.h		\
 	passes.c		\
 	util.c			\
 	util.h			\

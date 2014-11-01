@@ -40,6 +40,7 @@
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
+#include "wldbg-private.h"
 #include "resolve.h"
 
 #include "wayland/wayland-private.h"
@@ -527,6 +528,13 @@ wldbg_destroy(struct wldbg *wldbg)
 
 	close(wldbg->server.fd);
 	close(wldbg->client.fd);
+
+	assert(wldbg->client.path);
+	free(wldbg->client.path);
+
+	assert(wldbg->client.argc > 0);
+	assert(wldbg->client.argv);
+	free_arguments(wldbg->client.argv);
 }
 
 static int

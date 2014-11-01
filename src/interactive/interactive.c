@@ -29,6 +29,7 @@
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
+#include "wldbg-private.h"
 #include "interactive.h"
 #include "resolve.h"
 #include "passes.h"
@@ -222,14 +223,19 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 
 	/* TODO use getopt */
 	if (strcmp(argv[0], "--") == 0) {
-		wldbg->client.path = argv[1];
-		wldbg->client.argc = argc - 1;
-		wldbg->client.argv = (char * const *) argv + 2;
-	} else {
-		wldbg->client.path = argv[0];
-		wldbg->client.argc = argc;
-		wldbg->client.argv = (char * const *) argv + 1;
+		++argv;
+		--argc;
 	}
+
+	wldbg->client.path = strdup(argv[0]);
+	if (!wldbg->client.path)
+		goto err_pass;
+
+	wldbg->client.argc = copy_arguments(&wldbg->client.argv, argc, argv);
+	if (wldbg->client.argc == -1)
+		goto err_pass;
+
+	assert(wldbg->client.argc == argc);
 
 	return 0;
 

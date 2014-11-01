@@ -30,6 +30,7 @@
 #include <dlfcn.h>
 
 #include "wldbg.h"
+#include "wldbg-private.h"
 #include "wldbg-pass.h"
 
 /* hardcoded passes */
@@ -258,10 +259,12 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 				break;
 
 			if (strcmp(argv[argc - rest], "--") == 0) {
-				wldbg->client.path = argv[argc - rest + 1];
-				wldbg->client.argv
-					= (char * const *) argv + argc - rest + 1;
-				wldbg->client.argc = rest - 1;
+				wldbg->client.path = strdup(argv[argc - rest + 1]);
+				wldbg->client.argc
+					= copy_arguments(&wldbg->client.argv,
+							 rest - 1,
+							 argv + argc - rest + 1);
+				assert(wldbg->client.argc == rest - 1);
 #ifdef DEBUG
 				dbg("Program: %s, argc == %d\n",
 					wldbg->client.path,
