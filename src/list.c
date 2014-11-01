@@ -89,8 +89,9 @@ list_passes(int lng)
 }
  
 static int
-list_init(struct wldbg *wldbg, struct wldbg_pass *pass,
-		int argc, const char *argv[])
+list_init(struct wldbg *wldbg,
+	  WLDBG_UNUSED struct wldbg_pass *pass,
+	  int argc, const char *argv[])
 {
 	if (argc == 1) {
 		list_passes(0);
@@ -107,19 +108,19 @@ list_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 }
 
 static int
-list_in(void *user_data, struct message *message)
+list_in(WLDBG_UNUSED void *user_data, WLDBG_UNUSED struct message *message)
 {
 	return PASS_STOP;
 }
 
 static int
-list_out(void *user_data, struct message *message)
+list_out(WLDBG_UNUSED void *user_data, WLDBG_UNUSED struct message *message)
 {
 	return PASS_STOP;
 }
 
 static void
-list_destroy(void *data)
+list_destroy(WLDBG_UNUSED void *data)
 {
 }
 
