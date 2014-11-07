@@ -47,6 +47,9 @@ struct wldbg_interactive {
 	/* query user on the next message */
 	int stop;
 	int skip_first_query;
+
+	/* commands history */
+	char *last_command;
 };
 
 struct command {

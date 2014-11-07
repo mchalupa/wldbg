@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <signal.h>
 #include <assert.h>
 #include <sys/signalfd.h>
@@ -40,16 +41,29 @@ int
 cmd_quit(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf);
 
+static char *
+skip_ws(char *str)
+{
+	char *p = str;
+	while (*p && *p != '\n' && isspace(*p))
+		++p;
+
+	return p;
+}
+
+#define INPUT_BUFFER_SIZE 512
 static void
 query_user(struct wldbg_interactive *wldbgi, struct message *message)
 {
-	char buf[1024];
 	int ret;
+	char buf[INPUT_BUFFER_SIZE];
+	char *cmd;
 
 	while (1) {
 		if (wldbgi->wldbg->flags.exit
-			|| wldbgi->wldbg->flags.error)
+			|| wldbgi->wldbg->flags.error) {
 			break;
+		}
 
 		printf("(wldbg) ");
 
@@ -60,15 +74,26 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 				continue;
 		}
 
-		ret = run_command(buf, wldbgi, message);
+		cmd = skip_ws(buf);
+
+		if (*cmd == '\n' && wldbgi->last_command) {
+			cmd = wldbgi->last_command;
+		} else if (*cmd == '\n') {
+			continue;
+		} else {
+			/* save last command */
+			free(wldbgi->last_command);
+			wldbgi->last_command = strdup(cmd);
+		}
+
+		ret = run_command(cmd, wldbgi, message);
 
 		if (ret == CMD_END_QUERY)
 			break;
 		else if (ret == CMD_CONTINUE_QUERY)
 			continue;
-
-		if (buf[0] != '\n')
-			printf("Unknown command: %s", buf);
+		else
+			printf("Unknown command: %s", cmd);
 	}
 }
 
@@ -134,6 +159,9 @@ wldbgi_destory(void *data)
 
 	if (wldbgi->client.path)
 		free(wldbgi->client.path);
+
+	if (wldbgi->last_command)
+		free(wldbgi->last_command);
 
 	free(wldbgi);
 }
