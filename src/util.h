@@ -42,9 +42,9 @@ wldbg_ids_map_release(struct wldbg_ids_map *map);
 
 void
 wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
-			struct wl_interface *intf);
+			const struct wl_interface *intf);
 
-struct wl_interface *
+const struct wl_interface *
 wldbg_ids_map_get(struct wldbg_ids_map *map, uint32_t id);
 
 #endif /* _WLDBG_UTIL_H_ */

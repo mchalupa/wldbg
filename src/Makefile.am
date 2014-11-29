@@ -19,6 +19,10 @@ interactive_sources =				\
 	interactive/interactive.h		\
 	interactive/interactive-commands.c
 
+# XXX do it conditional
+hardcoded_interfaces =				\
+	../protocols/xdg-shell-protocol.c
+
 AM_CPPFLAGS = -I..
 AM_CFLAGS =				\
 	$(CFLAGS)			\
@@ -37,5 +41,6 @@ wldbg_SOURCES =			\
 	print.h			\
 	$(wayland_files)	\
 	$(hardcoded_passes)	\
-	$(interactive_sources)
-wldbg_LDFLAGS = -ldl
+	$(interactive_sources)	\
+	$(hardcoded_interfaces)
+wldbg_LDFLAGS = -ldl -lwayland-client

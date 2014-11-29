@@ -49,7 +49,7 @@ struct wl_interface unknown_interface = {
 
 struct interface
 {
-	struct wl_interface *interface;
+	const struct wl_interface *interface;
 	struct wl_list link;
 };
 
@@ -77,7 +77,7 @@ add_interface(struct resolve *resolve, struct interface *intf)
 	wl_list_insert(resolve->interfaces.next, &intf->link);
 }
 
-static struct wl_interface *
+static const struct wl_interface *
 get_interface(struct resolve *resolve, const char *name)
 {
 	struct interface *i;
@@ -93,10 +93,21 @@ get_interface(struct resolve *resolve, const char *name)
 }
 
 static struct interface *
+create_interface(const struct wl_interface *intf)
+{
+	struct interface *ret = malloc(sizeof *ret);
+	if (!ret)
+		return NULL;
+
+	ret->interface = intf;
+
+	return ret;
+}
+
+static struct interface *
 libwayland_get_interface(void *handle, const char *intf)
 {
-	struct wl_interface *interface;
-	struct interface *ret;
+	const struct wl_interface *interface;
 
 	dbg("Loading interface '%s' from libwayland\n", intf);
 
@@ -107,13 +118,7 @@ libwayland_get_interface(void *handle, const char *intf)
 		return NULL;
 	}
 
-	ret = malloc(sizeof *ret);
-	if (!ret)
-		return NULL;
-
-	ret->interface = interface;
-
-	return ret;
+	return create_interface(interface);
 }
 
 static void
@@ -182,6 +187,34 @@ parse_libwayland(struct resolve *resolve)
 		add_interface(resolve, intf);
 }
 
+extern const struct wl_interface xdg_shell_interface;
+extern const struct wl_interface xdg_surface_interface;
+extern const struct wl_interface xdg_popup_interface;
+
+static void
+add_hardcoded_xdg_shell(struct resolve *resolve)
+{
+	struct interface *intf;
+
+	intf = create_interface(&xdg_shell_interface);
+	if (!intf)
+		return;
+
+	add_interface(resolve, intf);
+
+	intf = create_interface(&xdg_surface_interface);
+	if (!intf)
+		return;
+
+	add_interface(resolve, intf);
+
+	intf = create_interface(&xdg_popup_interface);
+	if (!intf)
+		return;
+
+	add_interface(resolve, intf);
+}
+
 static int
 wl_message_new_id_pos(const char *signature)
 {
@@ -228,7 +261,7 @@ get_new_ids(struct resolve *resolve, uint32_t *data,
 		const struct wl_message *wl_message, const char *guess_type)
 {
 	uint32_t new_id;
-	struct wl_interface *new_intf;
+	const struct wl_interface *new_intf;
 	int id_pos, pos = 0;
 
 	/* search for new_id's in loop in the case there
@@ -345,6 +378,9 @@ resolve_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 
 	/* get interfaces from libwayland.so */
 	parse_libwayland(resolve);
+
+	/* this is a workaround until we have parser for binary */
+	add_hardcoded_xdg_shell(resolve);
 
 	/* XXX
 	if (path_to_binary)
