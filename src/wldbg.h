@@ -78,6 +78,7 @@ struct wldbg {
 		int fd;
 		/* TODO get rid of connection??? */
 		struct wl_connection *connection;
+		pid_t pid;
 	} server;
 
 	struct {

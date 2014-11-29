@@ -438,6 +438,33 @@ cmd_help_help(int ol)
 }
 
 static int
+cmd_attach(struct wldbg_interactive *wldbgi,
+	   WLDBG_UNUSED struct message *message,
+	   char *buf)
+{
+	char cmd[] = "gdb -p XXXXX";
+	pid_t pid;
+
+	if (strcmp(buf, "client\n") == 0)
+		pid = wldbgi->wldbg->client.pid;
+	else if (strcmp(buf, "server\n") == 0)
+		pid = wldbgi->wldbg->server.pid;
+	else {
+		printf("Attach to client or server?\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
+	assert(pid > 1);
+
+	snprintf(cmd + 7, 6, "%d", pid);
+	dbg("Calling %s\n", cmd);
+
+	system(cmd);
+
+	return CMD_CONTINUE_QUERY;
+}
+
+static int
 cmd_send(struct wldbg_interactive *wldbgi,
 		WLDBG_UNUSED struct message *message,
 		WLDBG_UNUSED char *buf)
@@ -631,6 +658,7 @@ cmd_edit(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
 const struct command commands[] = {
+	{"attach", NULL, cmd_attach, NULL},
 	{"break", "b", cmd_break, NULL},
 	{"continue", "c", cmd_continue, NULL},
 	{"edit", "e", cmd_edit, NULL},

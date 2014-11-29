@@ -440,6 +440,18 @@ err:
 }
 
 static int
+get_server_pid(int fd)
+{
+	struct ucred cr;
+	socklen_t len = sizeof cr;
+
+	getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &len);
+	dbg("Got server's pid: %d\n", cr.pid);
+
+	return cr.pid;
+}
+
+static int
 init_wayland_socket(struct wldbg *wldbg)
 {
 	assert(!wldbg->flags.error);
@@ -460,6 +472,9 @@ init_wayland_socket(struct wldbg *wldbg)
 	if (wldbg_monitor_fd(wldbg, wldbg->server.fd,
 				dispatch_messages, wldbg) < 0)
 		goto err_conn;
+
+
+	wldbg->server.pid = get_server_pid(wldbg->server.fd);
 
 	return 0;
 
