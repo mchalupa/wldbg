@@ -41,15 +41,7 @@ int
 cmd_quit(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf);
 
-static char *
-skip_ws(char *str)
-{
-	char *p = str;
-	while (*p && *p != '\n' && isspace(*p))
-		++p;
-
-	return p;
-}
+void free_breakpoint(struct breakpoint *);
 
 #define INPUT_BUFFER_SIZE 512
 static void
@@ -74,7 +66,7 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 				continue;
 		}
 
-		cmd = skip_ws(buf);
+		cmd = skip_ws_to_newline(buf);
 
 		if (*cmd == '\n' && wldbgi->last_command) {
 			cmd = wldbgi->last_command;
@@ -124,6 +116,7 @@ static int
 process_interactive(void *user_data, struct message *message)
 {
 	struct wldbg_interactive *wldbgi = user_data;
+	struct breakpoint *b;
 
 	vdbg("Mesagge from %s\n",
 		message->from == SERVER ? "SERVER" : "CLIENT");
@@ -140,6 +133,13 @@ process_interactive(void *user_data, struct message *message)
 		wldbgi->stop = 1;
 	}
 
+	wl_list_for_each(b, &wldbgi->breakpoints, link) {
+		if (b->applies(message, b)) {
+			wldbgi->stop = 1;
+			break;
+		}
+	}
+
 	process_message(wldbgi, message);
 
 	/* This is always the last pass. Even when user will add
@@ -152,6 +152,7 @@ static void
 wldbgi_destory(void *data)
 {
 	struct wldbg_interactive *wldbgi = data;
+	struct breakpoint *b, *btmp;
 
 	dbg("Destroying wldbgi\n");
 
@@ -162,6 +163,9 @@ wldbgi_destory(void *data)
 
 	if (wldbgi->last_command)
 		free(wldbgi->last_command);
+
+	wl_list_for_each_safe(b, btmp, &wldbgi->breakpoints, link)
+		free(b);
 
 	free(wldbgi);
 }
@@ -201,6 +205,7 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 		return -1;
 
 	memset(wldbgi, 0, sizeof *wldbgi);
+	wl_list_init(&wldbgi->breakpoints);
 	wldbgi->wldbg = wldbg;
 
 	pass = alloc_pass("interactive");

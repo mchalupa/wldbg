@@ -50,6 +50,9 @@ struct wldbg_interactive {
 
 	/* commands history */
 	char *last_command;
+
+	/* breakpoints */
+	struct wl_list breakpoints;
 };
 
 struct command {
@@ -78,5 +81,20 @@ extern const struct command commands[];
 int
 run_command(char *buf,
 		struct wldbg_interactive *wldbgi, struct message *message);
+
+
+struct breakpoint {
+	unsigned int id;
+	struct wl_list link;
+	char *description;
+
+	/* this function returns true if wldbg should stop
+	 * on given message */
+	int (*applies)(struct message *, struct breakpoint *);
+	void *data;
+	uint64_t small_data;
+	/* function to destroy data */
+	void (*data_destr)(void *);
+};
 
 #endif /* _WLDBG_INTERACTIVE_H_ */

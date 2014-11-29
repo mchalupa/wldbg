@@ -38,6 +38,9 @@
 #include "interactive.h"
 #include "passes.h"
 #include "util.h"
+#include "wldbg-private.h"
+
+static unsigned int breakpoint_next_id = 1;
 
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
@@ -73,6 +76,157 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 	wldbgi->wldbg->flags.exit = 1;
 
 	return CMD_END_QUERY;
+}
+
+int str_to_uint(char *str)
+{
+	char *num, *numtmp;
+
+	/* skip ws to first digit or newline */
+	numtmp = num = skip_ws_to_newline(str);
+
+	if (*num == '\n')
+		return -1;
+
+	/* check that it is a number */
+	while (!isspace(*numtmp)) {
+		if (!isdigit(*numtmp))
+			return -1;
+
+		++numtmp;
+	}
+
+	return atoi(num);
+}
+
+static int
+break_on_side(struct message *msg, struct breakpoint *b)
+{
+	if (msg->from == b->small_data)
+		return 1;
+
+	return 0;
+}
+
+static int
+break_on_id(struct message *msg, struct breakpoint *b)
+{
+	uint32_t *p = msg->data;
+
+	if (*p == b->small_data)
+		return 1;
+
+	return 0;
+}
+
+static struct breakpoint *
+create_breakpoint(char *buf)
+{
+	int id;
+	struct breakpoint *b;
+
+	b= calloc(1, sizeof *b);
+	if (!b) {
+		fprintf(stderr, "Out of memory\n");
+		return NULL;
+	}
+
+	b->id = breakpoint_next_id;
+
+	/* parse buf and find out what the breakpoint
+	 * should be */
+	if (strcmp(buf, "server\n") == 0) {
+		b->applies = break_on_side;
+		b->description = strdup("message from server");
+		b->small_data = SERVER;
+	} else if (strcmp(buf, "client\n") == 0) {
+		b->applies = break_on_side;
+		b->description = strdup("message from client");
+		b->small_data = CLIENT;
+	} else if (strncmp(buf, "id ", 3) == 0) {
+		id = str_to_uint(buf + 3);
+		if (id == -1) {
+			printf("Wrong id\n");
+			goto err;
+		}
+
+		b->applies = break_on_id;
+		b->description = strdup("break on id XXX");
+		snprintf(b->description + 12, 4, "%d", id);
+		b->small_data = id;
+	} else {
+		printf("Wrong syntax\n");
+		goto err;
+	}
+
+	++breakpoint_next_id;
+	dbg("Created breakpoint %u\n", b->id);
+
+	return b;
+err:
+	free(b);
+	return NULL;
+}
+
+void
+free_breakpoint(struct breakpoint *b)
+{
+	assert(b);
+
+	if (b->data_destr && b->data)
+		b->data_destr(b->data);
+	if (b->description)
+		free(b->description);
+	free(b);
+}
+
+static void
+delete_breakpoint(char *buf, struct wldbg_interactive *wldbgi)
+{
+	int id;
+	struct breakpoint *b, *tmp;
+
+	id = str_to_uint(buf);
+	if (id == -1) {
+		printf("Need valid id\n");
+		return;
+	}
+
+	wl_list_for_each_safe(b, tmp, &wldbgi->breakpoints, link) {
+		if (b->id == (unsigned) id) {
+			wl_list_remove(&b->link);
+			free_breakpoint(b);
+
+			return;
+		}
+	}
+
+	printf("Haven't found breakpoint with id %u\n", id);
+	return;
+}
+
+static int
+cmd_break(struct wldbg_interactive *wldbgi,
+	  WLDBG_UNUSED struct message *message,
+	  char *buf)
+{
+	struct breakpoint *b;
+
+	if (strncmp(buf, "delete ", 7) == 0) {
+		delete_breakpoint(buf + 7, wldbgi);
+		return CMD_CONTINUE_QUERY;
+	} else if (strncmp(buf, "d ", 2) == 0) {
+		delete_breakpoint(buf + 2, wldbgi);
+		return CMD_CONTINUE_QUERY;
+	}
+
+	b = create_breakpoint(buf);
+	if (b) {
+		wl_list_insert(wldbgi->breakpoints.next, &b->link);
+		printf("created breakpoint %u\n", b->id);
+	}
+
+	return CMD_CONTINUE_QUERY;
 }
 
 static void
@@ -185,6 +339,21 @@ print_objects(struct wldbg *wldbg)
 	}
 }
 
+static void
+print_breakpoints(struct wldbg_interactive *wldbgi)
+{
+	struct breakpoint *b;
+
+	if (wl_list_empty(&wldbgi->breakpoints)) {
+		printf("No breakpoints\n");
+		return;
+	}
+
+	wl_list_for_each(b, &wldbgi->breakpoints, link) {
+		printf("%d: break on %s\n", b->id, b->description);
+	}
+}
+
 static int
 cmd_info(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
@@ -197,6 +366,9 @@ cmd_info(struct wldbg_interactive *wldbgi,
 			message->size);
 	} else if (strncmp(buf, "objects\n", 8) == 0) {
 		print_objects(wldbgi->wldbg);
+	} else if (strncmp(buf, "breakpoints\n", 12) == 0
+		   || strncmp(buf, "b\n", 2) == 0) {
+		print_breakpoints(wldbgi);
 	} else {
 		printf("Unknown arguments\n");
 	}
@@ -459,6 +631,7 @@ cmd_edit(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
 const struct command commands[] = {
+	{"break", "b", cmd_break, NULL},
 	{"continue", "c", cmd_continue, NULL},
 	{"edit", "e", cmd_edit, NULL},
 	{"help", "h",  cmd_help, cmd_help_help},

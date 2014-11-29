@@ -72,3 +72,13 @@ free_arguments(char **argv)
 
 	free(arg_tmp);
 }
+
+char *
+skip_ws_to_newline(char *str)
+{
+	char *p = str;
+	while (*p && *p != '\n' && isspace(*p))
+		++p;
+
+	return p;
+}

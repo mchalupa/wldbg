@@ -31,4 +31,7 @@ copy_arguments(char ***to, int argc, const char*argv[]);
 void
 free_arguments(char *argv[]);
 
+char *
+skip_ws_to_newline(char *str);
+
 #endif /* _WLDBG_PRIVATE_H_ */
