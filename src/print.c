@@ -36,7 +36,7 @@ print_bare_message(struct wldbg *wldbg, struct message *message)
 {
 	int i;
 	uint32_t j, id, opcode, pos, len, size, *p;
-	struct wl_interface *interface, *obj;
+	const struct wl_interface *interface, *obj;
 	const char *signature;
 	const struct wl_message *wl_message = NULL;
 

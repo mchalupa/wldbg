@@ -298,7 +298,7 @@ resolve_in(void *user_data, struct message *message)
 	uint32_t id, opcode;
 	uint32_t *data = message->data;
 	struct resolve *resolve = user_data;
-	struct wl_interface *intf;
+	const struct wl_interface *intf;
 	const struct wl_message *wl_message;
 
 	id = data[0];
@@ -331,7 +331,7 @@ resolve_out(void *user_data, struct message *message)
 	uint32_t id, opcode;
 	uint32_t *data = message->data;
 	struct resolve *resolve = user_data;
-	struct wl_interface *intf;
+	const struct wl_interface *intf;
 	const struct wl_message *wl_message;
 	const char *guess_type = NULL;
 

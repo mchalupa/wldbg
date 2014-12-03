@@ -526,6 +526,8 @@ static char *
 store_message_to_tmpfile(struct message *message)
 {
 	int fd, ret;
+	/* I don't suppose anybody would attack this program,
+	 * so use dangerous function */
 	char *file = tempnam(NULL, "wldbg-msg");
 	if (!file) {
 		perror("Creating tmp file for storing a message");
@@ -542,12 +544,12 @@ store_message_to_tmpfile(struct message *message)
 	}
 
 	ret = write(fd, message->data, message->size);
-	if (ret != message->size) {
+	if ((size_t) ret != message->size) {
 		if (ret < 0)
 			perror("writing data to tmp file");
 		else
 			fprintf(stderr, "Wrote less bytes than expected, taking"
-					"it as an error (%d vs %u)\n", ret,
+					"it as an error (%d vs %lu)\n", ret,
 					message->size);
 		free(file);
 		close(fd);
@@ -634,7 +636,7 @@ cmd_edit(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
 			perror("Constituting a command");
 			destroy_message_tmpfile(msg_file);
 			return CMD_CONTINUE_QUERY;
-		} else if (ret >= size) { /* cmd string too small */
+		} else if ((size_t) ret >= size) { /* cmd string too small */
 			size *= 2;
 			free(cmd);
 			cmd = NULL;

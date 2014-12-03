@@ -30,12 +30,13 @@
 #include "../wayland/wayland-util.h"
 
 static int
-help_in(void *user_data, struct message *message)
+help_in(WLDBG_UNUSED void *user_data, WLDBG_UNUSED struct message *message)
 {
+	return 0;
 }
 
 static int
-help_out(void *user_data, struct message *message)
+help_out(void *user_data, WLDBG_UNUSED struct message *message)
 {
 	struct wldbg *wldbg = user_data;
 	int i;
@@ -104,6 +105,7 @@ help_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 static void
 help_destroy(void *data)
 {
+	(void) data;
 }
 
 struct wldbg_pass wldbg_pass = {

@@ -45,7 +45,7 @@ void
 wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
 			const struct wl_interface *intf)
 {
-	struct wl_interface **p;
+	const struct wl_interface **p;
 	size_t size;
 
 	if (id >= map->count) {
