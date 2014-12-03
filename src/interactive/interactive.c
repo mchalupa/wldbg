@@ -95,7 +95,7 @@ process_message(struct wldbg_interactive *wldbgi, struct message *message)
 	/* print message's description
 	 * This is default behaviour. XXX add possibility to
 	 * turn it off */
-	print_message(wldbgi->wldbg, message);
+	wldbgi_print_message(wldbgi, message);
 
 	if (wldbgi->stop) {
 		dbg("Stopped at message no. %lu from %s\n",
@@ -153,6 +153,7 @@ wldbgi_destory(void *data)
 {
 	struct wldbg_interactive *wldbgi = data;
 	struct breakpoint *b, *btmp;
+	struct print_filter *pf, *pftmp;
 
 	dbg("Destroying wldbgi\n");
 
@@ -166,6 +167,10 @@ wldbgi_destory(void *data)
 
 	wl_list_for_each_safe(b, btmp, &wldbgi->breakpoints, link)
 		free(b);
+	wl_list_for_each_safe(pf, pftmp, &wldbgi->print_filters, link) {
+		free(pf->filter);
+		free(pf);
+	}
 
 	free(wldbgi);
 }
@@ -206,6 +211,7 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 
 	memset(wldbgi, 0, sizeof *wldbgi);
 	wl_list_init(&wldbgi->breakpoints);
+	wl_list_init(&wldbgi->print_filters);
 	wldbgi->wldbg = wldbg;
 
 	pass = alloc_pass("interactive");

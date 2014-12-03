@@ -53,6 +53,9 @@ struct wldbg_interactive {
 
 	/* breakpoints */
 	struct wl_list breakpoints;
+
+	/* filters for printing messages */
+	struct wl_list print_filters;
 };
 
 struct command {

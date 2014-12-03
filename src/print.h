@@ -23,10 +23,20 @@
 #ifndef _WLDBG_PRINT_H_
 #define _WLDBG_PRINT_H_
 
-void
-print_message(struct wldbg *wldbg, struct message *message);
+#include <wayland/wayland-util.h> /* for wl_list */
+
+struct wldbg_interactive;
 
 void
-print_bare_message(struct wldbg *wldbg, struct message *message);
+wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message);
+
+void
+print_bare_message(struct wldbg *wldbg, struct message *message,
+		   struct wl_list *filters);
+
+struct print_filter {
+	char *filter;
+	struct wl_list link;
+};
 
 #endif /* _WLDBG_PRINT_H_ */

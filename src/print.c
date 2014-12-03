@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #include <ctype.h>
 
@@ -29,10 +30,68 @@
 #include "wayland/wayland-util.h"
 #include "util.h"
 #include "print.h"
+#include "interactive/interactive.h"
+
+static int
+filter_match(struct wl_list *filters, struct message *message,
+	     const struct wl_interface *interface)
+{
+	const struct wl_message *wl_message = NULL;
+	struct print_filter *pf;
+	char buf[128];
+	char *at;
+	int ret;
+	uint32_t *p = message->data;
+	uint32_t opcode = p[1] & 0xffff;
+
+	if (interface) {
+		if (message->from == SERVER)
+			wl_message = &interface->events[opcode];
+		else
+			wl_message = &interface->methods[opcode];
+	}
+
+	wl_list_for_each(pf, filters, link) {
+		/* compose the message name from message */
+		ret = snprintf(buf, sizeof buf, "%s",
+			       interface ? interface->name : "unknown");
+		if (ret >= (int) sizeof buf) {
+			fprintf(stderr,	"BUG: buf too short for filter\n");
+			return 0;
+		}
+
+		if ((at = strchr(pf->filter, '@'))) {
+			if (wl_message) {
+				ret = snprintf(buf + ret, sizeof buf - ret,
+					       "@%s", wl_message->name);
+
+				if (ret >= (int) sizeof buf) {
+					fprintf(stderr,
+						"BUG: buf too short for filter\n");
+					return 0;
+				}
+			} else {
+				ret = snprintf(buf + ret, sizeof buf - ret,
+					       "@%d", opcode);
+				if (ret >= (int) sizeof buf) {
+					fprintf(stderr,
+						"BUG: buf too short for filter\n");
+					return 0;
+				}
+			}
+		}
+
+		if (strcmp(pf->filter, buf) == 0)
+			return 1;
+	}
+
+	return 0;
+}
 
 /* roughly based on wl_closure_print from connection.c */
 void
-print_bare_message(struct wldbg *wldbg, struct message *message)
+print_bare_message(struct wldbg *wldbg, struct message *message,
+		   struct wl_list *filters)
 {
 	int i;
 	uint32_t j, id, opcode, pos, len, size, *p;
@@ -49,6 +108,11 @@ print_bare_message(struct wldbg *wldbg, struct message *message)
 	size = p[1] >> 16;
 
 	interface = wldbg_ids_map_get(&wldbg->resolved_objects, id);
+
+	if (filters && filter_match(filters, message, interface))
+		return;
+
+	printf("%c: ", message->from == SERVER ? 'S' : 'C');
 
 	/* if we do not know interface or the interface is
 	 * unknown_interface or free_entry */
@@ -134,14 +198,11 @@ print_bare_message(struct wldbg *wldbg, struct message *message)
 		++pos;
 	}
 
-	putchar(')');
+	printf(")\n");
 }
 
 void
-print_message(struct wldbg *wldbg, struct message *message)
+wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message)
 {
-	printf("%c: ", message->from == SERVER ? 'S' : 'C');
-
-	print_bare_message(wldbg, message);
-	putchar('\n');
+	print_bare_message(wldbgi->wldbg, message, &wldbgi->print_filters);
 }

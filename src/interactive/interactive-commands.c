@@ -38,6 +38,7 @@
 #include "interactive.h"
 #include "passes.h"
 #include "util.h"
+#include "print.h"
 #include "wldbg-private.h"
 
 static unsigned int breakpoint_next_id = 1;
@@ -657,6 +658,34 @@ cmd_edit(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
 	return CMD_CONTINUE_QUERY;
 }
 
+static int
+cmd_hide(struct wldbg_interactive *wldbgi,
+	 WLDBG_UNUSED struct message *message,
+	 char *buf)
+{
+	struct print_filter *pf;
+	char filter[128];
+	sscanf(buf, "%s", filter);
+
+	pf = malloc(sizeof *pf);
+	if (!pf) {
+		fprintf(stderr, "No memory\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
+	pf->filter = strdup(filter);
+	if (!pf->filter) {
+		fprintf(stderr, "No memory\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
+	wl_list_insert(wldbgi->print_filters.next, &pf->link);
+
+	printf("Filtering messages: %s\n", filter);
+
+	return CMD_CONTINUE_QUERY;
+}
+
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
 const struct command commands[] = {
@@ -665,6 +694,7 @@ const struct command commands[] = {
 	{"continue", "c", cmd_continue, NULL},
 	{"edit", "e", cmd_edit, NULL},
 	{"help", "h",  cmd_help, cmd_help_help},
+	{"hide", NULL,  cmd_hide, NULL},
 	{"info", "i", cmd_info, NULL},
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
