@@ -20,7 +20,7 @@ then pass the message to another pass and so on..
 
 Run wldbg with passes is very easy, just type on command-line:
 
-  $ wldbg pass1 ARGUMENTS, pass2 ARGUMENTS wayland-client
+  $ wldbg pass1 ARGUMENTS, pass2 ARGUMENTS -- wayland-client
 
 pass1 and pass2 are names of the passes without .so extension
 (i. e. dump.so ~~> dump)
@@ -57,7 +57,7 @@ will continue in running. Other usefull commands are:
 'e' or 'edit'  -- edit message that we stopped at
 'q' or 'quit'  -- exit wldbg
 
-Ctrl-C interrupts the programm and prompts user for input
+Ctrl-C interrupts the program and prompts user for input.
 
 
 === Wldbg is under hard developement and not all features are working yet
