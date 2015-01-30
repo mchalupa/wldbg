@@ -37,27 +37,27 @@
 extern int debug;
 extern int debug_verbose;
 
-#define vdbg(...) 								\
-	do {									\
-		if (!debug_verbose) break;					\
-		fprintf(stderr, "[%d | %s: %d] ", getpid(),			\
-				__FILE__, __LINE__);				\
-		fprintf(stderr,	__VA_ARGS__);					\
+#define vdbg(...) 							\
+	do {								\
+		if (!debug_verbose) break;				\
+		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
+				__FILE__, __LINE__);			\
+		fprintf(stderr,	__VA_ARGS__);				\
 	} while (0)
 
 
 
-#define dbg(...) 								\
-	do {									\
-		if (!debug) break;						\
-		fprintf(stderr, "[%d | %s: %d] ", getpid(),			\
-				__FILE__, __LINE__);				\
-		fprintf(stderr,	__VA_ARGS__);					\
+#define dbg(...) 							\
+	do {								\
+		if (!debug) break;					\
+		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
+				__FILE__, __LINE__);			\
+		fprintf(stderr,	__VA_ARGS__);				\
 	} while (0)
 
 #define ifdbg(cond, ...)			\
 	do {					\
-		if (!debug) break;						\
+		if (!debug) break;		\
 		if (cond)			\
 			dbg(__VA_ARGS__);	\
 	} while (0)
