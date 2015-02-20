@@ -25,6 +25,8 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <assert.h>
+
+#define WL_HIDE_DEPRECATED
 #include <wayland-server-protocol.h>
 #include <wayland-client-protocol.h>
 
