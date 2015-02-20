@@ -32,6 +32,7 @@
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
+#include "wldbg-private.h"
 #include "passes.h"
 
 /* this pass analyze the connection and translates object id

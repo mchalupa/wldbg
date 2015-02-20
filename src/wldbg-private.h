@@ -25,6 +25,43 @@
 #ifndef _WLDBG_PRIVATE_H_
 #define _WLDBG_PRIVATE_H_
 
+#ifdef DEBUG
+
+extern int debug;
+extern int debug_verbose;
+
+#define vdbg(...) 							\
+	do {								\
+		if (!debug_verbose) break;				\
+		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
+				__FILE__, __LINE__);			\
+		fprintf(stderr,	__VA_ARGS__);				\
+	} while (0)
+
+
+
+#define dbg(...) 							\
+	do {								\
+		if (!debug) break;					\
+		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
+				__FILE__, __LINE__);			\
+		fprintf(stderr,	__VA_ARGS__);				\
+	} while (0)
+
+#define ifdbg(cond, ...)			\
+	do {					\
+		if (!debug) break;		\
+		if (cond)			\
+			dbg(__VA_ARGS__);	\
+	} while (0)
+
+#else
+
+#define dbg(...)
+#define ifdbg(cond, ...)
+
+#endif /* DEBUG */
+
 int
 copy_arguments(char ***to, int argc, const char*argv[]);
 
@@ -33,5 +70,6 @@ free_arguments(char *argv[]);
 
 char *
 skip_ws_to_newline(char *str);
+
 
 #endif /* _WLDBG_PRIVATE_H_ */

@@ -32,43 +32,6 @@
 #include "wldbg-pass.h"
 #include "util.h"
 
-#ifdef DEBUG
-
-extern int debug;
-extern int debug_verbose;
-
-#define vdbg(...) 							\
-	do {								\
-		if (!debug_verbose) break;				\
-		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
-				__FILE__, __LINE__);			\
-		fprintf(stderr,	__VA_ARGS__);				\
-	} while (0)
-
-
-
-#define dbg(...) 							\
-	do {								\
-		if (!debug) break;					\
-		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
-				__FILE__, __LINE__);			\
-		fprintf(stderr,	__VA_ARGS__);				\
-	} while (0)
-
-#define ifdbg(cond, ...)			\
-	do {					\
-		if (!debug) break;		\
-		if (cond)			\
-			dbg(__VA_ARGS__);	\
-	} while (0)
-
-#else
-
-#define dbg(...)
-#define ifdbg(cond, ...)
-
-#endif /* DEBUG */
-
 /* in passes, we do not use all params frequently. This we can
  * use to suppress the warnings */
 #define WLDBG_UNUSED __attribute__((unused))
