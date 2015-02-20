@@ -30,17 +30,21 @@
 #include "../wayland/wayland-util.h"
 
 static int
-help_in(WLDBG_UNUSED void *user_data, WLDBG_UNUSED struct message *message)
+help_in(void *user_data, struct message *message)
 {
+	(void) user_data;
+	(void) message;
+
 	return 0;
 }
 
 static int
-help_out(void *user_data, WLDBG_UNUSED struct message *message)
+help_out(void *user_data, struct message *message)
 {
 	struct wldbg *wldbg = user_data;
 	int i;
 
+	(void) message;
 	assert(wldbg);
 
 	printf("Wldbg:\n-------\n\n");
