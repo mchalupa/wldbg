@@ -62,6 +62,30 @@ extern int debug_verbose;
 
 #endif /* DEBUG */
 
+struct wldbg_connection {
+	struct {
+		int fd;
+		/* TODO get rid of connection??? */
+		struct wl_connection *connection;
+		pid_t pid;
+	} server;
+
+	struct {
+		int fd;
+		struct wl_connection *connection;
+
+		/* path to the binary */
+		char *path;
+		/* pointer to arguments and number of arguments */
+		int argc;
+		char **argv;
+
+		pid_t pid;
+	} client;
+
+	struct wldbg_ids_map resolved_objects;
+};
+
 int
 copy_arguments(char ***to, int argc, const char*argv[]);
 

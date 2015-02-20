@@ -32,27 +32,10 @@
 #include "wldbg-pass.h"
 #include "util.h"
 
+struct wldbg_connection;
+
+/* XXX make this private */
 struct wldbg {
-	struct {
-		int fd;
-		/* TODO get rid of connection??? */
-		struct wl_connection *connection;
-		pid_t pid;
-	} server;
-
-	struct {
-		int fd;
-		struct wl_connection *connection;
-
-		/* path to the binary */
-		char *path;
-		/* pointer to arguments and number of arguments */
-		int argc;
-		char **argv;
-
-		pid_t pid;
-	} client;
-
 	int epoll_fd;
 	int signals_fd;
 
@@ -60,7 +43,6 @@ struct wldbg {
 	struct wl_list passes;
 	struct wl_list monitored_fds;
 
-	struct wldbg_ids_map resolved_objects;
 	unsigned int resolving_objects : 1;
 
 	struct {
@@ -69,8 +51,12 @@ struct wldbg {
 		unsigned int error	: 1;
 		unsigned int exit	: 1;
 	} flags;
+
+	/* this will be list later */
+	struct wldbg_connection *conn;
 };
 
+/* XXX make this private */
 struct pass {
 	struct wldbg_pass wldbg_pass;
 	struct wl_list link;
@@ -78,13 +64,20 @@ struct pass {
 };
 
 struct message {
+	/* raw data in message */
 	void *data;
+
+	/* size of the message in bytes */
 	size_t size;
 
+	/* whether it is a message from server or client */
 	enum {
 		SERVER,
 		CLIENT
 	} from;
+
+	/* pointer to connectoin structure */
+	struct wldbg_connection *connection;
 };
 
 int
