@@ -87,12 +87,14 @@ list_passes(int lng)
 		printf("/lib/wldbg:\n");
 	list_dir("/lib/wldbg");
 }
- 
+
 static int
 list_init(struct wldbg *wldbg,
-	  WLDBG_UNUSED struct wldbg_pass *pass,
+	  struct wldbg_pass *pass,
 	  int argc, const char *argv[])
 {
+	(void) pass;
+
 	if (argc == 1) {
 		list_passes(0);
 	} else if (argc == 2 && (strcmp(argv[1], "long") == 0
@@ -108,20 +110,28 @@ list_init(struct wldbg *wldbg,
 }
 
 static int
-list_in(WLDBG_UNUSED void *user_data, WLDBG_UNUSED struct message *message)
+list_in(void *user_data, struct message *message)
 {
+	(void) user_data;
+	(void) message;
+
 	return PASS_STOP;
 }
 
 static int
-list_out(WLDBG_UNUSED void *user_data, WLDBG_UNUSED struct message *message)
+list_out(void *user_data, struct message *message)
 {
+	(void) user_data;
+	(void) message;
+
 	return PASS_STOP;
 }
 
 static void
-list_destroy(WLDBG_UNUSED void *data)
+list_destroy(void *data)
 {
+	(void) data;
+	return;
 }
 
 struct wldbg_pass wldbg_pass_list = {

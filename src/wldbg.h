@@ -32,10 +32,6 @@
 #include "wldbg-pass.h"
 #include "util.h"
 
-/* in passes, we do not use all params frequently. This we can
- * use to suppress the warnings */
-#define WLDBG_UNUSED __attribute__((unused))
-
 struct wldbg {
 	struct {
 		int fd;

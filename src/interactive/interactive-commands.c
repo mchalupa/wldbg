@@ -45,10 +45,13 @@ static unsigned int breakpoint_next_id = 1;
 
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
-		WLDBG_UNUSED struct message *message,
-		WLDBG_UNUSED char *buf)
+		struct message *message,
+		char *buf)
 {
 	int chr;
+
+	(void) message;
+	(void) buf;
 
 	if (wldbgi->wldbg->flags.running
 		&& !wldbgi->wldbg->flags.error
@@ -208,10 +211,12 @@ delete_breakpoint(char *buf, struct wldbg_interactive *wldbgi)
 
 static int
 cmd_break(struct wldbg_interactive *wldbgi,
-	  WLDBG_UNUSED struct message *message,
+	  struct message *message,
 	  char *buf)
 {
 	struct breakpoint *b;
+
+	(void) message;
 
 	if (strncmp(buf, "delete ", 7) == 0) {
 		delete_breakpoint(buf + 7, wldbgi);
@@ -307,9 +312,12 @@ remove_pass(struct wldbg *wldbg, const char *name)
 
 static int
 cmd_pass(struct wldbg_interactive *wldbgi,
-		WLDBG_UNUSED struct message *message,
-		WLDBG_UNUSED char *buf)
+		struct message *message,
+		char *buf)
 {
+	(void) message;
+	(void) buf;
+
 	if (strncmp(buf, "list\n", 5) == 0) {
 		list_passes(1);
 	} else if (strncmp(buf, "loaded\n", 5) == 0) {
@@ -379,9 +387,11 @@ cmd_info(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_run(struct wldbg_interactive *wldbgi,
-	WLDBG_UNUSED struct message *message, char *buf)
+	struct message *message, char *buf)
 {
 	char *nl;
+
+	(void) message;
 
 	vdbg("cmd: run\n");
 
@@ -399,9 +409,12 @@ cmd_run(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_next(struct wldbg_interactive *wldbgi,
-		WLDBG_UNUSED struct message *message,
-		WLDBG_UNUSED char *buf)
+		struct message *message,
+		char *buf)
 {
+	(void) message;
+	(void) buf;
+
 	if (!wldbgi->wldbg->flags.running) {
 		printf("Client is not running\n");
 		return CMD_CONTINUE_QUERY;
@@ -413,9 +426,12 @@ cmd_next(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_continue(struct wldbg_interactive *wldbgi,
-		WLDBG_UNUSED struct message *message,
-		WLDBG_UNUSED char *buf)
+		struct message *message,
+		char *buf)
 {
+	(void) message;
+	(void) buf;
+
 	if (!wldbgi->wldbg->flags.running) {
 		printf("Client is not running\n");
 		return CMD_CONTINUE_QUERY;
@@ -440,11 +456,13 @@ cmd_help_help(int ol)
 
 static int
 cmd_attach(struct wldbg_interactive *wldbgi,
-	   WLDBG_UNUSED struct message *message,
+	   struct message *message,
 	   char *buf)
 {
 	char cmd[] = "gdb -p XXXXX";
 	pid_t pid;
+
+	(void) message;
 
 	if (strcmp(buf, "client\n") == 0)
 		pid = wldbgi->wldbg->client.pid;
@@ -467,13 +485,16 @@ cmd_attach(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_send(struct wldbg_interactive *wldbgi,
-		WLDBG_UNUSED struct message *message,
-		WLDBG_UNUSED char *buf)
+		struct message *message,
+		char *buf)
 {
 	struct wl_connection *conn;
 	uint32_t buffer[1024]; /* size of wl_connection buffer */
 	uint32_t size, opcode;
 	int where, interactive, i = 0;
+
+	(void) message;
+	(void) buf;
 
 	if (strncmp(buf, "server", 6) == 0
 		|| (buf[0] == 's' && isspace(buf[1]))) {
@@ -598,14 +619,16 @@ destroy_message_tmpfile(char *file)
 }
 
 static int
-cmd_edit(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
-		struct message *message,
-		char *buf)
+cmd_edit(struct wldbg_interactive *wldbgi,
+	 struct message *message,
+	 char *buf)
 {
 	const char *editor;
 	char *cmd, *msg_file, edstr[128];
 	size_t size = 1024;
 	int ret;
+
+	(void) wldbgi;
 
 	if (*buf != '\0') {
 		sscanf(buf, "%128s", edstr);
@@ -660,11 +683,14 @@ cmd_edit(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
 
 static int
 cmd_hide(struct wldbg_interactive *wldbgi,
-	 WLDBG_UNUSED struct message *message,
+	 struct message *message,
 	 char *buf)
 {
 	struct print_filter *pf;
 	char filter[128];
+
+	(void) message;
+
 	sscanf(buf, "%s", filter);
 
 	pf = malloc(sizeof *pf);
@@ -705,11 +731,14 @@ const struct command commands[] = {
 };
 
 static int
-cmd_help(WLDBG_UNUSED struct wldbg_interactive *wldbgi,
-		WLDBG_UNUSED struct message *message, char *buf)
+cmd_help(struct wldbg_interactive *wldbgi,
+	 struct message *message, char *buf)
 {
 	size_t i;
 	int all = 0;
+
+	(void) wldbgi;
+	(void) message;
 
 	if (strcmp(buf, "all\n") == 0)
 		all = 1;
