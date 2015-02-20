@@ -23,45 +23,8 @@
 #ifndef _WLDBG_H_
 #define _WLDBG_H_
 
-#include <unistd.h>
-#include <sys/signalfd.h>
-
-#include "config.h"
-
-#include "wayland/wayland-util.h"
-#include "wldbg-pass.h"
-#include "util.h"
-
+struct wldbg;
 struct wldbg_connection;
-
-/* XXX make this private */
-struct wldbg {
-	int epoll_fd;
-	int signals_fd;
-
-	sigset_t handled_signals;
-	struct wl_list passes;
-	struct wl_list monitored_fds;
-
-	unsigned int resolving_objects : 1;
-
-	struct {
-		unsigned int one_by_one	: 1;
-		unsigned int running	: 1;
-		unsigned int error	: 1;
-		unsigned int exit	: 1;
-	} flags;
-
-	/* this will be list later */
-	struct wldbg_connection *conn;
-};
-
-/* XXX make this private */
-struct pass {
-	struct wldbg_pass wldbg_pass;
-	struct wl_list link;
-	char *name;
-};
 
 struct message {
 	/* raw data in message */
@@ -82,7 +45,7 @@ struct message {
 
 int
 wldbg_monitor_fd(struct wldbg *wldbg, int fd,
-			int (*dispatch)(int fd, void *data),
-			void *data);
+		 int (*dispatch)(int fd, void *data),
+		 void *data);
 
 #endif /* _WLDBG_H_ */

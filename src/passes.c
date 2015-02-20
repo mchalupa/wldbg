@@ -240,6 +240,7 @@ count_args(int argc, const char *argv[])
 	return count;
 }
 
+#if 0
 int
 load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 {
@@ -317,3 +318,4 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 	dbg("Loaded %d passes\n", pass_created);
 	return pass_created;
 }
+#endif

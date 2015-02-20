@@ -31,8 +31,7 @@ void
 wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message);
 
 void
-print_bare_message(struct wldbg *wldbg, struct message *message,
-		   struct wl_list *filters);
+print_bare_message(struct message *message, struct wl_list *filters);
 
 struct print_filter {
 	char *filter;

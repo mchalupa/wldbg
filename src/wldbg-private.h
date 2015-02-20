@@ -25,6 +25,15 @@
 #ifndef _WLDBG_PRIVATE_H_
 #define _WLDBG_PRIVATE_H_
 
+#include "config.h"
+
+#include <unistd.h>
+#include <sys/signalfd.h>
+
+#include "wayland/wayland-util.h"
+#include "wldbg-pass.h"
+#include "util.h"
+
 #ifdef DEBUG
 
 extern int debug;
@@ -62,7 +71,38 @@ extern int debug_verbose;
 
 #endif /* DEBUG */
 
+struct wldbg_connection;
+
+struct wldbg {
+	int epoll_fd;
+	int signals_fd;
+
+	sigset_t handled_signals;
+	struct wl_list passes;
+	struct wl_list monitored_fds;
+
+	unsigned int resolving_objects : 1;
+
+	struct {
+		unsigned int one_by_one	: 1;
+		unsigned int running	: 1;
+		unsigned int error	: 1;
+		unsigned int exit	: 1;
+	} flags;
+
+	/* this will be list later */
+	struct wldbg_connection *connection;
+};
+
+struct pass {
+	struct wldbg_pass wldbg_pass;
+	struct wl_list link;
+	char *name;
+};
+
 struct wldbg_connection {
+	struct wldbg *wldbg;
+
 	struct {
 		int fd;
 		/* TODO get rid of connection??? */
@@ -84,6 +124,12 @@ struct wldbg_connection {
 	} client;
 
 	struct wldbg_ids_map resolved_objects;
+};
+
+struct cmd_options {
+	char *path;
+	int argc;
+	char **argv;
 };
 
 int

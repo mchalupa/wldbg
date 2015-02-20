@@ -31,6 +31,7 @@
 #include "util.h"
 #include "print.h"
 #include "interactive/interactive.h"
+#include "wldbg-private.h"
 
 static int
 filter_match(struct wl_list *filters, struct message *message,
@@ -90,16 +91,16 @@ filter_match(struct wl_list *filters, struct message *message,
 
 /* roughly based on wl_closure_print from connection.c */
 void
-print_bare_message(struct wldbg *wldbg, struct message *message,
-		   struct wl_list *filters)
+print_bare_message(struct message *message, struct wl_list *filters)
 {
 	int i;
 	uint32_t j, id, opcode, pos, len, size, *p;
 	const struct wl_interface *interface, *obj;
 	const char *signature;
 	const struct wl_message *wl_message = NULL;
+	struct wldbg_connection *conn = message->connection;
 
-	assert(wldbg->flags.one_by_one
+	assert(conn->wldbg->flags.one_by_one
 		&& "This function is meant to be used in one-by-one mode");
 
 	p = message->data;
@@ -107,7 +108,7 @@ print_bare_message(struct wldbg *wldbg, struct message *message,
 	opcode = p[1] & 0xffff;
 	size = p[1] >> 16;
 
-	interface = wldbg_ids_map_get(&wldbg->resolved_objects, id);
+	interface = wldbg_ids_map_get(&conn->resolved_objects, id);
 
 	if (filters && filter_match(filters, message, interface))
 		return;
@@ -120,7 +121,7 @@ print_bare_message(struct wldbg *wldbg, struct message *message,
 		|| (message->from == SERVER && !interface->event_count)
 		|| (message->from == CLIENT && !interface->method_count)) {
 		/* print at least fall-back description */
-		printf("unknown@%u.[opcode %u][size %uB]", id, opcode, size);
+		printf("unknown@%u.[opcode %u][size %uB]\n", id, opcode, size);
 		return;
 	}
 
@@ -158,7 +159,7 @@ print_bare_message(struct wldbg *wldbg, struct message *message,
 			pos += DIV_ROUNDUP(p[pos], sizeof(uint32_t));
 			break;
 		case 'o':
-			obj = wldbg_ids_map_get(&wldbg->resolved_objects,
+			obj = wldbg_ids_map_get(&conn->resolved_objects,
 						p[pos]);
 			if (obj)
 				printf("%s@%u",
@@ -204,5 +205,5 @@ print_bare_message(struct wldbg *wldbg, struct message *message,
 void
 wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message)
 {
-	print_bare_message(wldbgi->wldbg, message, &wldbgi->print_filters);
+	print_bare_message(message, &wldbgi->print_filters);
 }

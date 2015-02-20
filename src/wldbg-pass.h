@@ -23,6 +23,8 @@
 #ifndef _WLDBG_PASS_H_
 #define _WLDBG_PASS_H_
 
+#include <stdint.h>
+
 struct message;
 struct wldbg;
 

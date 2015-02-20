@@ -55,7 +55,7 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 
 	if (wldbgi->wldbg->flags.running
 		&& !wldbgi->wldbg->flags.error
-		&& wldbgi->wldbg->client.pid > 0) {
+		&& wldbgi->wldbg->connection != NULL) {
 
 		printf("Program seems running. "
 			"Do you really want to quit? (y)\n");
@@ -63,9 +63,10 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 			chr = getchar();
 			if (chr == 'y') {
 				dbg("Killing the client\n");
-				kill(wldbgi->wldbg->client.pid, SIGTERM);
+				kill(0, SIGTERM);
 				dbg("Waiting for the client to terminate\n");
-				waitpid(wldbgi->wldbg->client.pid, NULL, 0);
+				/* XXX do it properly */
+				waitpid(-1, NULL, 0);
 			} else {
 				/* clear buffer */
 				while (getchar() != '\n')
@@ -336,9 +337,9 @@ cmd_pass(struct wldbg_interactive *wldbgi,
 }
 
 void
-print_objects(struct wldbg *wldbg)
+print_objects(struct message *message)
 {
-	struct wldbg_ids_map *map = &wldbg->resolved_objects;
+	struct wldbg_ids_map *map = &message->connection->resolved_objects;
 	const struct wl_interface *intf;
 	uint32_t id;
 
@@ -374,7 +375,7 @@ cmd_info(struct wldbg_interactive *wldbgi,
 						: wldbgi->statistics.client_msg_no,
 			message->size);
 	} else if (strncmp(buf, "objects\n", 8) == 0) {
-		print_objects(wldbgi->wldbg);
+		print_objects(message);
 	} else if (strncmp(buf, "breakpoints\n", 12) == 0
 		   || strncmp(buf, "b\n", 2) == 0) {
 		print_breakpoints(wldbgi);
@@ -383,28 +384,6 @@ cmd_info(struct wldbg_interactive *wldbgi,
 	}
 
 	return CMD_CONTINUE_QUERY;
-}
-
-static int
-cmd_run(struct wldbg_interactive *wldbgi,
-	struct message *message, char *buf)
-{
-	char *nl;
-
-	(void) message;
-
-	vdbg("cmd: run\n");
-
-	nl = strrchr(buf, '\n');
-	assert(nl);
-
-	*nl = '\0';
-	wldbgi->wldbg->client.path
-		= wldbgi->client.path = strdup(buf);
-
-	wldbgi->skip_first_query = 1;
-
-	return CMD_END_QUERY;
 }
 
 static int
@@ -455,35 +434,6 @@ cmd_help_help(int ol)
 }
 
 static int
-cmd_attach(struct wldbg_interactive *wldbgi,
-	   struct message *message,
-	   char *buf)
-{
-	char cmd[] = "gdb -p XXXXX";
-	pid_t pid;
-
-	(void) message;
-
-	if (strcmp(buf, "client\n") == 0)
-		pid = wldbgi->wldbg->client.pid;
-	else if (strcmp(buf, "server\n") == 0)
-		pid = wldbgi->wldbg->server.pid;
-	else {
-		printf("Attach to client or server?\n");
-		return CMD_CONTINUE_QUERY;
-	}
-
-	assert(pid > 1);
-
-	snprintf(cmd + 7, 6, "%d", pid);
-	dbg("Calling %s\n", cmd);
-
-	system(cmd);
-
-	return CMD_CONTINUE_QUERY;
-}
-
-static int
 cmd_send(struct wldbg_interactive *wldbgi,
 		struct message *message,
 		char *buf)
@@ -511,9 +461,9 @@ cmd_send(struct wldbg_interactive *wldbgi,
 	interactive = 1;
 
 	if (where == SERVER)
-		conn = wldbgi->wldbg->server.connection;
+		conn = message->connection->server.connection;
 	else
-		conn = wldbgi->wldbg->client.connection;
+		conn = message->connection->client.connection;
 
 	/* XXX later do translation from interface@obj.request etc.. */
 	if (interactive) {
@@ -715,7 +665,6 @@ cmd_hide(struct wldbg_interactive *wldbgi,
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
 const struct command commands[] = {
-	{"attach", NULL, cmd_attach, NULL},
 	{"break", "b", cmd_break, NULL},
 	{"continue", "c", cmd_continue, NULL},
 	{"edit", "e", cmd_edit, NULL},
@@ -724,7 +673,6 @@ const struct command commands[] = {
 	{"info", "i", cmd_info, NULL},
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
-	{"run",  NULL, cmd_run, NULL},
 	{"send", "s", cmd_send, NULL},
 	{"quit", "q", cmd_quit, NULL},
 

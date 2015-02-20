@@ -23,6 +23,8 @@
 #ifndef _PASSES_H_
 #define _PASSES_H_
 
+struct pass;
+
 void
 dealloc_pass(struct pass *pass);
 

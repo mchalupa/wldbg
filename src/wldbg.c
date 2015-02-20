@@ -54,7 +54,8 @@ int debug_verbose = 0;
 
 /* defined in interactive.c */
 int
-run_interactive(struct wldbg *wldbg, int argc, const char *argv[]);
+interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
+		 int argc, const char *argv[]);
 
 /* defined in passes.c */
 int
@@ -191,9 +192,12 @@ wldbg_dispatch(struct wldbg *wldbg)
 }
 
 static void
-run_passes(struct wldbg *wldbg, struct message *message)
+run_passes(struct message *message)
 {
 	struct pass *pass;
+	struct wldbg *wldbg = message->connection->wldbg;
+
+	assert(wldbg && "BUG: No wldbg set in message->connection");
 
 	wl_list_for_each(pass, &wldbg->passes, link) {
 		vdbg("Running pass\n");
@@ -212,16 +216,17 @@ run_passes(struct wldbg *wldbg, struct message *message)
 }
 
 static int
-process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
-			struct message *message)
+process_one_by_one(struct wl_connection *write_conn,
+		   struct message *message)
 {
 	int n = 0;
 	size_t rest = message->size;
+	struct wldbg *wldbg = message->connection->wldbg;
 
 	while (rest > 0) {
 		message->size = ((uint32_t *) message->data)[1] >> 16;
 
-		run_passes(wldbg, message);
+		run_passes(message);
 
 		/* in interactive mode we can quit here. Do not
 		 * write into connection if we quit */
@@ -230,14 +235,12 @@ process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
 		if (wldbg->flags.error)
 			return -1;
 
-		vdbg("Writning connection\n");
 		if (wl_connection_write(write_conn, message->data,
 					message->size) < 0) {
 			perror("wl_connection_write");
 			return -1;
 		}
 
-		vdbg("Flushing connection\n");
 		if (wl_connection_flush(write_conn) < 0) {
 			perror("wl_connection_flush");
 			return -1;
@@ -254,34 +257,37 @@ process_one_by_one(struct wldbg *wldbg, struct wl_connection *write_conn,
 }
 
 static int
-process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
+process_data(struct wldbg_connection *conn,
+	     struct wl_connection *wl_connection, int len)
 {
 	int ret = 0;
 	char buffer[4096];
 	struct message message;
-	struct wl_connection *write_conn;
+	struct wl_connection *write_wl_conn;
+	struct wldbg *wldbg = conn->wldbg;
 
-	wl_connection_copy(connection, buffer, len);
-	wl_connection_consume(connection, len);
+	wl_connection_copy(wl_connection, buffer, len);
+	wl_connection_consume(wl_connection, len);
 
-	if (connection == wldbg->server.connection) {
-		write_conn = wldbg->client.connection;
+	if (wl_connection == conn->server.connection) {
+		write_wl_conn = conn->client.connection;
 		message.from = SERVER;
 	} else {
-		write_conn = wldbg->server.connection;
+		write_wl_conn = conn->server.connection;
 		message.from = CLIENT;
 	}
 
-	wl_connection_copy_fds(connection, write_conn);
+	wl_connection_copy_fds(wl_connection, write_wl_conn);
 
 	message.data = buffer;
 	message.size = len;
+	message.connection = conn;
 
 	if (wldbg->flags.one_by_one) {
-		ret = process_one_by_one(wldbg, write_conn, &message);
+		ret = process_one_by_one(write_wl_conn, &message);
 	} else {
 		/* process passes */
-		run_passes(wldbg, &message);
+		run_passes(&message);
 
 		/* if some pass wants exit or an error occured,
 		 * do not write into the connection */
@@ -291,13 +297,13 @@ process_data(struct wldbg *wldbg, struct wl_connection *connection, int len)
 			return -1;
 
 		/* resend the data */
-		vdbg("Writning connection\n");
-		if (wl_connection_write(write_conn, message.data, message.size) < 0) {
+		if (wl_connection_write(write_wl_conn,
+					message.data, message.size) < 0) {
 			perror("wl_connection_write");
 			return -1;
 		}
-		vdbg("Flushing connection\n");
-		if (wl_connection_flush(write_conn) < 0) {
+
+		if (wl_connection_flush(write_wl_conn) < 0) {
 			perror("wl_connection_flush");
 			return -1;
 		}
@@ -312,25 +318,25 @@ static int
 dispatch_messages(int fd, void *data)
 {
 	int len;
-	struct wldbg *wldbg = data;
-	struct wl_connection *conn;
+	struct wldbg_connection *conn = data;
+	struct wl_connection *wl_conn;
 
-	if (fd == wldbg->client.fd)
-		conn = wldbg->client.connection;
+	if (fd == conn->client.fd)
+		wl_conn = conn->client.connection;
 	else
-		conn = wldbg->server.connection;
+		wl_conn = conn->server.connection;
 
 	vdbg("Reading connection from %s\n",
-		fd == wldbg->client.fd ? "client" : "server");
+		fd == conn->client.fd ? "client" : "server");
 
-	len = wl_connection_read(conn);
+	len = wl_connection_read(wl_conn);
 	if (len < 0 && errno != EAGAIN) {
 		perror("wl_connection_read");
 		return -1;
 	} else if (len < 0 && errno == EAGAIN)
 		return 1;
 
-	return process_data(wldbg, conn, len);
+	return process_data(conn, wl_conn, len);
 }
 
 static int
@@ -340,6 +346,7 @@ dispatch_signals(int fd, void *data)
 	size_t len;
 	struct signalfd_siginfo si;
 	struct wldbg *wldbg = data;
+	pid_t pid;
 
 	len = read(fd, &si, sizeof si);
 	if (len != sizeof si) {
@@ -352,91 +359,19 @@ dispatch_signals(int fd, void *data)
 	if (si.ssi_signo == SIGCHLD) {
 		/* Just print message and let epoll exit with
 		 * the right exit code according to if it was HUP or ERR */
-		waitpid(wldbg->client.pid, &s, WNOHANG);
-		fprintf(stderr, "Client '%s' exited...\n",
-			WIFEXITED(s) ? "" : "abnormally");
+		pid = waitpid(-1, &s, WNOHANG);
+		fprintf(stderr, "Client '%d' exited...\n",
+			pid, WIFEXITED(s) ? "" : "abnormally");
 	} else if (si.ssi_signo == SIGINT) {
-		kill(wldbg->client.pid, SIGTERM);
-		wldbg->flags.exit = 1;
-
 		fprintf(stderr, "Interrupted...\n");
+
+		kill(0, SIGTERM);
+		wldbg->flags.exit = 1;
 	} else {
 		assert(0 && "Got unhandled signal from epoll");
 	}
 
 	return 1;
-}
-
-static pid_t
-spawn_client(struct wldbg *wldbg)
-{
-	int sock[2];
-	char sockstr[8];
-
-	assert(!wldbg->flags.error);
-	assert(!wldbg->flags.exit);
-
-	if (!wldbg->client.path) {
-		fprintf(stderr, "No client to run.\n");
-		return -1;
-	}
-
-	dbg("Spawning client: '%s'\n", wldbg->client.path);
-
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) != 0) {
-		perror("socketpair");
-		return -1;
-	}
-
-	wldbg->client.fd = sock[0];
-
-	wldbg->client.connection = wl_connection_create(wldbg->client.fd);
-	if (!wldbg->client.connection) {
-		perror("Failed creating wl_connection (client)");
-		goto err;
-	}
-
-	if (wldbg_monitor_fd(wldbg, wldbg->client.fd,
-				dispatch_messages, wldbg) < 0)
-		goto err;
-
-	if (snprintf(sockstr, sizeof sockstr, "%d",
-		     sock[1]) == sizeof sockstr) {
-		perror("Socket number too high, hack the code");
-		goto err;
-	}
-
-	if (setenv("WAYLAND_SOCKET", sockstr, 1) != 0) {
-		perror("Setting WAYLAND_SOCKET failed");
-		goto err;
-	}
-
-	wldbg->client.pid = fork();
-
-	if (wldbg->client.pid == -1) {
-		perror("fork");
-		goto err;
-	}
-
-	/* exec client in child */
-	if (wldbg->client.pid == 0) {
-		close(sock[0]);
-
-		execvp(wldbg->client.path, wldbg->client.argv);
-
-		perror("Exec failed");
-		abort();
-	}
-
-	close(sock[1]);
-
-	return wldbg->client.pid;
-
-err:
-		close(sock[0]);
-		close(sock[1]);
-
-		return -1;
 }
 
 static int
@@ -452,37 +387,156 @@ get_server_pid(int fd)
 }
 
 static int
-init_wayland_socket(struct wldbg *wldbg)
+connect_to_wayland_server(struct wldbg_connection *conn, const char *display)
 {
-	assert(!wldbg->flags.error);
-	assert(!wldbg->flags.exit);
-
-	wldbg->server.fd = connect_to_wayland_socket(NULL);
-	if (wldbg->server.fd == -1) {
+	conn->server.fd = connect_to_wayland_socket(display);
+	if (conn->server.fd == -1) {
 		perror("Failed opening wayland socket");
 		return -1;
 	}
 
-	wldbg->server.connection = wl_connection_create(wldbg->server.fd);
-	if (!wldbg->server.connection) {
+	conn->server.connection = wl_connection_create(conn->server.fd);
+	if (!conn->server.connection) {
 		perror("Failed creating wl_connection");
 		goto err;
 	}
 
-	if (wldbg_monitor_fd(wldbg, wldbg->server.fd,
-				dispatch_messages, wldbg) < 0)
+	if (wldbg_monitor_fd(conn->wldbg, conn->server.fd,
+			     dispatch_messages, conn) < 0)
 		goto err_conn;
 
 
-	wldbg->server.pid = get_server_pid(wldbg->server.fd);
+	/* XXX this is shared between clients and can be in
+	 * wldbg struct */
+	conn->server.pid = get_server_pid(conn->server.fd);
 
 	return 0;
 
 err_conn:
-	wl_connection_destroy(wldbg->server.connection);
+	wl_connection_destroy(conn->server.connection);
 err:
-	close(wldbg->server.fd);
+	close(conn->server.fd);
 	return -1;
+}
+
+
+
+static struct wldbg_connection *
+wldbg_connection_create(struct wldbg *wldbg)
+{
+	struct wldbg_connection *conn = malloc(sizeof *conn);
+	if (!conn)
+		return NULL;
+
+	wldbg_ids_map_init(&conn->resolved_objects);
+	conn->wldbg = wldbg;
+
+	if (connect_to_wayland_server(conn, NULL) < 0) {
+		free(conn);
+		return NULL;
+	}
+
+	return conn;
+}
+
+static int
+create_client_connection(struct wldbg_connection *conn)
+{
+	int sock[2];
+
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) != 0) {
+		perror("socketpair");
+		return -1;
+	}
+
+	conn->client.fd = sock[0];
+
+	conn->client.connection = wl_connection_create(conn->client.fd);
+	if (!conn->client.connection) {
+		perror("Failed creating wl_connection (client)");
+		goto err;
+	}
+
+	if (wldbg_monitor_fd(conn->wldbg, conn->client.fd,
+			     dispatch_messages, conn) < 0) {
+		wl_connection_destroy(conn->client.connection);
+		goto err;
+	}
+
+	return sock[1];
+
+err:
+	close(sock[0]);
+	close(sock[1]);
+	return -1;
+}
+
+struct wldbg_connection *
+spawn_client(struct wldbg *wldbg, char *path, char *argv[])
+{
+	char sockstr[8];
+	int sock;
+	struct wldbg_connection *conn;
+
+	assert(!wldbg->flags.error);
+	assert(!wldbg->flags.exit);
+
+	conn = wldbg_connection_create(wldbg);
+	if (!conn) {
+		fprintf(stderr, "Out of memory\n");
+		return NULL;
+	}
+
+	sock = create_client_connection(conn);
+	if (sock < 0) {
+		/* XXX destroy conn */
+		return NULL;
+	}
+
+#ifdef DEBUG
+	dbg("Spawning client: '%s'\n", path);
+
+	int i;
+	for (i = 0; argv[i] != NULL; ++i)
+		dbg("\targv[%d]: %s\n", i, argv[i]);
+#endif /* DEBUG */
+
+
+	if (snprintf(sockstr, sizeof sockstr, "%d",
+		     sock) >= (int) sizeof sockstr) {
+		perror("Socket number too high, hack the code");
+		goto err;
+	}
+
+	if (setenv("WAYLAND_SOCKET", sockstr, 1) != 0) {
+		perror("Setting WAYLAND_SOCKET failed");
+		goto err;
+	}
+
+	conn->client.pid = fork();
+
+	if (conn->client.pid == -1) {
+		perror("fork");
+		goto err;
+	}
+
+	/* exec client in child */
+	if (conn->client.pid == 0) {
+		close(conn->client.fd);
+
+		execvp(path, argv);
+
+		perror("Exec failed");
+		abort();
+	}
+
+	close(sock);
+
+	return conn;
+
+err:
+	/* XXX destroy conn */
+	return NULL;
 }
 
 static int
@@ -515,7 +569,9 @@ wldbg_run(struct wldbg *wldbg)
 static void
 wldbg_destroy(struct wldbg *wldbg)
 {
+	/*
 	struct pass *pass, *pass_tmp;
+	*/
 	struct wldbg_fd_callback *cb, *cb_tmp;
 
 	if (wldbg->epoll_fd >= 0)
@@ -523,6 +579,7 @@ wldbg_destroy(struct wldbg *wldbg)
 	if (wldbg->signals_fd >= 0)
 		close(wldbg->signals_fd);
 
+	/*
 	if (wldbg->server.connection)
 		wl_connection_destroy(wldbg->server.connection);
 	if (wldbg->client.connection)
@@ -534,11 +591,13 @@ wldbg_destroy(struct wldbg *wldbg)
 		free(pass->name);
 		free(pass);
 	}
+	*/
 
 	wl_list_for_each_safe(cb, cb_tmp, &wldbg->monitored_fds, link) {
 		free(cb);
 	}
 
+	/*
 	wldbg_ids_map_release(&wldbg->resolved_objects);
 
 	close(wldbg->server.fd);
@@ -550,6 +609,7 @@ wldbg_destroy(struct wldbg *wldbg)
 	assert(wldbg->client.argc > 0);
 	assert(wldbg->client.argv);
 	free_arguments(wldbg->client.argv);
+	*/
 }
 
 static int
@@ -562,7 +622,6 @@ wldbg_init(struct wldbg *wldbg)
 
 	wl_list_init(&wldbg->passes);
 	wl_list_init(&wldbg->monitored_fds);
-	wldbg_ids_map_init(&wldbg->resolved_objects);
 
 	wldbg->epoll_fd = epoll_create1(0);
 	if (wldbg->epoll_fd == -1) {
@@ -586,14 +645,14 @@ wldbg_init(struct wldbg *wldbg)
 	}
 
 	if (wldbg_monitor_fd(wldbg, wldbg->signals_fd,
-				dispatch_signals, wldbg) < 0)
+			     dispatch_signals, wldbg) < 0)
 		goto err_signals;
 
 	wldbg->handled_signals = signals;
 
 	/* init resolving wayland objects */
-	if (wldbg_add_resolve_pass(wldbg) < 0)
-		goto err_signals;
+	//if (wldbg_add_resolve_pass(wldbg) < 0)
+	//	goto err_signals;
 
 	return 0;
 
@@ -619,7 +678,7 @@ help(void)
 }
 
 static int
-parse_opts(struct wldbg *wldbg, int argc, char *argv[])
+parse_opts(struct wldbg *wldbg, struct cmd_options *opts, int argc, char *argv[])
 {
 	/* I know about getopt, but we need different behaviour,
 	 * so use our own arguments parsing */
@@ -629,9 +688,14 @@ parse_opts(struct wldbg *wldbg, int argc, char *argv[])
 		exit(1);
 	} else if (strcmp(argv[1], "--interactive") == 0 ||
 		strcmp(argv[1], "-i") == 0) {
-		if (run_interactive(wldbg, argc - 2,
-					(const char **) argv + 2) < 0)
+		if (interactive_init(wldbg, opts, argc - 2,
+				     (const char **) argv + 2) < 0)
 			return -1;
+	} else {
+		fprintf(stderr, "Not implemented yet\n");
+		abort();
+	}
+#if 0
 	} else if (strcmp(argv[1], "--one-by-one") == 0 ||
 		strcmp(argv[1], "-s" /* separate/split */) == 0) {
 
@@ -646,6 +710,7 @@ parse_opts(struct wldbg *wldbg, int argc, char *argv[])
 			return -1;
 		}
 	}
+#endif
 
 	return 0;
 }
@@ -653,6 +718,8 @@ parse_opts(struct wldbg *wldbg, int argc, char *argv[])
 int main(int argc, char *argv[])
 {
 	struct wldbg wldbg;
+	/* XXX program info would be better name? */
+	struct cmd_options cmd_opts;
 
 	if (argc == 1) {
 		help();
@@ -672,7 +739,7 @@ int main(int argc, char *argv[])
 
 	wldbg_init(&wldbg);
 
-	if (parse_opts(&wldbg, argc, argv) < 0)
+	if (parse_opts(&wldbg, &cmd_opts, argc, argv) < 0)
 		goto err;
 
 	/* if some pass created
@@ -685,10 +752,8 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	if (init_wayland_socket(&wldbg) < 0)
-		goto err;
-
-	if (spawn_client(&wldbg) < 0)
+	wldbg.connection = spawn_client(&wldbg, cmd_opts.path, cmd_opts.argv);
+	if (wldbg.connection == NULL)
 		goto err;
 
 	if (wldbg_run(&wldbg) < 0)

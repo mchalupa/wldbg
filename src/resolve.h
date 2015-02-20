@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Marek Chalupa
+ * Copyright (c) 2014 - 2015 Marek Chalupa
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -22,11 +22,6 @@
 
 #ifndef _WLDBG_RESOLVE_H_
 #define _WLDBG_RESOLVE_H_
-
-struct pass;
-
-struct pass *
-create_resolve_pass(void);
 
 int
 wldbg_add_resolve_pass(struct wldbg *wldbg);

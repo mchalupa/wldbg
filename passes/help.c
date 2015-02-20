@@ -29,6 +29,10 @@
 #include "../src/wldbg-pass.h"
 #include "../wayland/wayland-util.h"
 
+#include "wldbg-private.h"
+
+/* XXX rename this pass to debug (and maybe move to src/ ? */
+
 static int
 help_in(void *user_data, struct message *message)
 {
@@ -57,18 +61,20 @@ help_out(void *user_data, struct message *message)
 		"\tconnection = %p\n\n"
 		"\tpath = %s\n"
 		"\targc = %d\n",
-		wldbg->server.fd, wldbg->server.connection,
-		wldbg->client.fd, wldbg->client.connection,
-		wldbg->client.path, wldbg->client.argc);
-	for (i = 0; i < wldbg->client.argc; ++i)
+		wldbg->connection->server.fd,
+		wldbg->connection->server.connection,
+		wldbg->connection->client.fd,
+		wldbg->connection->client.connection,
+		wldbg->connection->client.path, wldbg->connection->client.argc);
+	for (i = 0; i < wldbg->connection->client.argc; ++i)
 		printf("\t    argv[%d] = %s\n",
-			i, wldbg->client.argv[i]);
+			i, wldbg->connection->client.argv[i]);
 	printf(
 		"\n\tpid = %d\n"
 		"}\n\n"
 		"epoll fd = %d\n\n"
 		"passes no = %d\n",
-		wldbg->client.pid, wldbg->epoll_fd,
+		wldbg->connection->client.pid, wldbg->epoll_fd,
 		wl_list_length(&wldbg->passes));
 
 	/* leaky leaky.. */

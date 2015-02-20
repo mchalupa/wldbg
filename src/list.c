@@ -26,8 +26,7 @@
 #include <string.h>
 #include <dirent.h>
 
-#include "../src/wldbg.h"
-#include "../src/wldbg-pass.h"
+#include "wldbg-private.h"
 
 static void
 list_dir(const char *path)

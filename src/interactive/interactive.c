@@ -197,7 +197,8 @@ handle_sigint(int fd, void *data)
 }
 
 int
-run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
+interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
+		 int argc, const char *argv[])
 {
 	struct pass *pass;
 	struct wldbg_interactive *wldbgi;
@@ -266,15 +267,15 @@ run_interactive(struct wldbg *wldbg, int argc, const char *argv[])
 		--argc;
 	}
 
-	wldbg->client.path = strdup(argv[0]);
-	if (!wldbg->client.path)
+	opts->path = strdup(argv[0]);
+	if (!opts->path)
 		goto err_pass;
 
-	wldbg->client.argc = copy_arguments(&wldbg->client.argv, argc, argv);
-	if (wldbg->client.argc == -1)
+	opts->argc = copy_arguments(&opts->argv, argc, argv);
+	if (opts->argc == -1)
 		goto err_pass;
 
-	assert(wldbg->client.argc == argc);
+	assert(opts->argc == argc);
 
 	return 0;
 

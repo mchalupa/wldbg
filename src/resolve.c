@@ -363,6 +363,7 @@ resolve_out(void *user_data, struct message *message)
 	return PASS_NEXT;
 }
 
+#if 0
 static int
 resolve_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 	     int argc, const char *argv[])
@@ -453,3 +454,4 @@ wldbg_add_resolve_pass(struct wldbg *wldbg)
 
 	return 0;
 }
+#endif
