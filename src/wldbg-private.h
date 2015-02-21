@@ -72,6 +72,7 @@ extern int debug_verbose;
 #endif /* DEBUG */
 
 struct wldbg_connection;
+struct resolved_objects;
 
 struct wldbg {
 	int epoll_fd;
@@ -123,7 +124,7 @@ struct wldbg_connection {
 		pid_t pid;
 	} client;
 
-	struct wldbg_ids_map resolved_objects;
+	struct resolved_objects *resolved_objects;
 };
 
 struct cmd_options {

@@ -23,7 +23,19 @@
 #ifndef _WLDBG_RESOLVE_H_
 #define _WLDBG_RESOLVE_H_
 
+struct resolved_objects;
+struct wldbg_connection;
+
+struct resolved_objects *
+wldbg_connection_get_resolved_objects(struct wldbg_connection *connection);
+
 int
 wldbg_add_resolve_pass(struct wldbg *wldbg);
+
+struct wldbg_ids_map *
+resolved_objects_get_objects(struct resolved_objects *ro);
+
+struct resolved_objects *
+create_resolved_objects(void);
 
 #endif /* _WLDBG_RESOLVE_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Marek Chalupa
+ * Copyright (c) 2014 - 2015 Marek Chalupa
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -35,6 +35,23 @@
 #include "wldbg-private.h"
 #include "passes.h"
 
+static struct wl_list shared_interfaces;
+
+struct resolved_objects {
+	struct wldbg_ids_map objects;
+	/* these are shared between connections */
+	struct wl_list *interfaces;
+
+	/* these are specific for connection */
+	struct wl_list additional_interfaces;
+};
+
+struct wldbg_ids_map *
+resolved_objects_get_objects(struct resolved_objects *ro)
+{
+	return &ro->objects;
+}
+
 /* this pass analyze the connection and translates object id
  * to human-readable names */
 
@@ -56,19 +73,12 @@ struct interface
 	struct wl_list link;
 };
 
-struct resolve {
-	struct wldbg *wldbg;
-	/* pointer to wldbg->resolved_objects */
-	struct wldbg_ids_map *objects;
-	struct wl_list interfaces;
-};
-
 static void
-add_interface(struct resolve *resolve, struct interface *intf)
+add_interface(struct wl_list *intfs, struct interface *intf)
 {
 	struct interface *i;
 
-	wl_list_for_each(i, &resolve->interfaces, link) {
+	wl_list_for_each(i, intfs, link) {
 		if (strcmp(i->interface->name, intf->interface->name) == 0) {
 			dbg("Already got '%s' interface, discarding\n",
 				intf->interface->name);
@@ -77,15 +87,28 @@ add_interface(struct resolve *resolve, struct interface *intf)
 		}
 	}
 
-	wl_list_insert(resolve->interfaces.next, &intf->link);
+	dbg("Adding interface '%s'\n", intf->interface->name);
+	wl_list_insert(intfs->next, &intf->link);
+}
+
+static void
+add_shared_interface(struct interface *intf)
+{
+	add_interface(&shared_interfaces, intf);
 }
 
 static const struct wl_interface *
-get_interface(struct resolve *resolve, const char *name)
+get_interface(struct resolved_objects *ro, const char *name)
 {
 	struct interface *i;
 
-	wl_list_for_each(i, &resolve->interfaces, link) {
+	wl_list_for_each(i, ro->interfaces, link) {
+		if (strcmp(i->interface->name, name) == 0) {
+			return i->interface;
+		}
+	}
+
+	wl_list_for_each(i, &ro->additional_interfaces, link) {
 		if (strcmp(i->interface->name, name) == 0) {
 			return i->interface;
 		}
@@ -125,7 +148,7 @@ libwayland_get_interface(void *handle, const char *intf)
 }
 
 static void
-parse_libwayland(struct resolve *resolve)
+parse_libwayland(void)
 {
 	struct interface *intf;
 	void *handle;
@@ -137,57 +160,49 @@ parse_libwayland(struct resolve *resolve)
 	}
 
 	if ((intf = libwayland_get_interface(handle, "wl_display_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_registry_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_callback_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-						"wl_compositor_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_compositor_interface")))
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_shm_pool_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_shm_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_buffer_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-						"wl_data_offer_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-						"wl_data_source_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-						"wl_data_device_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-					"wl_data_device_manager_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_data_offer_interface")))
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_data_source_interface")))
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_data_device_interface")))
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_data_device_manager_interface")))
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_shell_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-						"wl_shell_surface_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_shell_surface_interface")))
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_surface_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_seat_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_pointer_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_keyboard_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_touch_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_output_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_region_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-						"wl_subcompositor_interface")))
-		add_interface(resolve, intf);
-	if ((intf = libwayland_get_interface(handle,
-						"wl_subsurface_interface")))
-		add_interface(resolve, intf);
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_subcompositor_interface")))
+		add_shared_interface(intf);
+	if ((intf = libwayland_get_interface(handle, "wl_subsurface_interface")))
+		add_shared_interface(intf);
 }
 
 extern const struct wl_interface xdg_shell_interface;
@@ -195,7 +210,7 @@ extern const struct wl_interface xdg_surface_interface;
 extern const struct wl_interface xdg_popup_interface;
 
 static void
-add_hardcoded_xdg_shell(struct resolve *resolve)
+add_hardcoded_xdg_shell(void)
 {
 	struct interface *intf;
 
@@ -203,19 +218,19 @@ add_hardcoded_xdg_shell(struct resolve *resolve)
 	if (!intf)
 		return;
 
-	add_interface(resolve, intf);
+	add_shared_interface(intf);
 
 	intf = create_interface(&xdg_surface_interface);
 	if (!intf)
 		return;
 
-	add_interface(resolve, intf);
+	add_shared_interface(intf);
 
 	intf = create_interface(&xdg_popup_interface);
 	if (!intf)
 		return;
 
-	add_interface(resolve, intf);
+	add_shared_interface(intf);
 }
 
 static int
@@ -260,12 +275,15 @@ get_new_id(const char *signature, uint32_t *data)
 }
 
 static void
-get_new_ids(struct resolve *resolve, uint32_t *data,
-		const struct wl_message *wl_message, const char *guess_type)
+get_new_ids(struct resolved_objects *ro, uint32_t *data,
+	    const struct wl_message *wl_message, const char *guess_type)
 {
 	uint32_t new_id;
 	const struct wl_interface *new_intf;
 	int id_pos, pos = 0;
+
+	assert(wl_message->signature && "BUG: no wl_message->signature");
+	assert(wl_message->types && "BUG: no wl_message->types");
 
 	/* search for new_id's in loop in the case there
 	 * are more of them in a event/request */
@@ -280,14 +298,13 @@ get_new_ids(struct resolve *resolve, uint32_t *data,
 		if (!new_intf && guess_type){
 			dbg("RESOLVE: Guessing unknown type is '%s'\n",
 				guess_type);
-			new_intf = get_interface(resolve, guess_type);
+			new_intf = get_interface(ro, guess_type);
 		}
 
 		if (!new_intf)
 			new_intf = &unknown_interface;
 
-		wldbg_ids_map_insert(resolve->objects, new_id,
-				  (void *) new_intf);
+		wldbg_ids_map_insert(&ro->objects, new_id, (void *) new_intf);
 
 		dbg("RESOLVE: Got new id %u (%s)\n", new_id, new_intf->name);
 
@@ -300,14 +317,16 @@ resolve_in(void *user_data, struct message *message)
 {
 	uint32_t id, opcode;
 	uint32_t *data = message->data;
-	struct resolve *resolve = user_data;
 	const struct wl_interface *intf;
 	const struct wl_message *wl_message;
+	struct resolved_objects *ro = message->connection->resolved_objects;
+
+	(void) user_data;
 
 	id = data[0];
 	opcode = data[1] & 0xffff;
 
-	intf = wldbg_ids_map_get(resolve->objects, id);
+	intf = wldbg_ids_map_get(&ro->objects, id);
 
 	if (intf) {
 		if (intf == &unknown_interface || intf == &free_entry)
@@ -318,11 +337,10 @@ resolve_in(void *user_data, struct message *message)
 		/* handle delete_id event */
 		if (id == 1 /* wl_display */
 			&& opcode == WL_DISPLAY_DELETE_ID) {
-			wldbg_ids_map_insert(resolve->objects, data[2],
-						&free_entry);
+			wldbg_ids_map_insert(&ro->objects, data[2], &free_entry);
 			dbg("RESOLVE: Freed id %u\n", data[2]);
 		} else
-			get_new_ids(resolve, data, wl_message, NULL);
+			get_new_ids(ro, data, wl_message, NULL);
 	}
 
 	return PASS_NEXT;
@@ -333,15 +351,17 @@ resolve_out(void *user_data, struct message *message)
 {
 	uint32_t id, opcode;
 	uint32_t *data = message->data;
-	struct resolve *resolve = user_data;
 	const struct wl_interface *intf;
 	const struct wl_message *wl_message;
 	const char *guess_type = NULL;
+	struct resolved_objects *ro = message->connection->resolved_objects;
+
+	(void) user_data;
 
 	id = data[0];
 	opcode = data[1] & 0xffff;
 
-	intf = wldbg_ids_map_get(resolve->objects, id);
+	intf = wldbg_ids_map_get(&ro->objects, id);
 
 	if (intf) {
 		/* unknown interface */
@@ -357,37 +377,59 @@ resolve_out(void *user_data, struct message *message)
 			&& opcode == WL_REGISTRY_BIND)
 				guess_type = (const char *) (data + 4);
 
-		get_new_ids(resolve, data, wl_message, guess_type);
+		get_new_ids(ro, data, wl_message, guess_type);
 	}
 
 	return PASS_NEXT;
 }
 
-#if 0
+struct resolved_objects *
+create_resolved_objects(void)
+{
+	struct resolved_objects *ro = malloc(sizeof *ro);
+	if (!ro) {
+		fprintf(stderr, "Out of memory\n");
+		return NULL;
+	}
+
+	wldbg_ids_map_init(&ro->objects);
+	wl_list_init(&ro->additional_interfaces);
+
+	/* these are shared between connection */
+	/* and contain at least libwayland interfaces */
+	assert(!wl_list_empty(&shared_interfaces));
+	ro->interfaces = &shared_interfaces;
+
+	/* id 0 is always empty and 1 is always display */
+	wldbg_ids_map_insert(&ro->objects, 0, NULL);
+	wldbg_ids_map_insert(&ro->objects, 1,
+			     get_interface(ro, "wl_display"));
+
+	return ro;
+}
+
 static int
 resolve_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 	     int argc, const char *argv[])
 {
-	struct resolve *resolve;
-
 	(void) argc;
 	(void) argv;
+	(void) wldbg;
+	(void) pass;
 
-	resolve = malloc(sizeof *resolve);
-	if (!resolve)
-		return -1;
+	wl_list_init(&shared_interfaces);
+	struct interface *i;
+	int count = 0;
+	wl_list_for_each(i, &shared_interfaces, link)
+		count++;
 
-	resolve->wldbg = wldbg;
-	resolve->objects = &wldbg->resolved_objects;
-	wl_list_init(&resolve->interfaces);
 
-	pass->user_data = resolve;
 
 	/* get interfaces from libwayland.so */
-	parse_libwayland(resolve);
+	parse_libwayland();
 
 	/* this is a workaround until we have parser for binary */
-	add_hardcoded_xdg_shell(resolve);
+	add_hardcoded_xdg_shell();
 
 	/* XXX
 	if (path_to_binary)
@@ -395,10 +437,7 @@ resolve_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 
 	*/
 
-	/* id 0 is always empty and 1 is always display */
-	wldbg_ids_map_insert(resolve->objects, 0, NULL);
-	wldbg_ids_map_insert(resolve->objects, 1,
-				get_interface(resolve, "wl_display"));
+	dbg("Resolving objects inited\n");
 
 	return 0;
 }
@@ -407,13 +446,12 @@ static void
 resolve_destroy(void *data)
 {
 	struct interface *intf, *tmp;
-	struct resolve *resolve = data;
 
-	wl_list_for_each_safe(intf, tmp, &resolve->interfaces, link) {
+	(void) data;
+
+	wl_list_for_each_safe(intf, tmp, &shared_interfaces, link) {
 		free(intf);
 	}
-
-	free(resolve);
 }
 
 struct pass *
@@ -454,4 +492,3 @@ wldbg_add_resolve_pass(struct wldbg *wldbg)
 
 	return 0;
 }
-#endif

@@ -339,7 +339,8 @@ cmd_pass(struct wldbg_interactive *wldbgi,
 void
 print_objects(struct message *message)
 {
-	struct wldbg_ids_map *map = &message->connection->resolved_objects;
+	struct wldbg_ids_map *map
+		= resolved_objects_get_objects(message->connection->resolved_objects);
 	const struct wl_interface *intf;
 	uint32_t id;
 

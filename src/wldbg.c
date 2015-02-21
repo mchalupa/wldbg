@@ -428,7 +428,12 @@ wldbg_connection_create(struct wldbg *wldbg)
 	if (!conn)
 		return NULL;
 
-	wldbg_ids_map_init(&conn->resolved_objects);
+	conn->resolved_objects = create_resolved_objects();
+	if (!conn->resolved_objects) {
+		free(conn);
+		return NULL;
+	}
+
 	conn->wldbg = wldbg;
 
 	if (connect_to_wayland_server(conn, NULL) < 0) {
@@ -651,8 +656,8 @@ wldbg_init(struct wldbg *wldbg)
 	wldbg->handled_signals = signals;
 
 	/* init resolving wayland objects */
-	//if (wldbg_add_resolve_pass(wldbg) < 0)
-	//	goto err_signals;
+	if (wldbg_add_resolve_pass(wldbg) < 0)
+		goto err_signals;
 
 	return 0;
 
