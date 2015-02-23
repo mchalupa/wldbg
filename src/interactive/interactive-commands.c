@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Marek Chalupa
+ * Copyright (c) 2014 - 2015 Marek Chalupa
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -40,6 +40,7 @@
 #include "util.h"
 #include "print.h"
 #include "wldbg-private.h"
+#include "resolve.h"
 
 static unsigned int breakpoint_next_id = 1;
 
@@ -446,6 +447,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 
 	(void) message;
 	(void) buf;
+	(void) wldbgi;
 
 	if (strncmp(buf, "server", 6) == 0
 		|| (buf[0] == 's' && isspace(buf[1]))) {
