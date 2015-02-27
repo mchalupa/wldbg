@@ -476,6 +476,31 @@ err:
 	return -1;
 }
 
+static int
+wldbg_add_connection(struct wldbg *wldbg, struct wldbg_connection *conn)
+{
+	assert(wldbg->connections_num >= 0);
+
+	wl_list_insert(&wldbg->connections, &conn->link);
+	++wldbg->connections_num;
+
+	return wldbg->connections_num;
+}
+
+static int
+wldbg_remove_connection(struct wldbg_connection *conn)
+{
+	struct wldbg *wldbg = conn->wldbg;
+
+	--wldbg->connections_num;
+	assert(wldbg->connections_num >= 0
+	       && "BUG: removed more connections than added");
+
+	wl_list_remove(&conn->link);
+
+	return wldbg->connections_num;
+}
+
 struct wldbg_connection *
 spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 {
@@ -627,6 +652,7 @@ wldbg_init(struct wldbg *wldbg)
 
 	wl_list_init(&wldbg->passes);
 	wl_list_init(&wldbg->monitored_fds);
+	wl_list_init(&wldbg->connections);
 
 	wldbg->epoll_fd = epoll_create1(0);
 	if (wldbg->epoll_fd == -1) {
@@ -725,6 +751,7 @@ int main(int argc, char *argv[])
 	struct wldbg wldbg;
 	/* XXX program info would be better name? */
 	struct cmd_options cmd_opts;
+	struct wldbg_connection *conn;
 
 	if (argc == 1) {
 		help();
@@ -757,9 +784,11 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	wldbg.connection = spawn_client(&wldbg, cmd_opts.path, cmd_opts.argv);
-	if (wldbg.connection == NULL)
+	conn = spawn_client(&wldbg, cmd_opts.path, cmd_opts.argv);
+	if (conn == NULL)
 		goto err;
+
+	wldbg_add_connection(&wldbg, conn);
 
 	if (wldbg_run(&wldbg) < 0)
 		goto err;

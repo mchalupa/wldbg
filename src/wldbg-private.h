@@ -92,7 +92,8 @@ struct wldbg {
 	} flags;
 
 	/* this will be list later */
-	struct wldbg_connection *connection;
+	struct wl_list connections;
+	int connections_num;
 };
 
 struct pass {
@@ -125,6 +126,7 @@ struct wldbg_connection {
 	} client;
 
 	struct resolved_objects *resolved_objects;
+	struct wl_list link;
 };
 
 struct cmd_options {

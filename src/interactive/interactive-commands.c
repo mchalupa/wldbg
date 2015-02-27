@@ -56,7 +56,7 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 
 	if (wldbgi->wldbg->flags.running
 		&& !wldbgi->wldbg->flags.error
-		&& wldbgi->wldbg->connection != NULL) {
+		&& !wl_list_empty(&wldbgi->wldbg->connections)) {
 
 		printf("Program seems running. "
 			"Do you really want to quit? (y)\n");
