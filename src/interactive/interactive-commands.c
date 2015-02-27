@@ -44,6 +44,17 @@
 
 static unsigned int breakpoint_next_id = 1;
 
+void
+terminate_client(struct wldbg_connection *conn)
+{
+	pid_t pid = conn->client.pid;
+
+	dbg("Terminating client %d\n", pid);
+
+	kill(pid, SIGTERM);
+	waitpid(pid, NULL, 0);
+}
+
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
 		struct message *message,
@@ -63,11 +74,8 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 
 			chr = getchar();
 			if (chr == 'y') {
-				dbg("Killing the client\n");
-				kill(0, SIGTERM);
-				dbg("Waiting for the client to terminate\n");
-				/* XXX do it properly */
-				waitpid(-1, NULL, 0);
+				wldbg_foreach_connection(wldbgi->wldbg,
+							 terminate_client);
 			} else {
 				/* clear buffer */
 				while (getchar() != '\n')

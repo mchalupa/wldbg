@@ -419,8 +419,6 @@ err:
 	return -1;
 }
 
-
-
 static struct wldbg_connection *
 wldbg_connection_create(struct wldbg *wldbg)
 {
@@ -499,6 +497,16 @@ wldbg_remove_connection(struct wldbg_connection *conn)
 	wl_list_remove(&conn->link);
 
 	return wldbg->connections_num;
+}
+
+void
+wldbg_foreach_connection(struct wldbg *wldbg,
+			 void (*func)(struct wldbg_connection *))
+{
+	struct wldbg_connection *conn;
+
+	wl_list_for_each(conn, &wldbg->connections, link)
+		func(conn);
 }
 
 struct wldbg_connection *

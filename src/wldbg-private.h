@@ -129,6 +129,10 @@ struct wldbg_connection {
 	struct wl_list link;
 };
 
+void
+wldbg_foreach_connection(struct wldbg *wldbg,
+			 void (*func)(struct wldbg_connection *));
+
 struct cmd_options {
 	char *path;
 	int argc;

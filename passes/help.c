@@ -51,6 +51,7 @@ help_out(void *user_data, struct message *message)
 	(void) message;
 	assert(wldbg);
 
+#if 0
 	printf("Wldbg:\n-------\n\n");
 	printf( "Server {\n"
 		"\tfd = %d\n"
@@ -79,6 +80,7 @@ help_out(void *user_data, struct message *message)
 
 	/* leaky leaky.. */
 	exit(0);
+#endif
 }
 
 static int
