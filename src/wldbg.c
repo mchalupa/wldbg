@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Marek Chalupa
+ * Copyright (c) 2014 - 2015 Marek Chalupa
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -62,64 +62,6 @@ interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
 /* defined in passes.c */
 int
 load_passes(struct wldbg *wldbg, int argc, const char *argv[]);
-
-/* copied out from wayland-client.c */
-/* renamed from connect_to_socket -> connect_to_wayland_socket */
-static int
-connect_to_wayland_socket(const char *name)
-{
-	struct sockaddr_un addr;
-	socklen_t size;
-	const char *runtime_dir;
-	int name_size, fd;
-
-	dbg("CONNECTING TO %s\n", name);
-
-	runtime_dir = getenv("XDG_RUNTIME_DIR");
-	if (!runtime_dir) {
-		wl_log("error: XDG_RUNTIME_DIR not set in the environment.\n");
-		/* to prevent programs reporting
-		 * "failed to create display: Success" */
-		errno = ENOENT;
-		return -1;
-	}
-
-	if (name == NULL)
-		name = getenv("WAYLAND_DISPLAY");
-	if (name == NULL)
-		name = "wayland-0";
-
-	fd = wl_os_socket_cloexec(PF_LOCAL, SOCK_STREAM, 0);
-	if (fd < 0)
-		return -1;
-
-	memset(&addr, 0, sizeof addr);
-	addr.sun_family = AF_LOCAL;
-	name_size =
-		snprintf(addr.sun_path, sizeof addr.sun_path,
-			 "%s/%s", runtime_dir, name) + 1;
-
-	assert(name_size > 0);
-	if (name_size > (int)sizeof addr.sun_path) {
-		wl_log("error: socket path \"%s/%s\" plus null terminator"
-		       " exceeds 108 bytes\n", runtime_dir, name);
-		close(fd);
-		/* to prevent programs reporting
-		 * "failed to add socket: Success" */
-		errno = ENAMETOOLONG;
-		return -1;
-	};
-
-	size = offsetof(struct sockaddr_un, sun_path) + name_size;
-
-	if (connect(fd, (struct sockaddr *) &addr, size) < 0) {
-		close(fd);
-		return -1;
-	}
-
-	return fd;
-}
-
 
 struct wldbg_fd_callback {
 	int fd;
@@ -378,55 +320,11 @@ dispatch_signals(int fd, void *data)
 	return 1;
 }
 
-static int
-get_pid_for_socket(int fd)
-{
-	struct ucred cr;
-	socklen_t len = sizeof cr;
-
-	getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &len);
-	vdbg("Got fd's %d pid: %d\n", fd, cr.pid);
-
-	return cr.pid;
-}
-
-static int
-connect_to_wayland_server(struct wldbg_connection *conn, const char *display)
-{
-	conn->server.fd = connect_to_wayland_socket(display);
-	if (conn->server.fd == -1) {
-		perror("Failed opening wayland socket");
-		return -1;
-	}
-
-	conn->server.connection = wl_connection_create(conn->server.fd);
-	if (!conn->server.connection) {
-		perror("Failed creating wl_connection");
-		goto err;
-	}
-
-	if (wldbg_monitor_fd(conn->wldbg, conn->server.fd,
-			     dispatch_messages, conn) < 0)
-		goto err_conn;
-
-
-	/* XXX this is shared between clients and can be in
-	 * wldbg struct */
-	conn->server.pid = get_pid_for_socket(conn->server.fd);
-
-	return 0;
-
-err_conn:
-	wl_connection_destroy(conn->server.connection);
-err:
-	close(conn->server.fd);
-	return -1;
-}
-
 static struct wldbg_connection *
 wldbg_connection_create(struct wldbg *wldbg)
 {
 	const char *sock_name = NULL;
+	int fd;
 
 	struct wldbg_connection *conn = malloc(sizeof *conn);
 	if (!conn)
@@ -443,8 +341,16 @@ wldbg_connection_create(struct wldbg *wldbg)
 	if (wldbg->flags.server_mode)
 		sock_name = WLDBG_SERVER_MODE_SOCKET_NAME;
 
-	if (connect_to_wayland_server(conn, sock_name) < 0) {
+	fd = connect_to_wayland_server(conn, sock_name);
+	if (fd < 0) {
 		free(conn);
+		return NULL;
+	}
+
+	if (wldbg_monitor_fd(wldbg, conn->server.fd,
+			     dispatch_messages, conn) < 0) {
+		free(conn);
+		close(fd);
 		return NULL;
 	}
 
@@ -776,112 +682,20 @@ err:
 	return -1;
 }
 
-char *
-get_socket_path(const char *display)
-{
-	size_t size = sizeof(struct sockaddr_un);
-	const char *xdg_env;
-	int ret;
-
-	xdg_env = getenv("XDG_RUNTIME_DIR");
-	if (!xdg_env)
-		xdg_env = "/tmp";
-
-	char *path = malloc(size);
-	if (!path) {
-		fprintf(stderr, "Out of memory\n");
-		return NULL;
-	}
-
-	ret = snprintf(path, size, "%s/%s", xdg_env, display);
-	if((size_t) ret >= size) {
-		fprintf(stderr, "Cannot construct path to new socket\n");
-		free(path);
-		return NULL;
-	}
-
-	return path;
-}
-
-static int
-server_mode_add_socket(struct wldbg *wldbg, const char *name)
-{
-	socklen_t size;
-	struct sockaddr_un *addr = &wldbg->server_mode.addr;
-	int sock;
-
-	assert(wldbg->flags.server_mode);
-	memset(addr, 0, sizeof *addr);
-
-	sock = socket(PF_LOCAL, SOCK_STREAM, 0);
-	if (sock < 0) {
-		return -1;
-	}
-
-	addr->sun_family = AF_UNIX;
-	strcpy(addr->sun_path, name);
-
-	size = SUN_LEN(addr);
-	if (bind(sock, (struct sockaddr *) addr, size) < 0) {
-		perror("bind() failed");
-		goto err;
-	}
-
-	if (listen(sock, 128) < 0) {
-		perror("listen() failed:");
-		goto err;
-	}
-
-	dbg("Server mode: listening on fd %d\n", sock);
-
-	return sock;
-err:
-	close(sock);
-	return -1;
-}
-
 static int
 server_mode_init(struct wldbg *wldbg)
 {
 	int fd;
-	char *orig_socket = get_socket_path("wayland-0");
-	char *new_socket = get_socket_path(WLDBG_SERVER_MODE_SOCKET_NAME);
 
-	if (!orig_socket || ! new_socket)
-		goto err_strs;
-
-	/* rename the socket */
-	if (rename(orig_socket, new_socket) < 0) {
-		perror("renaming wayland socket");
-		goto err_strs;
-	}
-
-	/* create new fake socket */
-	fd = server_mode_add_socket(wldbg, orig_socket);
-	if (fd == -1)
-		goto err_sock;
-
-	wldbg->server_mode.fd = fd;
-
-	/* this will make new clients connect to new_socket
-	 * instead of orig_socket */
-	wldbg->server_mode.old_socket_name = orig_socket;
-	wldbg->server_mode.wldbg_socket_name = new_socket;
+	fd = server_mode_change_sockets(wldbg);
+	if (fd < 0)
+		return -1;
 
 	if (wldbg_monitor_fd(wldbg, fd, server_mode_accept, wldbg) < 0) {
 		assert(0 && "LEAK");
 	}
 
 	return 0;
-
-err_sock:
-	unlink(orig_socket);
-	if (rename(new_socket, orig_socket) < 0)
-		perror("Tried rename back the sockets");
-err_strs:
-	free(orig_socket);
-	free(new_socket);
-	return -1;
 }
 
 static int

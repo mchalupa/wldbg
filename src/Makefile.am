@@ -35,6 +35,8 @@ wldbg_SOURCES =			\
 	wldbg-private.c		\
 	wldbg-private.h		\
 	passes.c		\
+	sockets.c		\
+	sockets.h		\
 	util.c			\
 	util.h			\
 	print.c			\
