@@ -784,14 +784,14 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	if (!wldbg.flags.server_mode) {
+	if (wldbg.flags.server_mode) {
+		printf("Listening for incoming connections...\n");
+	} else {
 		conn = spawn_client(&wldbg, cmd_opts.path, cmd_opts.argv);
 		if (conn == NULL)
 			goto err;
 
 		wldbg_add_connection(conn);
-	} else {
-		printf("Listening for incoming connections...\n");
 	}
 
 	if (wldbg_run(&wldbg) < 0)
