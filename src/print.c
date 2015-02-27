@@ -114,6 +114,8 @@ print_bare_message(struct message *message, struct wl_list *filters)
 	if (filters && filter_match(filters, message, interface))
 		return;
 
+	if (conn->wldbg->connections_num > 1)
+		printf("[%5d] ", conn->client.pid);
 	printf("%c: ", message->from == SERVER ? 'S' : 'C');
 
 	/* if we do not know interface or the interface is

@@ -52,6 +52,8 @@ int debug = 0;
 int debug_verbose = 0;
 #endif
 
+#define WLDBG_SERVER_MODE_SOCKET_NAME "wldbg-wayland-0"
+
 /* defined in interactive.c */
 int
 interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
@@ -70,6 +72,8 @@ connect_to_wayland_socket(const char *name)
 	socklen_t size;
 	const char *runtime_dir;
 	int name_size, fd;
+
+	dbg("CONNECTING TO %s\n", name);
 
 	runtime_dir = getenv("XDG_RUNTIME_DIR");
 	if (!runtime_dir) {
@@ -375,13 +379,13 @@ dispatch_signals(int fd, void *data)
 }
 
 static int
-get_server_pid(int fd)
+get_pid_for_socket(int fd)
 {
 	struct ucred cr;
 	socklen_t len = sizeof cr;
 
 	getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cr, &len);
-	dbg("Got server's pid: %d\n", cr.pid);
+	vdbg("Got fd's %d pid: %d\n", fd, cr.pid);
 
 	return cr.pid;
 }
@@ -408,7 +412,7 @@ connect_to_wayland_server(struct wldbg_connection *conn, const char *display)
 
 	/* XXX this is shared between clients and can be in
 	 * wldbg struct */
-	conn->server.pid = get_server_pid(conn->server.fd);
+	conn->server.pid = get_pid_for_socket(conn->server.fd);
 
 	return 0;
 
@@ -422,6 +426,8 @@ err:
 static struct wldbg_connection *
 wldbg_connection_create(struct wldbg *wldbg)
 {
+	const char *sock_name = NULL;
+
 	struct wldbg_connection *conn = malloc(sizeof *conn);
 	if (!conn)
 		return NULL;
@@ -434,12 +440,37 @@ wldbg_connection_create(struct wldbg *wldbg)
 
 	conn->wldbg = wldbg;
 
-	if (connect_to_wayland_server(conn, NULL) < 0) {
+	if (wldbg->flags.server_mode)
+		sock_name = WLDBG_SERVER_MODE_SOCKET_NAME;
+
+	if (connect_to_wayland_server(conn, sock_name) < 0) {
 		free(conn);
 		return NULL;
 	}
 
 	return conn;
+}
+
+
+static int
+create_client_connection_for_fd(struct wldbg_connection *conn, int fd)
+{
+	conn->client.connection = wl_connection_create(fd);
+	if (!conn->client.connection) {
+		perror("Failed creating wl_connection (client)");
+		return -1;
+	}
+
+	if (wldbg_monitor_fd(conn->wldbg, fd,
+			     dispatch_messages, conn) < 0) {
+		wl_connection_destroy(conn->client.connection);
+		return -1;
+	}
+
+	conn->client.fd = fd;
+	conn->client.pid = get_pid_for_socket(fd);
+
+	return 0;
 }
 
 static int
@@ -452,19 +483,9 @@ create_client_connection(struct wldbg_connection *conn)
 		return -1;
 	}
 
-	conn->client.fd = sock[0];
-
-	conn->client.connection = wl_connection_create(conn->client.fd);
-	if (!conn->client.connection) {
-		perror("Failed creating wl_connection (client)");
+	if (create_client_connection_for_fd(conn, sock[0]) < 0)
 		goto err;
-	}
 
-	if (wldbg_monitor_fd(conn->wldbg, conn->client.fd,
-			     dispatch_messages, conn) < 0) {
-		wl_connection_destroy(conn->client.connection);
-		goto err;
-	}
 
 	return sock[1];
 
@@ -475,8 +496,10 @@ err:
 }
 
 static int
-wldbg_add_connection(struct wldbg *wldbg, struct wldbg_connection *conn)
+wldbg_add_connection(struct wldbg_connection *conn)
 {
+	struct wldbg *wldbg = conn->wldbg;
+
 	assert(wldbg->connections_num >= 0);
 
 	wl_list_insert(&wldbg->connections, &conn->link);
@@ -509,6 +532,7 @@ wldbg_foreach_connection(struct wldbg *wldbg,
 		func(conn);
 }
 
+
 struct wldbg_connection *
 spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 {
@@ -520,14 +544,13 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 	assert(!wldbg->flags.exit);
 
 	conn = wldbg_connection_create(wldbg);
-	if (!conn) {
-		fprintf(stderr, "Out of memory\n");
+	if (!conn)
 		return NULL;
-	}
 
 	sock = create_client_connection(conn);
 	if (sock < 0) {
 		/* XXX destroy conn */
+		assert(0 && "LEAK: destroy conection");
 		return NULL;
 	}
 
@@ -574,6 +597,7 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 
 err:
 	/* XXX destroy conn */
+	assert(0 && "LEAK: destroy conection");
 	return NULL;
 }
 
@@ -717,10 +741,153 @@ help(void)
 }
 
 static int
+server_mode_accept(int fd, void *data)
+{
+	struct wldbg *wldbg = data;
+	struct sockaddr_un name;
+	socklen_t length;
+	int client_fd;
+	struct wldbg_connection *conn;
+
+	length = sizeof name;
+	client_fd = wl_os_accept_cloexec(fd, (struct sockaddr *) &name,
+					 &length);
+	if (client_fd < 0) {
+		perror("accept");
+		return -1;
+	}
+
+	conn = wldbg_connection_create(wldbg);
+	if (!conn)
+		goto err;
+
+	if (create_client_connection_for_fd(conn, client_fd) < 0) {
+		/* XXX destroy conn */
+		assert(0 && "LEAK: destroy conection");
+		goto err;
+	}
+
+	wldbg_add_connection(conn);
+	dbg("Created new connection to client: %s\n", name.sun_path);
+
+	return 1;
+err:
+	close(client_fd);
+	return -1;
+}
+
+char *
+get_socket_path(const char *display)
+{
+	size_t size = sizeof(struct sockaddr_un);
+	const char *xdg_env;
+	int ret;
+
+	xdg_env = getenv("XDG_RUNTIME_DIR");
+	if (!xdg_env)
+		xdg_env = "/tmp";
+
+	char *path = malloc(size);
+	if (!path) {
+		fprintf(stderr, "Out of memory\n");
+		return NULL;
+	}
+
+	ret = snprintf(path, size, "%s/%s", xdg_env, display);
+	if((size_t) ret >= size) {
+		fprintf(stderr, "Cannot construct path to new socket\n");
+		free(path);
+		return NULL;
+	}
+
+	return path;
+}
+
+static int
+server_mode_add_socket(struct wldbg *wldbg, const char *name)
+{
+	socklen_t size;
+	struct sockaddr_un *addr = &wldbg->server_mode.addr;
+	int sock;
+
+	assert(wldbg->flags.server_mode);
+	memset(addr, 0, sizeof *addr);
+
+	sock = socket(PF_LOCAL, SOCK_STREAM, 0);
+	if (sock < 0) {
+		return -1;
+	}
+
+	addr->sun_family = AF_UNIX;
+	strcpy(addr->sun_path, name);
+
+	size = SUN_LEN(addr);
+	if (bind(sock, (struct sockaddr *) addr, size) < 0) {
+		perror("bind() failed");
+		goto err;
+	}
+
+	if (listen(sock, 128) < 0) {
+		perror("listen() failed:");
+		goto err;
+	}
+
+	dbg("Server mode: listening on fd %d\n", sock);
+
+	return sock;
+err:
+	close(sock);
+	return -1;
+}
+
+static int
+server_mode_init(struct wldbg *wldbg)
+{
+	int fd;
+	char *orig_socket = get_socket_path("wayland-0");
+	char *new_socket = get_socket_path(WLDBG_SERVER_MODE_SOCKET_NAME);
+
+	if (!orig_socket || ! new_socket)
+		goto err_strs;
+
+	/* rename the socket */
+	if (rename(orig_socket, new_socket) < 0) {
+		perror("renaming wayland socket");
+		goto err_strs;
+	}
+
+	/* create new fake socket */
+	fd = server_mode_add_socket(wldbg, orig_socket);
+	if (fd == -1)
+		goto err_sock;
+
+	wldbg->server_mode.fd = fd;
+
+	/* this will make new clients connect to new_socket
+	 * instead of orig_socket */
+	wldbg->server_mode.old_socket_name = orig_socket;
+	wldbg->server_mode.wldbg_socket_name = new_socket;
+
+	if (wldbg_monitor_fd(wldbg, fd, server_mode_accept, wldbg) < 0) {
+		assert(0 && "LEAK");
+	}
+
+	return 0;
+
+err_sock:
+	unlink(orig_socket);
+	if (rename(new_socket, orig_socket) < 0)
+		perror("Tried rename back the sockets");
+err_strs:
+	free(orig_socket);
+	free(new_socket);
+	return -1;
+}
+
+static int
 parse_opts(struct wldbg *wldbg, struct cmd_options *opts, int argc, char *argv[])
 {
-	/* I know about getopt, but we need different behaviour,
-	 * so use our own arguments parsing */
+	/* XXX rework parsing arguments and passing options */
 	if (strcmp(argv[1], "--help") == 0 ||
 		strcmp(argv[1], "-h") == 0) {
 		help();
@@ -729,6 +896,17 @@ parse_opts(struct wldbg *wldbg, struct cmd_options *opts, int argc, char *argv[]
 		strcmp(argv[1], "-i") == 0) {
 		if (interactive_init(wldbg, opts, argc - 2,
 				     (const char **) argv + 2) < 0)
+			return -1;
+	} else if (strcmp(argv[1], "--server-mode") == 0 ||
+		   strcmp(argv[1], "-s") == 0) {
+		wldbg->flags.server_mode = 1;
+
+		if (server_mode_init(wldbg) < 0)
+			return -1;
+
+		/* server mode is interactive too -- at least
+		 * ATM */
+		if (interactive_init(wldbg, NULL, 0, NULL) < 0)
 			return -1;
 	} else {
 		fprintf(stderr, "Not implemented yet\n");
@@ -792,11 +970,15 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 
-	conn = spawn_client(&wldbg, cmd_opts.path, cmd_opts.argv);
-	if (conn == NULL)
-		goto err;
+	if (!wldbg.flags.server_mode) {
+		conn = spawn_client(&wldbg, cmd_opts.path, cmd_opts.argv);
+		if (conn == NULL)
+			goto err;
 
-	wldbg_add_connection(&wldbg, conn);
+		wldbg_add_connection(conn);
+	} else {
+		printf("Listening for incoming connections...\n");
+	}
 
 	if (wldbg_run(&wldbg) < 0)
 		goto err;

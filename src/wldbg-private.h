@@ -29,6 +29,7 @@
 
 #include <unistd.h>
 #include <sys/signalfd.h>
+#include <sys/un.h>
 
 #include "wayland/wayland-util.h"
 #include "wldbg-pass.h"
@@ -85,11 +86,19 @@ struct wldbg {
 	unsigned int resolving_objects : 1;
 
 	struct {
-		unsigned int one_by_one	: 1;
-		unsigned int running	: 1;
-		unsigned int error	: 1;
-		unsigned int exit	: 1;
+		unsigned int one_by_one		: 1;
+		unsigned int running		: 1;
+		unsigned int error		: 1;
+		unsigned int exit		: 1;
+		unsigned int server_mode	: 1;
 	} flags;
+
+	struct {
+		int fd;
+		struct sockaddr_un addr;
+		char *old_socket_name;
+		char *wldbg_socket_name;
+	} server_mode;
 
 	/* this will be list later */
 	struct wl_list connections;

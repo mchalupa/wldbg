@@ -256,10 +256,9 @@ interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
 				handle_sigint, wldbgi) < 0)
 		goto err_pass;
 
-	if (argc == 0) {
-		query_user(wldbgi, NULL);
+	/* we can bail out here in server mode */
+	if (wldbg->flags.server_mode)
 		return 0;
-	}
 
 	/* TODO use getopt */
 	if (strcmp(argv[0], "--") == 0) {
