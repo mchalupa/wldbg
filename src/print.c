@@ -94,7 +94,7 @@ filter_match(struct wl_list *filters, struct message *message,
 void
 print_bare_message(struct message *message, struct wl_list *filters)
 {
-	int i;
+	int i, is_buggy = 0;
 	uint32_t j, id, opcode, pos, len, size, *p;
 	const struct wl_interface *interface, *obj;
 	const char *signature;
@@ -126,14 +126,31 @@ print_bare_message(struct message *message, struct wl_list *filters)
 		return;
 	}
 
-	if (message->from == SERVER)
-		wl_message = &interface->events[opcode];
-	else
-		wl_message = &interface->methods[opcode];
+	if (message->from == SERVER) {
+		if ((uint32_t) interface->event_count <= opcode)
+			is_buggy = 1;
 
-	printf("%s@%u.%s(",
-		interface->name, id,
-		wl_message->name);
+		wl_message = &interface->events[opcode];
+	} else {
+		if ((uint32_t) interface->method_count <= opcode)
+			is_buggy = 1;
+
+		wl_message = &interface->methods[opcode];
+	}
+
+	printf("%s@%u.", interface->name, id);
+
+	/* catch buggy events/requests. We don't want them to make
+	 * wldbg crash */
+	if (!wl_message || !wl_message->signature || is_buggy) {
+		printf("_buggy %s_",
+			message->from == SERVER ? "event" : "request");
+		printf("[opcode %u][size %uB]\n", opcode, size);
+		return;
+	} else {
+		printf("%s(", wl_message->name);
+	}
+
 
 	/* 2 is position of the first argument */
 	pos = 2;
@@ -144,6 +161,15 @@ print_bare_message(struct message *message, struct wl_list *filters)
 
 		if (pos > 2)
 			printf(", ");
+
+		/* buffer has 4096 bytes and position jumps over 4 bytes */
+		if (pos >= 1024) {
+			/* be kind to user... for now */
+			fflush(stdout);
+			fprintf(stderr, "Probably wrong %s, expect crash\n",
+				message->from == SERVER ? "event" : "request");
+			break;
+		}
 
 		switch (signature[i]) {
 		case 'u':

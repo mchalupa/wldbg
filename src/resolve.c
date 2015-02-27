@@ -332,6 +332,19 @@ resolve_in(void *user_data, struct message *message)
 		if (intf == &unknown_interface || intf == &free_entry)
 			return PASS_NEXT;
 
+		if (((uint32_t) intf->event_count) <= opcode) {
+			fprintf(stderr,
+				"Invalid opcode in event, maybe protocol"
+				" version mismatch? opcode: %u ", opcode);
+			if (intf->event_count == 1)
+				fprintf(stderr, "available opcodes: 0\n");
+			else
+				fprintf(stderr, "available opcodes: 0 - %d\n",
+					intf->event_count - 1);
+			return PASS_NEXT;
+		}
+
+
 		wl_message = &intf->events[opcode];
 
 		/* handle delete_id event */
@@ -367,6 +380,18 @@ resolve_out(void *user_data, struct message *message)
 		/* unknown interface */
 		if (intf == &unknown_interface || intf == &free_entry)
 			return PASS_NEXT;
+
+		if (((uint32_t) intf->method_count) <= opcode) {
+			fprintf(stderr,
+				"Invalid opcode in request, maybe protocol"
+				" version mismatch? opcode: %u ", opcode);
+			if (intf->method_count == 1)
+				fprintf(stderr, "available opcodes: 0\n");
+			else
+				fprintf(stderr, "available opcodes: 0 - %d\n",
+					intf->method_count - 1);
+			return PASS_NEXT;
+		}
 
 		wl_message = &intf->methods[opcode];
 
