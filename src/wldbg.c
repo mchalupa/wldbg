@@ -774,7 +774,8 @@ server_mode_init(struct wldbg *wldbg)
 		return -1;
 
 	if (wldbg_monitor_fd(wldbg, fd, server_mode_accept, wldbg) < 0) {
-		assert(0 && "LEAK");
+		close(fd);
+		return -1;
 	}
 
 	return 0;
