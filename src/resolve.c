@@ -508,6 +508,7 @@ create_resolve_pass(void)
 	pass->wldbg_pass.destroy = resolve_destroy;
 	pass->wldbg_pass.server_pass = resolve_in;
 	pass->wldbg_pass.client_pass = resolve_out;
+	pass->wldbg_pass.description = "Assign interfaces to objects";
 
 	return pass;
 }

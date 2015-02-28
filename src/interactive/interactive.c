@@ -189,9 +189,9 @@ handle_sigint(int fd, void *data)
 	}
 
 	vdbg("Wldbgi: Got interrupt (SIGINT)\n");
-	wldbgi->stop = 1;
 
 	putchar('\n');
+	query_user(wldbgi, &wldbgi->wldbg->message);
 
 	return 1;
 }
@@ -253,7 +253,7 @@ interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
 
 	vdbg("Adding interactive SIGINT handler (fd %d)\n", wldbgi->sigint_fd);
 	if (wldbg_monitor_fd(wldbg, wldbgi->sigint_fd,
-				handle_sigint, wldbgi) < 0)
+			     handle_sigint, wldbgi) < 0)
 		goto err_pass;
 
 	/* we can bail out here in server mode */

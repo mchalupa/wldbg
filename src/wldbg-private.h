@@ -31,6 +31,7 @@
 #include <sys/signalfd.h>
 #include <sys/un.h>
 
+#include "wldbg.h"
 #include "wayland/wayland-util.h"
 #include "wldbg-pass.h"
 #include "util.h"
@@ -78,6 +79,9 @@ struct resolved_objects;
 struct wldbg {
 	int epoll_fd;
 	int signals_fd;
+
+	struct message message;
+	char *buffer;
 
 	sigset_t handled_signals;
 	struct wl_list passes;

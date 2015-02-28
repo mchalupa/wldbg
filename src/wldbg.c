@@ -342,33 +342,36 @@ process_data(struct wldbg_connection *conn,
 	     struct wl_connection *wl_connection, int len)
 {
 	int ret = 0;
-	char buffer[4096];
-	struct message message;
 	struct wl_connection *write_wl_conn;
 	struct wldbg *wldbg = conn->wldbg;
+	struct message *message = &wldbg->message;
+	char *buffer = wldbg->buffer;
+
+	/* reset the message */
+	memset(message, 0, sizeof *message);
 
 	wl_connection_copy(wl_connection, buffer, len);
 	wl_connection_consume(wl_connection, len);
 
 	if (wl_connection == conn->server.connection) {
 		write_wl_conn = conn->client.connection;
-		message.from = SERVER;
+		message->from = SERVER;
 	} else {
 		write_wl_conn = conn->server.connection;
-		message.from = CLIENT;
+		message->from = CLIENT;
 	}
 
 	wl_connection_copy_fds(wl_connection, write_wl_conn);
 
-	message.data = buffer;
-	message.size = len;
-	message.connection = conn;
+	message->data = buffer;
+	message->size = len;
+	message->connection = conn;
 
 	if (wldbg->flags.one_by_one) {
-		ret = process_one_by_one(write_wl_conn, &message);
+		ret = process_one_by_one(write_wl_conn, message);
 	} else {
 		/* process passes */
-		run_passes(&message);
+		run_passes(message);
 
 		/* if some pass wants exit or an error occured,
 		 * do not write into the connection */
@@ -377,9 +380,10 @@ process_data(struct wldbg_connection *conn,
 		if (wldbg->flags.error)
 			return -1;
 
-		/* resend the data */
+		/* resend the data. Use message->data, not buffer,
+		 * because some pass could have reallocated the data */
 		if (wl_connection_write(write_wl_conn,
-					message.data, message.size) < 0) {
+					message->data, message->size) < 0) {
 			perror("wl_connection_write");
 			return -1;
 		}
@@ -391,6 +395,8 @@ process_data(struct wldbg_connection *conn,
 
 		ret = 1;
 	}
+
+	/* What if some pass reallocated the buffer? */
 
 	return ret;
 }
@@ -599,6 +605,9 @@ wldbg_destroy(struct wldbg *wldbg)
 	struct pass *pass, *pass_tmp;
 	struct wldbg_fd_callback *cb, *cb_tmp;
 
+	/* free buffer */
+	free(wldbg->buffer);
+
 	if (wldbg->epoll_fd >= 0)
 		close(wldbg->epoll_fd);
 	if (wldbg->signals_fd >= 0)
@@ -635,6 +644,12 @@ wldbg_init(struct wldbg *wldbg)
 	memset(wldbg, 0, sizeof *wldbg);
 	wldbg->signals_fd = wldbg->epoll_fd = -1;
 
+	/* wl_buffer has size 4096 and probably will
+	 * have some time */
+	wldbg->buffer = malloc(4096);
+	if (!wldbg->buffer)
+		return -1;
+
 	wl_list_init(&wldbg->passes);
 	wl_list_init(&wldbg->monitored_fds);
 	wl_list_init(&wldbg->connections);
@@ -642,7 +657,7 @@ wldbg_init(struct wldbg *wldbg)
 	wldbg->epoll_fd = epoll_create1(0);
 	if (wldbg->epoll_fd == -1) {
 		perror("epoll_create failed");
-		return -1;
+		goto err_data;
 	}
 
 	sigemptyset(&signals);
@@ -676,7 +691,8 @@ err_signals:
 	close(wldbg->signals_fd);
 err_epoll:
 	close(wldbg->epoll_fd);
-
+err_data:
+	free(wldbg->buffer);
 	return -1;
 }
 
@@ -715,8 +731,7 @@ server_mode_accept(int fd, void *data)
 		goto err;
 
 	if (create_client_connection_for_fd(conn, client_fd) < 0) {
-		/* XXX destroy conn */
-		assert(0 && "LEAK: destroy conection");
+		wldbg_connection_destroy(conn);
 		goto err;
 	}
 
