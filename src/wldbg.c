@@ -616,6 +616,8 @@ wldbg_destroy(struct wldbg *wldbg)
 	}
 
 	if (wldbg->flags.server_mode) {
+		server_mode_change_sockets_back(wldbg);
+
 		free(wldbg->server_mode.old_socket_name);
 		free(wldbg->server_mode.wldbg_socket_name);
 	}

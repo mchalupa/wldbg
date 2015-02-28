@@ -209,6 +209,27 @@ err:
 }
 
 int
+server_mode_change_sockets_back(struct wldbg *wldbg)
+{
+	/* remove wldbg socket - it is now named as the
+	 * old socket.. XXX The naming is confusing.. */
+	if (unlink(wldbg->server_mode.old_socket_name) < 0) {
+		perror("deleting named socket");
+		/* try continue, we'll probably fail right
+		 * the next step */
+	}
+
+	/* rename the socket */
+	if (rename(wldbg->server_mode.wldbg_socket_name,
+		   wldbg->server_mode.old_socket_name) < 0) {
+		perror("renaming wayland socket");
+		return -1;
+	}
+
+	return 0;
+}
+
+int
 server_mode_add_socket(struct wldbg *wldbg, const char *name)
 {
 	socklen_t size;

@@ -35,6 +35,9 @@ int
 server_mode_change_sockets(struct wldbg *wldbg);
 
 int
+server_mode_change_sockets_back(struct wldbg *wldbg);
+
+int
 server_mode_add_socket(struct wldbg *wldbg, const char *name);
 
 #endif /* _WLDBG_SOCKETS_H_ */
