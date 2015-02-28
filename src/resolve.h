@@ -38,4 +38,7 @@ resolved_objects_get_objects(struct resolved_objects *ro);
 struct resolved_objects *
 create_resolved_objects(void);
 
+void
+destroy_resolved_objects(struct resolved_objects *ro);
+
 #endif /* _WLDBG_RESOLVE_H_ */

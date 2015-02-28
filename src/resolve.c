@@ -203,6 +203,8 @@ parse_libwayland(void)
 		add_shared_interface(intf);
 	if ((intf = libwayland_get_interface(handle, "wl_subsurface_interface")))
 		add_shared_interface(intf);
+
+	dlclose(handle);
 }
 
 extern const struct wl_interface xdg_shell_interface;
@@ -431,6 +433,20 @@ create_resolved_objects(void)
 			     get_interface(ro, "wl_display"));
 
 	return ro;
+}
+
+void
+destroy_resolved_objects(struct resolved_objects *ro)
+{
+	struct interface *intf, *tmp;
+
+	wldbg_ids_map_release(&ro->objects);
+
+	wl_list_for_each_safe(intf, tmp, &ro->additional_interfaces, link) {
+		free(intf);
+	}
+
+	free(ro);
 }
 
 static int

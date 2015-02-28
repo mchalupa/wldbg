@@ -88,12 +88,14 @@ wldbg_connection_create(struct wldbg *wldbg)
 
 	fd = connect_to_wayland_server(conn, sock_name);
 	if (fd < 0) {
+		destroy_resolved_objects(conn->resolved_objects);
 		free(conn);
 		return NULL;
 	}
 
 	if (wldbg_monitor_fd(wldbg, conn->server.fd,
 			     dispatch_messages, conn) < 0) {
+		destroy_resolved_objects(conn->resolved_objects);
 		free(conn);
 		close(fd);
 		return NULL;
@@ -105,15 +107,19 @@ wldbg_connection_create(struct wldbg *wldbg)
 static void
 wldbg_connection_destroy(struct wldbg_connection *conn)
 {
-	struct wldbg_ids_map *objs
-		= resolved_objects_get_objects(conn->resolved_objects);
-	wldbg_ids_map_release(objs);
+	destroy_resolved_objects(conn->resolved_objects);
 
 	wl_connection_destroy(conn->server.connection);
 	wl_connection_destroy(conn->client.connection);
 
-	close(conn->server.fd);
-	close(conn->client.fd);
+	/* XXX new version of wl_connection_destroy does not close
+	 * filedescriptors, so if we will update, uncomment this
+
+	if (close(conn->server.fd) < 0)
+		perror("wldbg_connectin_destroy: closing server fd");
+	if (close(conn->client.fd) < 0)
+		perror("wldbg_connectin_destroy: closing client fd");
+	*/
 
 	free(conn);
 }
@@ -155,9 +161,9 @@ void
 wldbg_foreach_connection(struct wldbg *wldbg,
 			 void (*func)(struct wldbg_connection *))
 {
-	struct wldbg_connection *conn;
+	struct wldbg_connection *conn, *tmp;
 
-	wl_list_for_each(conn, &wldbg->connections, link)
+	wl_list_for_each_safe(conn, tmp, &wldbg->connections, link)
 		func(conn);
 }
 
@@ -206,14 +212,11 @@ wldbg_remove_callback(struct wldbg *wldbg, struct wldbg_fd_callback *cb)
 
 	wl_list_remove(&cb->link);
 	free(cb);
-	/* XXX aren't we leaking data? */
 
 	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
 		perror("Failed removing fd from epoll");
 		return -1;
 	}
-
-	close(fd);
 
 	return 0;
 }
@@ -223,6 +226,7 @@ wldbg_dispatch(struct wldbg *wldbg)
 {
 	struct epoll_event ev;
 	struct wldbg_fd_callback *cb;
+	struct wldbg_connection *conn;
 	int n, ret;
 
 	assert(!wldbg->flags.exit);
@@ -243,15 +247,17 @@ wldbg_dispatch(struct wldbg *wldbg)
 
 	cb = ev.data.ptr;
 	assert(cb && "No callback set in event");
+	conn = cb->data;
 
 	if (ev.events & EPOLLHUP) {
-		if (wldbg_remove_callback(wldbg, cb) != 0)
-			return 0;
-
 		/* if we have no other clients to run,
 		 * this func will return 0, thus ending the loop */
-		ret = wldbg_remove_connection(cb->data);
-		wldbg_connection_destroy(cb->data);
+		ret = wldbg_remove_connection(conn);
+
+		if (wldbg_remove_callback(wldbg, cb) != 0)
+			ret = 0;
+
+		wldbg_connection_destroy(conn);
 
 		return ret;
 	}
@@ -507,10 +513,8 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 		return NULL;
 
 	sock = create_client_connection(conn);
-	if (sock < 0) {
-		wldbg_connection_destroy(conn);
-		return NULL;
-	}
+	if (sock < 0)
+		goto err;
 
 #ifdef DEBUG
 	dbg("Spawning client: '%s'\n", path);
@@ -524,19 +528,19 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 	if (snprintf(sockstr, sizeof sockstr, "%d",
 		     sock) >= (int) sizeof sockstr) {
 		perror("Socket number too high, hack the code");
-		goto err;
+		goto err_sock;
 	}
 
 	if (setenv("WAYLAND_SOCKET", sockstr, 1) != 0) {
 		perror("Setting WAYLAND_SOCKET failed");
-		goto err;
+		goto err_sock;
 	}
 
 	conn->client.pid = fork();
 
 	if (conn->client.pid == -1) {
 		perror("fork");
-		goto err;
+		goto err_sock;
 	}
 
 	/* exec client in child */
@@ -553,6 +557,8 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 
 	return conn;
 
+err_sock:
+	close(sock);
 err:
 	wldbg_connection_destroy(conn);
 	return NULL;
@@ -609,14 +615,14 @@ wldbg_destroy(struct wldbg *wldbg)
 		free(cb);
 	}
 
-	/*
-	assert(wldbg->client.path);
-	free(wldbg->client.path);
+	if (wldbg->flags.server_mode) {
+		free(wldbg->server_mode.old_socket_name);
+		free(wldbg->server_mode.wldbg_socket_name);
+	}
 
-	assert(wldbg->client.argc > 0);
-	assert(wldbg->client.argv);
-	free_arguments(wldbg->client.argv);
-	*/
+	/* if there are any connections left that haven't got
+	 * HUP, free them */
+	wldbg_foreach_connection(wldbg, wldbg_connection_destroy);
 }
 
 static int
@@ -808,6 +814,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+	memset(&cmd_opts, 0 , sizeof cmd_opts);
 	wldbg_init(&wldbg);
 
 	if (parse_opts(&wldbg, &cmd_opts, argc, argv) < 0)
@@ -836,9 +843,17 @@ int main(int argc, char *argv[])
 	if (wldbg_run(&wldbg) < 0)
 		goto err;
 
+	free(cmd_opts.path);
+	if (cmd_opts.argv)
+		free_arguments(cmd_opts.argv);
+
 	wldbg_destroy(&wldbg);
 	return EXIT_SUCCESS;
 err:
+	free(cmd_opts.path);
+	if (cmd_opts.argv)
+		free_arguments(cmd_opts.argv);
+
 	wldbg_destroy(&wldbg);
 	return EXIT_FAILURE;
 }
