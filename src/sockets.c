@@ -42,12 +42,11 @@
 #include "wldbg-pass.h"
 #include "wldbg-private.h"
 #include "resolve.h"
+#include "sockets.h"
 
 #include "wayland/wayland-private.h"
 #include "wayland/wayland-util.h"
 #include "wayland/wayland-os.h"
-
-#define WLDBG_SERVER_MODE_SOCKET_NAME "wldbg-wayland-0"
 
 /* copied out from wayland-client.c */
 /* renamed from connect_to_socket -> connect_to_wayland_socket */

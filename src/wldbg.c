@@ -42,6 +42,7 @@
 #include "wldbg-pass.h"
 #include "wldbg-private.h"
 #include "resolve.h"
+#include "sockets.h"
 
 #include "wayland/wayland-private.h"
 #include "wayland/wayland-util.h"
@@ -60,6 +61,105 @@ interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
 /* defined in passes.c */
 int
 load_passes(struct wldbg *wldbg, int argc, const char *argv[]);
+
+static int
+dispatch_messages(int fd, void *data);
+
+static struct wldbg_connection *
+wldbg_connection_create(struct wldbg *wldbg)
+{
+	const char *sock_name = NULL;
+	int fd;
+
+	struct wldbg_connection *conn = malloc(sizeof *conn);
+	if (!conn)
+		return NULL;
+
+	conn->resolved_objects = create_resolved_objects();
+	if (!conn->resolved_objects) {
+		free(conn);
+		return NULL;
+	}
+
+	conn->wldbg = wldbg;
+
+	if (wldbg->flags.server_mode)
+		sock_name = WLDBG_SERVER_MODE_SOCKET_NAME;
+
+	fd = connect_to_wayland_server(conn, sock_name);
+	if (fd < 0) {
+		free(conn);
+		return NULL;
+	}
+
+	if (wldbg_monitor_fd(wldbg, conn->server.fd,
+			     dispatch_messages, conn) < 0) {
+		free(conn);
+		close(fd);
+		return NULL;
+	}
+
+	return conn;
+}
+
+static void
+wldbg_connection_destroy(struct wldbg_connection *conn)
+{
+	struct wldbg_ids_map *objs
+		= resolved_objects_get_objects(conn->resolved_objects);
+	wldbg_ids_map_release(objs);
+
+	wl_connection_destroy(conn->server.connection);
+	wl_connection_destroy(conn->client.connection);
+
+	close(conn->server.fd);
+	close(conn->client.fd);
+
+	free(conn);
+}
+
+static int
+wldbg_add_connection(struct wldbg_connection *conn)
+{
+	struct wldbg *wldbg = conn->wldbg;
+
+	assert(wldbg->connections_num >= 0);
+
+	wl_list_insert(&wldbg->connections, &conn->link);
+	++wldbg->connections_num;
+
+	vdbg("Adding connection (%d) [%p]\n",
+	     wldbg->connections_num, conn);
+
+	return wldbg->connections_num;
+}
+
+static int
+wldbg_remove_connection(struct wldbg_connection *conn)
+{
+	struct wldbg *wldbg = conn->wldbg;
+
+	dbg("Removing connection (%d) [%p]\n",
+	     wldbg->connections_num, conn);
+
+	--wldbg->connections_num;
+	assert(wldbg->connections_num >= 0
+	       && "BUG: removed more connections than added");
+
+	wl_list_remove(&conn->link);
+
+	return wldbg->connections_num;
+}
+
+void
+wldbg_foreach_connection(struct wldbg *wldbg,
+			 void (*func)(struct wldbg_connection *))
+{
+	struct wldbg_connection *conn;
+
+	wl_list_for_each(conn, &wldbg->connections, link)
+		func(conn);
+}
 
 struct wldbg_fd_callback {
 	int fd;
@@ -100,16 +200,36 @@ wldbg_monitor_fd(struct wldbg *wldbg, int fd,
 }
 
 int
+wldbg_remove_callback(struct wldbg *wldbg, struct wldbg_fd_callback *cb)
+{
+	int fd = cb->fd;
+
+	wl_list_remove(&cb->link);
+	free(cb);
+	/* XXX aren't we leaking data? */
+
+	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
+		perror("Failed removing fd from epoll");
+		return -1;
+	}
+
+	close(fd);
+
+	return 0;
+}
+
+int
 wldbg_dispatch(struct wldbg *wldbg)
 {
 	struct epoll_event ev;
 	struct wldbg_fd_callback *cb;
-	int n;
+	int n, ret;
 
 	assert(!wldbg->flags.exit);
 	assert(!wldbg->flags.error);
 
 	n = epoll_wait(wldbg->epoll_fd, &ev, 1, -1);
+
 
 	if (n < 0) {
 		/* don't print error when we has been interrupted
@@ -121,17 +241,29 @@ wldbg_dispatch(struct wldbg *wldbg)
 		return -1;
 	}
 
-	if (ev.events & EPOLLERR) {
-		fprintf(stderr, "epoll event error\n");
-		return -1;
-	} else if (ev.events & EPOLLHUP) {
-		return 0;
-	}
-
 	cb = ev.data.ptr;
 	assert(cb && "No callback set in event");
 
-	vdbg("cb [%p]: dispatching %p(%d, %p)\n", cb, cb->dispatch, cb->fd, cb->data);
+	if (ev.events & EPOLLHUP) {
+		if (wldbg_remove_callback(wldbg, cb) != 0)
+			return 0;
+
+		/* if we have no other clients to run,
+		 * this func will return 0, thus ending the loop */
+		ret = wldbg_remove_connection(cb->data);
+		wldbg_connection_destroy(cb->data);
+
+		return ret;
+	}
+
+	if (ev.events & EPOLLERR) {
+		fprintf(stderr, "epoll event error\n");
+		return -1;
+	}
+
+	vdbg("cb [%p]: dispatching %p(%d, %p)\n",
+	     cb, cb->dispatch, cb->fd, cb->data);
+
 	return cb->dispatch(cb->fd, cb->data);
 }
 
@@ -144,7 +276,6 @@ run_passes(struct message *message)
 	assert(wldbg && "BUG: No wldbg set in message->connection");
 
 	wl_list_for_each(pass, &wldbg->passes, link) {
-		vdbg("Running pass\n");
 		if (message->from == SERVER) {
 			if (pass->wldbg_pass.server_pass(
 				pass->wldbg_pass.user_data,
@@ -270,7 +401,7 @@ dispatch_messages(int fd, void *data)
 	else
 		wl_conn = conn->server.connection;
 
-	vdbg("Reading connection from %s\n",
+	vdbg("Reading connection [%p] from %s\n", conn,
 		fd == conn->client.fd ? "client" : "server");
 
 	len = wl_connection_read(wl_conn);
@@ -318,44 +449,6 @@ dispatch_signals(int fd, void *data)
 	return 1;
 }
 
-static struct wldbg_connection *
-wldbg_connection_create(struct wldbg *wldbg)
-{
-	const char *sock_name = NULL;
-	int fd;
-
-	struct wldbg_connection *conn = malloc(sizeof *conn);
-	if (!conn)
-		return NULL;
-
-	conn->resolved_objects = create_resolved_objects();
-	if (!conn->resolved_objects) {
-		free(conn);
-		return NULL;
-	}
-
-	conn->wldbg = wldbg;
-
-	if (wldbg->flags.server_mode)
-		sock_name = WLDBG_SERVER_MODE_SOCKET_NAME;
-
-	fd = connect_to_wayland_server(conn, sock_name);
-	if (fd < 0) {
-		free(conn);
-		return NULL;
-	}
-
-	if (wldbg_monitor_fd(wldbg, conn->server.fd,
-			     dispatch_messages, conn) < 0) {
-		free(conn);
-		close(fd);
-		return NULL;
-	}
-
-	return conn;
-}
-
-
 static int
 create_client_connection_for_fd(struct wldbg_connection *conn, int fd)
 {
@@ -399,44 +492,6 @@ err:
 	return -1;
 }
 
-static int
-wldbg_add_connection(struct wldbg_connection *conn)
-{
-	struct wldbg *wldbg = conn->wldbg;
-
-	assert(wldbg->connections_num >= 0);
-
-	wl_list_insert(&wldbg->connections, &conn->link);
-	++wldbg->connections_num;
-
-	return wldbg->connections_num;
-}
-
-static int
-wldbg_remove_connection(struct wldbg_connection *conn)
-{
-	struct wldbg *wldbg = conn->wldbg;
-
-	--wldbg->connections_num;
-	assert(wldbg->connections_num >= 0
-	       && "BUG: removed more connections than added");
-
-	wl_list_remove(&conn->link);
-
-	return wldbg->connections_num;
-}
-
-void
-wldbg_foreach_connection(struct wldbg *wldbg,
-			 void (*func)(struct wldbg_connection *))
-{
-	struct wldbg_connection *conn;
-
-	wl_list_for_each(conn, &wldbg->connections, link)
-		func(conn);
-}
-
-
 struct wldbg_connection *
 spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 {
@@ -453,8 +508,7 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 
 	sock = create_client_connection(conn);
 	if (sock < 0) {
-		/* XXX destroy conn */
-		assert(0 && "LEAK: destroy conection");
+		wldbg_connection_destroy(conn);
 		return NULL;
 	}
 
@@ -500,8 +554,7 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 	return conn;
 
 err:
-	/* XXX destroy conn */
-	assert(0 && "LEAK: destroy conection");
+	wldbg_connection_destroy(conn);
 	return NULL;
 }
 
@@ -517,11 +570,13 @@ wldbg_run(struct wldbg *wldbg)
 
 	while((ret = wldbg_dispatch(wldbg)) > 0) {
 		if (wldbg->flags.error) {
+			dbg("Exiting for error flag");
 			ret = -1;
 			break;
 		}
 
 		if (wldbg->flags.exit) {
+			dbg("Exiting for exit flag");
 			ret = 0;
 			break;
 		}
@@ -535,9 +590,7 @@ wldbg_run(struct wldbg *wldbg)
 static void
 wldbg_destroy(struct wldbg *wldbg)
 {
-	/*
 	struct pass *pass, *pass_tmp;
-	*/
 	struct wldbg_fd_callback *cb, *cb_tmp;
 
 	if (wldbg->epoll_fd >= 0)
@@ -545,30 +598,18 @@ wldbg_destroy(struct wldbg *wldbg)
 	if (wldbg->signals_fd >= 0)
 		close(wldbg->signals_fd);
 
-	/*
-	if (wldbg->server.connection)
-		wl_connection_destroy(wldbg->server.connection);
-	if (wldbg->client.connection)
-		wl_connection_destroy(wldbg->client.connection);
-
 	wl_list_for_each_safe(pass, pass_tmp, &wldbg->passes, link) {
 		if (pass->wldbg_pass.destroy)
 			pass->wldbg_pass.destroy(pass->wldbg_pass.user_data);
 		free(pass->name);
 		free(pass);
 	}
-	*/
 
 	wl_list_for_each_safe(cb, cb_tmp, &wldbg->monitored_fds, link) {
 		free(cb);
 	}
 
 	/*
-	wldbg_ids_map_release(&wldbg->resolved_objects);
-
-	close(wldbg->server.fd);
-	close(wldbg->client.fd);
-
 	assert(wldbg->client.path);
 	free(wldbg->client.path);
 
