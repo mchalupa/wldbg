@@ -52,8 +52,6 @@ int debug = 0;
 int debug_verbose = 0;
 #endif
 
-#define WLDBG_SERVER_MODE_SOCKET_NAME "wldbg-wayland-0"
-
 /* defined in interactive.c */
 int
 interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
