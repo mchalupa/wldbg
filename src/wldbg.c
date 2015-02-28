@@ -124,6 +124,9 @@ wldbg_connection_destroy(struct wldbg_connection *conn)
 	free(conn);
 }
 
+/**
+ * Register new connection in wldbg
+ */
 static int
 wldbg_add_connection(struct wldbg_connection *conn)
 {
@@ -140,6 +143,9 @@ wldbg_add_connection(struct wldbg_connection *conn)
 	return wldbg->connections_num;
 }
 
+/**
+ * Unregister connection in wldbg
+ */
 static int
 wldbg_remove_connection(struct wldbg_connection *conn)
 {
@@ -174,6 +180,10 @@ struct wldbg_fd_callback {
 	struct wl_list link;
 };
 
+/**
+ * Monitor filedescriptor for incoming events and
+ * call set-up callbacks
+ */
 int
 wldbg_monitor_fd(struct wldbg *wldbg, int fd,
 			int (*dispatch)(int fd, void *data),
@@ -205,6 +215,9 @@ wldbg_monitor_fd(struct wldbg *wldbg, int fd,
 	return 0;
 }
 
+/**
+ * Stop monitoring filedescriptor and its callback
+ */
 int
 wldbg_remove_callback(struct wldbg *wldbg, struct wldbg_fd_callback *cb)
 {
@@ -504,6 +517,9 @@ err:
 	return -1;
 }
 
+/**
+ * Spawn client (program)
+ */
 struct wldbg_connection *
 spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 {
@@ -707,10 +723,10 @@ help(void)
 	fprintf(stderr, "\nUsage:\n");
 	fprintf(stderr, "\twldbg [-i|--interactive] ARGUMENTS [PROGRAM]\n");
 	fprintf(stderr, "\twldbg pass ARGUMENTS, pass ARGUMENTS,... -- PROGRAM\n");
-	fprintf(stderr, "\twldbg [-s|--one-by-one] pass ARGUMENTS,"
-			" pass ARGUMENTS,... -- PROGRAM\n");
+	fprintf(stderr, "\twldbg [-s|--server-mode]\n");
 	fprintf(stderr, "\nTry 'wldbg help' too.\n"
-		"For interactive mode description see documentation.\n");
+			"For interactive mode and server-mode description "
+			"see documentation.\n");
 }
 
 static int
