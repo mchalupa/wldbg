@@ -170,12 +170,21 @@ get_socket_path(const char *display)
 	return path;
 }
 
+#define WLDBG_SERVER_MODE_SOCKET_NAME "wldbg-wayland-0"
+
 int
 server_mode_change_sockets(struct wldbg *wldbg)
 {
 	int fd;
-	char *orig_socket = get_socket_path("wayland-0");
-	char *new_socket = get_socket_path(WLDBG_SERVER_MODE_SOCKET_NAME);
+	char *orig_socket;
+	char *new_socket;
+	const char *wayland_display = getenv("WAYLAND_DISPLAY");
+
+	if (!wayland_display)
+		wayland_display = "wayland-0";
+
+	orig_socket = get_socket_path(wayland_display);
+	new_socket = get_socket_path(WLDBG_SERVER_MODE_SOCKET_NAME);
 
 	if (!orig_socket || ! new_socket)
 		goto err;
@@ -188,8 +197,10 @@ server_mode_change_sockets(struct wldbg *wldbg)
 
 	/* this will make new clients connect to new_socket
 	 * instead of orig_socket */
-	wldbg->server_mode.old_socket_name = orig_socket;
-	wldbg->server_mode.wldbg_socket_name = new_socket;
+	wldbg->server_mode.old_socket_path = orig_socket;
+	wldbg->server_mode.wldbg_socket_path = new_socket;
+	wldbg->server_mode.old_socket_name = strdup(wayland_display);
+	wldbg->server_mode.wldbg_socket_name = strdup(WLDBG_SERVER_MODE_SOCKET_NAME);
 
 	/* create new fake socket */
 	fd = server_mode_add_socket(wldbg, orig_socket);
@@ -211,15 +222,15 @@ server_mode_change_sockets_back(struct wldbg *wldbg)
 {
 	/* remove wldbg socket - it is now named as the
 	 * old socket.. XXX The naming is confusing.. */
-	if (unlink(wldbg->server_mode.old_socket_name) < 0) {
+	if (unlink(wldbg->server_mode.old_socket_path) < 0) {
 		perror("deleting named socket");
 		/* try continue, we'll probably fail right
 		 * the next step */
 	}
 
 	/* rename the socket */
-	if (rename(wldbg->server_mode.wldbg_socket_name,
-		   wldbg->server_mode.old_socket_name) < 0) {
+	if (rename(wldbg->server_mode.wldbg_socket_path,
+		   wldbg->server_mode.old_socket_path) < 0) {
 		perror("renaming wayland socket");
 		return -1;
 	}

@@ -23,8 +23,6 @@
 #ifndef _WLDBG_SOCKETS_H_
 #define _WLDBG_SOCKETS_H_
 
-#define WLDBG_SERVER_MODE_SOCKET_NAME "wldbg-wayland-0"
-
 int
 connect_to_wayland_server(struct wldbg_connection *conn, const char *display);
 

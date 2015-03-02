@@ -84,7 +84,7 @@ wldbg_connection_create(struct wldbg *wldbg)
 	conn->wldbg = wldbg;
 
 	if (wldbg->flags.server_mode)
-		sock_name = WLDBG_SERVER_MODE_SOCKET_NAME;
+		sock_name = wldbg->server_mode.wldbg_socket_name;
 
 	fd = connect_to_wayland_server(conn, sock_name);
 	if (fd < 0) {
@@ -649,6 +649,8 @@ wldbg_destroy(struct wldbg *wldbg)
 
 		free(wldbg->server_mode.old_socket_name);
 		free(wldbg->server_mode.wldbg_socket_name);
+		free(wldbg->server_mode.old_socket_path);
+		free(wldbg->server_mode.wldbg_socket_path);
 	}
 
 	/* if there are any connections left that haven't got

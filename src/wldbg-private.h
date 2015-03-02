@@ -100,6 +100,8 @@ struct wldbg {
 	struct {
 		int fd;
 		struct sockaddr_un addr;
+		char *old_socket_path;
+		char *wldbg_socket_path;
 		char *old_socket_name;
 		char *wldbg_socket_name;
 	} server_mode;
