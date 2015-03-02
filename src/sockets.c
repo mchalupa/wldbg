@@ -138,8 +138,6 @@ connect_to_wayland_server(struct wldbg_connection *conn, const char *display)
 
 	return conn->server.fd;
 
-err_conn:
-	wl_connection_destroy(conn->server.connection);
 err:
 	close(conn->server.fd);
 	return -1;
