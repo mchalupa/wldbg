@@ -112,6 +112,50 @@ get_pid_for_socket(int fd)
 	return cr.pid;
 }
 
+char *
+get_program_for_pid(pid_t pid)
+{
+	char path[255];
+	char *comm;
+	ssize_t len;
+	int fd;
+
+	if (snprintf(path, sizeof path, "/proc/%d/comm", pid)
+		>= (ssize_t) sizeof path) {
+		fprintf(stderr, "BUG: buffer too short for path\n");
+		return NULL;
+	}
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		perror("opening pid's comm file");
+		return NULL;
+	}
+
+	comm = malloc(255);
+	if (!comm) {
+		close(fd);
+		return NULL;
+	}
+
+	len = read(fd, comm, 255);
+	if (len < 0) {
+		perror("reading pid's comm file");
+		close(fd);
+		free(comm);
+		return NULL;
+	}
+
+	/* add terminating 0 instead of \n*/
+	if (len > 0)
+		comm[len - 1] = 0;
+
+	vdbg("Got program with pid %d: %s\n", pid, comm);
+
+	close(fd);
+	return comm;
+}
+
 int
 connect_to_wayland_server(struct wldbg_connection *conn, const char *display)
 {

@@ -136,6 +136,7 @@ struct wldbg_connection {
 		int fd;
 		struct wl_connection *connection;
 
+		char *program;
 		/* path to the binary */
 		char *path;
 		/* pointer to arguments and number of arguments */

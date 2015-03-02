@@ -29,6 +29,9 @@ connect_to_wayland_server(struct wldbg_connection *conn, const char *display);
 int
 get_pid_for_socket(int fd);
 
+char *
+get_program_for_pid(pid_t pid);
+
 int
 server_mode_change_sockets(struct wldbg *wldbg);
 

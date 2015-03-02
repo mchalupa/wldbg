@@ -128,6 +128,7 @@ wldbg_connection_destroy(struct wldbg_connection *conn)
 		perror("wldbg_connectin_destroy: closing client fd");
 	*/
 
+	free(conn->client.program);
 	free(conn);
 }
 
@@ -498,6 +499,8 @@ create_client_connection_for_fd(struct wldbg_connection *conn, int fd)
 
 	conn->client.fd = fd;
 	conn->client.pid = get_pid_for_socket(fd);
+	if (conn->client.pid != -1)
+		conn->client.program = get_program_for_pid(conn->client.pid);
 
 	return 0;
 }
