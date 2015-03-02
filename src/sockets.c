@@ -33,19 +33,14 @@
 #include <sys/un.h>
 #include <assert.h>
 #include <fcntl.h>
-#include <sys/epoll.h>
-#include <sys/signalfd.h>
-#include <signal.h>
-#include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/file.h>
 
 #include "wldbg.h"
-#include "wldbg-pass.h"
 #include "wldbg-private.h"
-#include "resolve.h"
 #include "sockets.h"
 
 #include "wayland/wayland-private.h"
-#include "wayland/wayland-util.h"
 #include "wayland/wayland-os.h"
 
 /* copied out from wayland-client.c */
@@ -170,6 +165,61 @@ get_socket_path(const char *display)
 	return path;
 }
 
+#ifndef UNIX_PATH_MAX
+#define UNIX_PATH_MAX sizeof (((struct sockaddr_un *) 0)->sun_path)
+#endif
+
+#define LOCK_SUFFIX ".lock"
+
+static int
+socket_lock(struct wldbg *wldbg, const char *path)
+{
+	struct stat socket_stat;
+	ssize_t size = UNIX_PATH_MAX + sizeof(LOCK_SUFFIX);
+	int fd;
+
+	char *lock_addr = malloc(size);
+	if (!lock_addr)
+		return -1;
+
+	if (snprintf(lock_addr, size, "%s%s", path, LOCK_SUFFIX) >= size) {
+		fprintf(stderr, "Lock path is too long: %s.lock\n", path);
+		free(lock_addr);
+		return -1;
+	}
+
+	fd = open(lock_addr, O_CREAT | O_CLOEXEC,
+	          (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP));
+
+	if (fd < 0) {
+		fprintf(stderr, "unable to open lockfile %s check permissions\n",
+			lock_addr);
+		goto err;
+	}
+
+	if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
+		fprintf(stderr, "unable to lock lockfile %s, maybe another compositor is running\n",
+			lock_addr);
+		goto err;
+	}
+
+	if (stat(path, &socket_stat) < 0 ) {
+		if (errno != ENOENT) {
+			fprintf(stderr, "did not manage to stat file %s\n", path);
+			goto err;
+		}
+	}
+
+	wldbg->server_mode.fd_lock = fd;
+	wldbg->server_mode.lock_addr = lock_addr;
+
+	return 0;
+err:
+	close(fd);
+	free(lock_addr);
+	return -1;
+}
+
 #define WLDBG_SERVER_MODE_SOCKET_NAME "wldbg-wayland-0"
 
 int
@@ -267,10 +317,26 @@ server_mode_add_socket(struct wldbg *wldbg, const char *name)
 		goto err;
 	}
 
+	if (socket_lock(wldbg, name) < 0) {
+		fprintf(stderr, "Failed locking socket\n");
+		goto err;
+	}
+
 	dbg("Server mode: listening on fd %d\n", sock);
 
 	return sock;
 err:
 	close(sock);
 	return -1;
+}
+
+int server_mode_add_socket2(struct wldbg *wldbg, const char *name)
+{
+	char *path = get_socket_path(name);
+	if (!path)
+		return -1;
+
+	wldbg->server_mode.wldbg_socket_path = path;
+
+	return server_mode_add_socket(wldbg, path);
 }

@@ -38,4 +38,9 @@ server_mode_change_sockets_back(struct wldbg *wldbg);
 int
 server_mode_add_socket(struct wldbg *wldbg, const char *name);
 
+/* this version will use $XDG_RUNTIME_DIR as a root dir when
+ * creating socket */
+int
+server_mode_add_socket2(struct wldbg *wldbg, const char *name);
+
 #endif /* _WLDBG_SOCKETS_H_ */

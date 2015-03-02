@@ -83,8 +83,15 @@ wldbg_connection_create(struct wldbg *wldbg)
 
 	conn->wldbg = wldbg;
 
-	if (wldbg->flags.server_mode)
-		sock_name = wldbg->server_mode.wldbg_socket_name;
+	if (wldbg->flags.server_mode) {
+		/* this one has precedence - so that we can connect
+		 * to arbitrary compositor while still be able to
+		 * have fake bounded socket */
+		if (wldbg->server_mode.connect_to)
+			sock_name = wldbg->server_mode.connect_to;
+		else
+			sock_name = wldbg->server_mode.wldbg_socket_name;
+	}
 
 	fd = connect_to_wayland_server(conn, sock_name);
 	if (fd < 0) {
@@ -641,11 +648,20 @@ wldbg_destroy(struct wldbg *wldbg)
 	}
 
 	if (wldbg->flags.server_mode) {
+		if (wldbg->server_mode.fd_lock) {
+			close(wldbg->server_mode.fd_lock);
+			unlink(wldbg->server_mode.lock_addr);
+
+			if (!wldbg->server_mode.wldbg_socket_name)
+				unlink(wldbg->server_mode.wldbg_socket_path);
+		}
+
 		/* if we hit an error before creating the socket,
 		 * we could destroy some other socket without
 		 * this check */
-		if (wldbg->server_mode.wldbg_socket_name)
+		if (wldbg->server_mode.wldbg_socket_name) {
 			server_mode_change_sockets_back(wldbg);
+		}
 
 		free(wldbg->server_mode.old_socket_name);
 		free(wldbg->server_mode.wldbg_socket_name);
@@ -770,8 +786,15 @@ static int
 server_mode_init(struct wldbg *wldbg)
 {
 	int fd;
+	const char *display_name = getenv("WAYLAND_DISPLAY");
 
-	fd = server_mode_change_sockets(wldbg);
+	if (!display_name)
+		display_name = "wayland-0";
+
+	if(wldbg->server_mode.connect_to)
+		fd = server_mode_add_socket2(wldbg, display_name);
+	else
+		fd = server_mode_change_sockets(wldbg);
 	if (fd < 0)
 		return -1;
 
@@ -799,6 +822,9 @@ parse_opts(struct wldbg *wldbg, struct cmd_options *opts, int argc, char *argv[]
 	} else if (strcmp(argv[1], "--server-mode") == 0 ||
 		   strcmp(argv[1], "-s") == 0) {
 		wldbg->flags.server_mode = 1;
+
+		if (argv[2])
+			wldbg->server_mode.connect_to = argv[2];
 
 		if (server_mode_init(wldbg) < 0)
 			return -1;

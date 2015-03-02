@@ -104,6 +104,11 @@ struct wldbg {
 		char *wldbg_socket_path;
 		char *old_socket_name;
 		char *wldbg_socket_name;
+
+		char *lock_addr;
+		int fd_lock;
+
+		const char *connect_to;
 	} server_mode;
 
 	/* this will be list later */
