@@ -133,11 +133,69 @@ break_on_id(struct message *msg, struct breakpoint *b)
 	return 0;
 }
 
-static struct breakpoint *
-create_breakpoint(char *buf)
+static int
+break_on_name(struct message *msg, struct breakpoint *b)
 {
-	int id;
+	uint32_t *p = msg->data;
+	uint32_t id, opcode, bopcode;
+	const struct wl_interface *intf;
+	const struct wl_message *bmessage, *wl_message = NULL;
+
+	struct wldbg_ids_map *objects
+		= resolved_objects_get_objects(msg->connection->resolved_objects);
+
+	id = p[0];
+	opcode = p[1] & 0xffff;
+	bopcode = b->small_data;
+	bmessage = b->data;
+
+	/* we know that if the opcodes differ, we can
+	 * break without any interface checking */
+	if (bopcode != opcode)
+		return 0;
+
+	intf = wldbg_ids_map_get(objects, id);
+	if (!intf)
+		return 0;
+
+	if (msg->from == CLIENT) {
+		if ((int) opcode < intf->method_count)
+			wl_message = &intf->methods[opcode];
+	} else {
+		if ((int) opcode < intf->event_count)
+			wl_message = &intf->events[opcode];
+	}
+
+	if (wl_message && bmessage == wl_message)
+		return 1;
+
+	return 0;
+}
+
+static const struct wl_interface *
+get_interface_with_name(struct resolved_objects *ro, const char *name)
+{
+	unsigned int i;
+	const struct wl_interface *intf;
+	struct wldbg_ids_map *objects
+		= resolved_objects_get_objects(ro);
+
+	for (i = 0; i < objects->count; ++i) {
+		intf = wldbg_ids_map_get(objects, i);
+		if (intf && strcmp(intf->name, name) == 0)
+			return intf;
+	}
+
+	return NULL;
+}
+
+static struct breakpoint *
+create_breakpoint(struct resolved_objects *ro, char *buf)
+{
+	int id, i, opcode;
 	struct breakpoint *b;
+	const struct wl_interface *intf = NULL;
+	char *at;
 
 	b= calloc(1, sizeof *b);
 	if (!b) {
@@ -168,9 +226,57 @@ create_breakpoint(char *buf)
 		b->description = strdup("break on id XXX");
 		snprintf(b->description + 12, 4, "%d", id);
 		b->small_data = id;
+
 	} else {
-		printf("Wrong syntax\n");
-		goto err;
+		if ((at = strchr(buf, '@'))) {
+			/* split the string on '@' */
+			*at = 0;
+			intf = get_interface_with_name(ro, buf);
+			if (!intf) {
+				printf("Unknown interface\n");
+				goto err;
+			}
+
+			/* find the request/event with name pointed
+			 * by at + 1 */
+			++at;
+			at[strlen(at) - 1] = 0; /* delete newline */
+			opcode = -1;
+
+			/* XXX what if interface has method and event
+			 * with the same name? Handle it... */
+			for (i = 0; i < intf->method_count; ++i)
+				if (strcmp(intf->methods[i].name, at) == 0) {
+					b->data = (struct wl_message *) &intf->methods[i];
+					opcode = i;
+				}
+
+			if (opcode == -1)
+				for (i = 0; i < intf->event_count; ++i)
+					if (strcmp(intf->events[i].name, at) == 0) {
+						b->data = (struct wl_message *) &intf->events[i];
+						opcode = i;
+					}
+
+			if (opcode == -1) {
+				printf("Couldn't find method/event name\n");
+				goto err;
+			}
+
+			b->small_data = opcode;
+			b->applies = break_on_name;
+			b->description = malloc(1024);
+			if (!b->description) {
+				printf("No memory\n");
+				goto err;
+			}
+
+			snprintf(b->description, 1024, "break on %s@%s",
+				 intf->name, ((struct wl_message *) b->data)->name);
+		} else {
+			printf("Wrong syntax\n");
+			goto err;
+		}
 	}
 
 	++breakpoint_next_id;
@@ -225,6 +331,7 @@ cmd_break(struct wldbg_interactive *wldbgi,
 	  char *buf)
 {
 	struct breakpoint *b;
+	struct resolved_objects *ro = message->connection->resolved_objects;
 
 	(void) message;
 
@@ -236,7 +343,7 @@ cmd_break(struct wldbg_interactive *wldbgi,
 		return CMD_CONTINUE_QUERY;
 	}
 
-	b = create_breakpoint(buf);
+	b = create_breakpoint(ro, buf);
 	if (b) {
 		wl_list_insert(wldbgi->breakpoints.next, &b->link);
 		printf("created breakpoint %u\n", b->id);
