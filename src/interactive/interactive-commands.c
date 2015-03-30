@@ -481,26 +481,102 @@ print_breakpoints(struct wldbg_interactive *wldbgi)
 	}
 }
 
+static void
+info_wldbg(struct wldbg_interactive *wldbgi)
+{
+	struct wldbg *wldbg = wldbgi->wldbg;
+
+	printf("\n-- Wldbg -- \n");
+
+	printf("Monitored fds num: %d\n", wl_list_length(&wldbg->monitored_fds));
+	printf("Resolving objects: %d\n", wldbg->resolving_objects);
+	printf("Flags:"
+	       "\tone_by_one : %u\n"
+	       "\trunning    : %u\n"
+	       "\terror      : %u\n"
+	       "\texit       : %u\n"
+	       "\tserver_mode: %u\n",
+	       wldbg->flags.one_by_one,
+	       wldbg->flags.running,
+	       wldbg->flags.error,
+	       wldbg->flags.exit,
+	       wldbg->flags.server_mode);
+
+	if (!wldbg->flags.server_mode)
+		return;
+
+	printf("Server mode:\n"
+		"\told socket name: \'%s\'\n"
+		"\told socket path: \'%s\'\n"
+		"\twldbg socket path: \'%s\'\n"
+		"\twldbg socket path: \'%s\'\n"
+		"\tlock address: \'%s\'\n"
+		"\tconnect to: \'%s\'\n",
+		wldbg->server_mode.old_socket_path,
+		wldbg->server_mode.wldbg_socket_path,
+		wldbg->server_mode.old_socket_name,
+		wldbg->server_mode.wldbg_socket_name,
+		wldbg->server_mode.lock_addr,
+		wldbg->server_mode.connect_to);
+
+	printf("Connections number: %d\n", wldbg->connections_num);
+}
+
+static void
+info_connections(struct wldbg_interactive *wldbgi)
+{
+	struct wldbg *wldbg = wldbgi->wldbg;
+	struct wldbg_connection *conn;
+	int i;
+	int n = 0;
+
+	printf("\n-- Connections -- \n");
+	wl_list_for_each(conn, &wldbg->connections, link) {
+		++n;
+
+		printf("%d.\n", n);
+		printf("\tserver: pid=%d\n", conn->server.pid);
+		printf("\tclient: pid=%d\n", conn->client.pid);
+		printf("\t      : program=\'%s\'\n", conn->client.program);
+		printf("\t      : path=\'%s\'\n", conn->client.path);
+		printf("\t      : argc=\'%d\'\n", conn->client.argc);
+		for (i = 0; i < conn->client.argc; ++i)
+			printf("\t      :   argv[%d]=\'%s\'\n",
+			       i, conn->client.argv[i]);
+
+	}
+}
+
 static int
 cmd_info(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
 {
-	if (strncmp(buf, "message\n", 8) == 0) {
+
+#define MATCH(buf, str) (strncmp((buf), (str "\n"), (sizeof((str)) + 1)) == 0)
+
+	if (MATCH(buf, "message")) {
 		printf("Sender: %s (no. %lu), size: %lu\n",
 			message->from == SERVER ? "server" : "client",
 			message->from == SERVER ? wldbgi->statistics.server_msg_no
 						: wldbgi->statistics.client_msg_no,
 			message->size);
-	} else if (strncmp(buf, "objects\n", 8) == 0) {
+	} else if (MATCH(buf, "objects")) {
 		print_objects(message);
-	} else if (strncmp(buf, "breakpoints\n", 12) == 0
-		   || strncmp(buf, "b\n", 2) == 0) {
+	} else if (MATCH(buf, "breakpoints")
+		   || MATCH(buf, "b")) {
 		print_breakpoints(wldbgi);
+	} else if (MATCH(buf, "proc")) {
+		info_wldbg(wldbgi);
+		info_connections(wldbgi);
+	} else if (MATCH(buf, "conn")) {
+		info_connections(wldbgi);
 	} else {
 		printf("Unknown arguments\n");
 	}
 
 	return CMD_CONTINUE_QUERY;
+
+#undef MATCH
 }
 
 static int
