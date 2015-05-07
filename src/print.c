@@ -26,6 +26,8 @@
 #include <assert.h>
 #include <ctype.h>
 
+#include <linux/input.h>
+
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
 #include "util.h"
@@ -85,6 +87,313 @@ filter_match(struct wl_list *filters, struct message *message,
 
 		if (strcmp(pf->filter, buf) == 0)
 			return 1;
+	}
+
+	return 0;
+}
+
+static void
+print_key(uint32_t p)
+{
+#define CASE(k) case KEY_##k: printf("'%s'", #k); break;
+
+	switch (p) {
+		CASE(RESERVED)
+		CASE(ESC)
+		CASE(1)
+		CASE(2)
+		CASE(3)
+		CASE(4)
+		CASE(5)
+		CASE(6)
+		CASE(7)
+		CASE(8)
+		CASE(9)
+		CASE(0)
+		CASE(MINUS)
+		CASE(EQUAL)
+		CASE(BACKSPACE)
+		CASE(TAB)
+		CASE(Q)
+		CASE(W)
+		CASE(E)
+		CASE(R)
+		CASE(T)
+		CASE(Y)
+		CASE(U)
+		CASE(I)
+		CASE(O)
+		CASE(P)
+		CASE(LEFTBRACE)
+		CASE(RIGHTBRACE)
+		CASE(ENTER)
+		CASE(LEFTCTRL)
+		CASE(A)
+		CASE(S)
+		CASE(D)
+		CASE(F)
+		CASE(G)
+		CASE(H)
+		CASE(J)
+		CASE(K)
+		CASE(L)
+		CASE(SEMICOLON)
+		CASE(APOSTROPHE)
+		CASE(GRAVE)
+		CASE(LEFTSHIFT)
+		CASE(BACKSLASH)
+		CASE(Z)
+		CASE(X)
+		CASE(C)
+		CASE(V)
+		CASE(B)
+		CASE(N)
+		CASE(M)
+		CASE(COMMA)
+		CASE(DOT)
+		CASE(SLASH)
+		CASE(RIGHTSHIFT)
+		CASE(KPASTERISK)
+		CASE(LEFTALT)
+		CASE(SPACE)
+		CASE(CAPSLOCK)
+		CASE(F1)
+		CASE(F2)
+		CASE(F3)
+		CASE(F4)
+		CASE(F5)
+		CASE(F6)
+		CASE(F7)
+		CASE(F8)
+		CASE(F9)
+		CASE(F10)
+		CASE(NUMLOCK)
+		CASE(SCROLLLOCK)
+		CASE(KP7)
+		CASE(KP8)
+		CASE(KP9)
+		CASE(KPMINUS)
+		CASE(KP4)
+		CASE(KP5)
+		CASE(KP6)
+		CASE(KPPLUS)
+		CASE(KP1)
+		CASE(KP2)
+		CASE(KP3)
+		CASE(KP0)
+		CASE(KPDOT)
+
+		CASE(ZENKAKUHANKAKU)
+		CASE(102ND)
+		CASE(F11)
+		CASE(F12)
+		CASE(RO)
+		CASE(KATAKANA)
+		CASE(HIRAGANA)
+		CASE(HENKAN)
+		CASE(KATAKANAHIRAGANA)
+		CASE(MUHENKAN)
+		CASE(KPJPCOMMA)
+		CASE(KPENTER)
+		CASE(RIGHTCTRL)
+		CASE(KPSLASH)
+		CASE(SYSRQ)
+		CASE(RIGHTALT)
+		CASE(LINEFEED)
+		CASE(HOME)
+		CASE(UP)
+		CASE(PAGEUP)
+		CASE(LEFT)
+		CASE(RIGHT)
+		CASE(END)
+		CASE(DOWN)
+		CASE(PAGEDOWN)
+		CASE(INSERT)
+		CASE(DELETE)
+		CASE(MACRO)
+		CASE(MUTE)
+		CASE(VOLUMEDOWN)
+		CASE(VOLUMEUP)
+		CASE(POWER)
+		CASE(KPEQUAL)
+		CASE(KPPLUSMINUS)
+		CASE(PAUSE)
+		CASE(SCALE)
+
+		CASE(LEFTMETA)
+		CASE(RIGHTMETA)
+		CASE(COMPOSE)
+
+		CASE(STOP)
+		CASE(AGAIN)
+		CASE(PROPS)
+		CASE(UNDO)
+		CASE(FRONT)
+		CASE(COPY)
+		CASE(OPEN)
+		CASE(PASTE)
+		CASE(FIND)
+		CASE(CUT)
+		CASE(HELP)
+		CASE(MENU)
+		CASE(CALC)
+		CASE(SETUP)
+		CASE(SLEEP)
+		CASE(WAKEUP)
+		CASE(FILE)
+		CASE(SENDFILE)
+		CASE(DELETEFILE)
+		CASE(XFER)
+		CASE(PROG1)
+		CASE(PROG2)
+		CASE(WWW)
+		CASE(MSDOS)
+		CASE(SCREENLOCK)
+		CASE(DIRECTION)
+		CASE(CYCLEWINDOWS)
+		CASE(MAIL)
+		CASE(BOOKMARKS)
+		CASE(COMPUTER)
+		CASE(BACK)
+		CASE(FORWARD)
+		CASE(CLOSECD)
+		CASE(EJECTCD)
+		CASE(EJECTCLOSECD)
+		CASE(NEXTSONG)
+		CASE(PLAYPAUSE)
+		CASE(PREVIOUSSONG)
+		CASE(STOPCD)
+		CASE(RECORD)
+		CASE(REWIND)
+		CASE(PHONE)
+		CASE(ISO)
+		CASE(CONFIG)
+		CASE(HOMEPAGE)
+		CASE(REFRESH)
+		CASE(EXIT)
+		CASE(MOVE)
+		CASE(EDIT)
+		CASE(SCROLLUP)
+		CASE(SCROLLDOWN)
+		CASE(KPLEFTPAREN)
+		CASE(KPRIGHTPAREN)
+		CASE(NEW)
+		CASE(REDO)
+
+		CASE(F13)
+		CASE(F14)
+		CASE(F15)
+		CASE(F16)
+		CASE(F17)
+		CASE(F18)
+		CASE(F19)
+		CASE(F20)
+		CASE(F21)
+		CASE(F22)
+		CASE(F23)
+		CASE(F24)
+
+		CASE(PLAYCD)
+		CASE(PAUSECD)
+		CASE(PROG3)
+		CASE(PROG4)
+		CASE(DASHBOARD)
+		CASE(SUSPEND)
+		CASE(CLOSE)
+		CASE(PLAY)
+		CASE(FASTFORWARD)
+		CASE(BASSBOOST)
+		CASE(PRINT)
+		CASE(HP)
+		CASE(CAMERA)
+		CASE(SOUND)
+		CASE(QUESTION)
+		CASE(EMAIL)
+		CASE(CHAT)
+		CASE(SEARCH)
+		CASE(CONNECT)
+		CASE(FINANCE)
+		CASE(SPORT)
+		CASE(SHOP)
+		CASE(ALTERASE)
+		CASE(CANCEL)
+		CASE(BRIGHTNESSDOWN)
+		CASE(BRIGHTNESSUP)
+		CASE(MEDIA)
+
+		CASE(SWITCHVIDEOMODE)
+		CASE(KBDILLUMTOGGLE)
+		CASE(KBDILLUMDOWN)
+		CASE(KBDILLUMUP)
+
+		CASE(SEND)
+		CASE(REPLY)
+		CASE(FORWARDMAIL)
+		CASE(SAVE)
+		CASE(DOCUMENTS)
+
+		CASE(BATTERY)
+
+		CASE(BLUETOOTH)
+		CASE(WLAN)
+		CASE(UWB)
+
+		CASE(UNKNOWN)
+		default: printf("%u", p);
+	}
+
+#undef CASE
+}
+
+static const char *MODIFIERS[] =
+{
+	"SHIFT",
+	"CAPS",
+	"CTRL",
+	"ALT",
+	"MOD2",
+	"MOD3",
+	"MOD4",
+	"MOD5"
+};
+
+static void
+print_modifiers(uint32_t p)
+{
+	unsigned int i, printed = 0;
+	for (i = 0; i < (8 * sizeof p); ++i) {
+		if (p & (1U << i)) {
+			if (i < (sizeof MODIFIERS / sizeof *MODIFIERS))
+				printf("%s%s", printed++ ? "|" : "", MODIFIERS[i]);
+			else
+				printf("%s0x%x", printed++ ? "|" : "", 1U << i);
+		}
+	}
+}
+
+static int
+print_wl_keyboard_message(const struct wl_interface *wl_interface,
+			  const struct wl_message *wl_message, int pos, uint32_t p)
+{
+	if (strcmp(wl_interface->name, "wl_keyboard") != 0)
+		return 0;
+
+	if (strcmp(wl_message->name, "modifiers") == 0) {
+		if (pos == 2 || p == 0)
+			return 0;
+
+		print_modifiers(p);
+		return 1;
+	} else if (strcmp(wl_message->name, "key") == 0) {
+		/* state */
+		if (pos == 5) {
+			printf("%s", p == 1 ? "press" : "release");
+			return 1;
+		/* key */
+		} else if (pos == 4) {
+			print_key(p);
+			return 1;
+		}
 	}
 
 	return 0;
@@ -180,7 +489,9 @@ print_bare_message(struct message *message, struct wl_list *filters)
 
 		switch (signature[i]) {
 		case 'u':
-			printf("%u", p[pos]);
+			if (!print_wl_keyboard_message(interface,
+						       wl_message, pos, p[pos]))
+				printf("%u", p[pos]);
 			break;
 		case 'i':
 			printf("%d", p[pos]);
