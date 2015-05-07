@@ -57,6 +57,9 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 			break;
 		}
 
+		/* print whatever should have been printed by now
+		 * and then print the prompt */
+		fflush(stdout);
 		printf("(wldbg) ");
 
 		if (fgets(buf, sizeof buf, stdin) == NULL) {
