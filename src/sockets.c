@@ -283,9 +283,14 @@ server_mode_change_sockets(struct wldbg *wldbg)
 	if (!orig_socket || ! new_socket)
 		goto err;
 
+	dbg("Renaming wayland socket: %s -> %s\n",
+	    orig_socket, new_socket);
+
 	/* rename the socket */
 	if (rename(orig_socket, new_socket) < 0) {
 		perror("renaming wayland socket");
+		fprintf(stderr, "Is any wayland compositor running? "
+		        "If so, try setting WAYLAND_DISPLAY\n");
 		goto err;
 	}
 
@@ -295,6 +300,8 @@ server_mode_change_sockets(struct wldbg *wldbg)
 	wldbg->server_mode.wldbg_socket_path = new_socket;
 	wldbg->server_mode.old_socket_name = strdup(wayland_display);
 	wldbg->server_mode.wldbg_socket_name = strdup(WLDBG_SERVER_MODE_SOCKET_NAME);
+
+	dbg("Creating fake socket: %s\n", orig_socket);
 
 	/* create new fake socket */
 	fd = server_mode_add_socket(wldbg, orig_socket);
@@ -321,6 +328,10 @@ server_mode_change_sockets_back(struct wldbg *wldbg)
 		/* try continue, we'll probably fail right
 		 * the next step */
 	}
+
+	dbg("Renaming wayland socket back: %s -> %s\n",
+	    wldbg->server_mode.wldbg_socket_path,
+	    wldbg->server_mode.old_socket_path);
 
 	/* rename the socket */
 	if (rename(wldbg->server_mode.wldbg_socket_path,
@@ -350,6 +361,8 @@ server_mode_add_socket(struct wldbg *wldbg, const char *name)
 	addr->sun_family = AF_UNIX;
 	strcpy(addr->sun_path, name);
 
+	dbg("Binding socket: %s\n", name);
+
 	size = SUN_LEN(addr);
 	if (bind(sock, (struct sockaddr *) addr, size) < 0) {
 		perror("bind() failed");
@@ -361,12 +374,7 @@ server_mode_add_socket(struct wldbg *wldbg, const char *name)
 		goto err;
 	}
 
-	if (socket_lock(wldbg, name) < 0) {
-		fprintf(stderr, "Failed locking socket\n");
-		goto err;
-	}
-
-	dbg("Server mode: listening on fd %d\n", sock);
+	dbg("Server mode: listening on fd %d [%s]\n", sock, name);
 
 	return sock;
 err:
