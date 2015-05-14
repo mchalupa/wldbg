@@ -795,7 +795,7 @@ server_mode_init(struct wldbg *wldbg)
 		display_name = "wayland-0";
 
 	if(wldbg->server_mode.connect_to)
-		fd = server_mode_add_socket2(wldbg, display_name);
+		fd = server_mode_add_socket_with_lock(wldbg, display_name);
 	else
 		fd = server_mode_change_sockets(wldbg);
 	if (fd < 0)

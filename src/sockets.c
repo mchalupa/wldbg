@@ -382,13 +382,27 @@ err:
 	return -1;
 }
 
-int server_mode_add_socket2(struct wldbg *wldbg, const char *name)
+int server_mode_add_socket_with_lock(struct wldbg *wldbg, const char *name)
 {
-	char *path = get_socket_path(name);
+	int sock;
+	char *path;
+
+	path = get_socket_path(name);
 	if (!path)
 		return -1;
 
 	wldbg->server_mode.wldbg_socket_path = path;
 
-	return server_mode_add_socket(wldbg, path);
+	sock = server_mode_add_socket(wldbg, path);
+	if (sock < 0)
+		return -1;
+
+	dbg("Taking lock on socket: %s\n", path);
+	if (socket_lock(wldbg, path) < 0) {
+		fprintf(stderr, "Failed locking socket\n");
+		close(sock);
+		return -1;
+	}
+
+	return sock;
 }

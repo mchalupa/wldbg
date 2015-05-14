@@ -42,8 +42,9 @@ int
 server_mode_add_socket(struct wldbg *wldbg, const char *name);
 
 /* this version will use $XDG_RUNTIME_DIR as a root dir when
- * creating socket */
+ * creating socket and will lock the socket the same way
+ * as compositors do */
 int
-server_mode_add_socket2(struct wldbg *wldbg, const char *name);
+server_mode_add_socket_with_lock(struct wldbg *wldbg, const char *name);
 
 #endif /* _WLDBG_SOCKETS_H_ */
