@@ -36,6 +36,7 @@ print_bare_message(struct message *message, struct wl_list *filters);
 struct print_filter {
 	char *filter;
 	struct wl_list link;
+	int show_only;
 };
 
 #endif /* _WLDBG_PRINT_H_ */

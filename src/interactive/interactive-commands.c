@@ -849,6 +849,40 @@ cmd_hide(struct wldbg_interactive *wldbgi,
 		return CMD_CONTINUE_QUERY;
 	}
 
+	pf->show_only = 0;
+	wl_list_insert(wldbgi->print_filters.next, &pf->link);
+
+	printf("Filtering messages: %s\n", filter);
+
+	return CMD_CONTINUE_QUERY;
+}
+
+static int
+cmd_show_only(struct wldbg_interactive *wldbgi,
+	      struct message *message,
+	      char *buf)
+{
+	struct print_filter *pf;
+	char filter[128];
+
+	(void) message;
+
+	sscanf(buf, "%s", filter);
+
+	pf = malloc(sizeof *pf);
+	if (!pf) {
+		fprintf(stderr, "No memory\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
+	pf->filter = strdup(filter);
+	if (!pf->filter) {
+		fprintf(stderr, "No memory\n");
+		return CMD_CONTINUE_QUERY;
+	}
+
+	pf->show_only = 1;
+
 	wl_list_insert(wldbgi->print_filters.next, &pf->link);
 
 	printf("Filtering messages: %s\n", filter);
@@ -868,6 +902,7 @@ const struct command commands[] = {
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
 	{"send", "s", cmd_send, NULL},
+	{"showonly", NULL, cmd_show_only, NULL},
 	{"quit", "q", cmd_quit, NULL},
 
 };

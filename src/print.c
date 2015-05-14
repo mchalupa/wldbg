@@ -36,6 +36,7 @@
 #include "wldbg-private.h"
 #include "resolve.h"
 
+/* return 1 if some of filters matches - thus hide the message */
 static int
 filter_match(struct wl_list *filters, struct message *message,
 	     const struct wl_interface *interface)
@@ -44,7 +45,7 @@ filter_match(struct wl_list *filters, struct message *message,
 	struct print_filter *pf;
 	char buf[128];
 	char *at;
-	int ret;
+	int ret, has_show_only = 0;
 	uint32_t *p = message->data;
 	uint32_t opcode = p[1] & 0xffff;
 
@@ -85,9 +86,24 @@ filter_match(struct wl_list *filters, struct message *message,
 			}
 		}
 
-		if (strcmp(pf->filter, buf) == 0)
+		/* got we match? */
+		if (strcmp(pf->filter, buf) == 0) {
+			/* If this filter is show_only,
+			 * we must return 0, because we'd like to show this message */
+			if (pf->show_only)
+				return 0;
+
 			return 1;
+		}
+
+		if (pf->show_only)
+			has_show_only = 1;
 	}
+
+	/* if we haven't found filter match and we have some show_only filters,
+	 * we must return 1 so that this message will get hidden */
+	if (has_show_only)
+		return 1;
 
 	return 0;
 }
