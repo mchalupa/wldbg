@@ -458,6 +458,12 @@ dispatch_messages(int fd, void *data)
 	return process_data(conn, wl_conn, len);
 }
 
+static void
+wldbg_connection_kill(struct wldbg_connection *conn)
+{
+	kill(conn->client.pid, SIGTERM);
+}
+
 static int
 dispatch_signals(int fd, void *data)
 {
@@ -484,7 +490,7 @@ dispatch_signals(int fd, void *data)
 	} else if (si.ssi_signo == SIGINT) {
 		fprintf(stderr, "Interrupted...\n");
 
-		kill(0, SIGTERM);
+		wldbg_foreach_connection(wldbg, wldbg_connection_kill);
 		wldbg->flags.exit = 1;
 	} else {
 		assert(0 && "Got unhandled signal from epoll");
