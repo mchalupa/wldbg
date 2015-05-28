@@ -146,12 +146,22 @@ create_pass(const char *name)
 	if (strcmp(name, "list") == 0) {
 		wldbg_pass = &wldbg_pass_list;
 	} else {
-		/* try root dir, its nice when developing */
-		if (build_path(path, "passes/", LT_OBJDIR, name) < 0)
+		/* try current directory */
+		if (build_path(path, "./", NULL, name) < 0)
 			return NULL;
 
 		dbg("Trying '%s'\n", path);
 		wldbg_pass = load_pass(path);
+
+		/* try passes/ if we're in build directory */
+		if (!wldbg_pass && errno != EEXIST) {
+			if (build_path(path, "passes/",
+				       LT_OBJDIR, name) < 0)
+				return NULL;
+
+			dbg("Trying '%s'\n", path);
+			wldbg_pass = load_pass(path);
+		}
 
 		/* home dir */
 		if (!wldbg_pass && errno != EEXIST) {
@@ -160,7 +170,7 @@ create_pass(const char *name)
 				fprintf(stderr, "$HOME is not set!\n");
 			} else {
 				if (build_path(path, env,
-						"/.wldbg/", name) < 0)
+					       "/.wldbg/", name) < 0)
 					return NULL;
 
 				dbg("Trying '%s'\n", path);
@@ -168,7 +178,8 @@ create_pass(const char *name)
 			}
 		}
 
-		/* default paths */
+		/* default paths
+		 * XXX use LD_LIBRARY_PATH */
 		if (!wldbg_pass && errno != EEXIST) {
 			if (build_path(path, "/usr/local/lib/wldbg/",
 					NULL, name) < 0)
