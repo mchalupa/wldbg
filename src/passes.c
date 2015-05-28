@@ -218,7 +218,7 @@ pass_init(struct wldbg *wldbg, struct pass *pass,
 {
 	if (pass->wldbg_pass.init)
 		return pass->wldbg_pass.init(wldbg, &pass->wldbg_pass,
-						argc, argv);
+					     argc, argv);
 	else
 		return 0;
 }
@@ -240,15 +240,13 @@ count_args(int argc, const char *argv[])
 	return count;
 }
 
-#if 0
 int
-load_passes(struct wldbg *wldbg, int argc, const char *argv[])
+load_passes(struct wldbg *wldbg, struct wldbg_options *opts,
+	    int argc, const char *argv[])
 {
 	int i, rest, count, pass_num = 0, pass_created = 0;
 	struct pass *pass;
 	char *comma;
-
-	dbg("Loading passes\n");
 
 	rest = argc;
 	while (rest) {
@@ -260,20 +258,13 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 				break;
 
 			if (strcmp(argv[argc - rest], "--") == 0) {
-				wldbg->client.path = strdup(argv[argc - rest + 1]);
-				wldbg->client.argc
-					= copy_arguments(&wldbg->client.argv,
+				opts->path = strdup(argv[argc - rest + 1]);
+				opts->argc
+					= copy_arguments(&opts->argv,
 							 rest - 1,
 							 argv + argc - rest + 1);
-				assert(wldbg->client.argc == rest - 1);
-#ifdef DEBUG
-				dbg("Program: %s, argc == %d\n",
-					wldbg->client.path,
-					wldbg->client.argc);
-				for (i = 0; i < wldbg->client.argc; ++i)
-					dbg("\targ[%d]: %s\n",
-						i, wldbg->client.argv[i]);
-#endif /* DEBUG */
+				assert(opts->argc == rest - 1);
+
 				break;
 			} else if (strcmp(argv[argc - rest], ",") == 0) {
 				/* just skip the comma and process next pass */
@@ -294,7 +285,6 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 				dbg("\targ[%d]: %s\n", i, argv[argc - rest + i]);
 			}
 #endif
-
 			pass = create_pass(argv[argc - rest]);
 			if (pass) {
 				if (pass_init(wldbg, pass, count,
@@ -318,4 +308,3 @@ load_passes(struct wldbg *wldbg, int argc, const char *argv[])
 	dbg("Loaded %d passes\n", pass_created);
 	return pass_created;
 }
-#endif

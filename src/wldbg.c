@@ -59,7 +59,7 @@ interactive_init(struct wldbg *wldbg);
 
 /* defined in passes.c */
 int
-load_passes(struct wldbg *wldbg, int argc, const char *argv[]);
+load_passes(struct wldbg *wldbg, struct wldbg_options *opts, int argc, const char *argv[]);
 
 static int
 dispatch_messages(int fd, void *data);
@@ -536,6 +536,11 @@ spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 	int sock;
 	struct wldbg_connection *conn;
 
+	if (!path) {
+		fprintf(stderr, "No path to program given\n");
+		return NULL;
+	}
+
 	assert(!wldbg->flags.error);
 	assert(!wldbg->flags.exit);
 
@@ -811,7 +816,7 @@ server_mode_init(struct wldbg *wldbg)
 static int
 parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *argv[])
 {
-	int pass_off;
+	int pass_off, pass_num;
 
 	pass_off = get_opts(argc, argv, options);
 	if (pass_off == -1) {
@@ -855,8 +860,12 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *a
 	} else if (options->server_mode) {
 		wldbg->flags.server_mode = 1;
 
-		if (argv[pass_off])
+		if (argv[pass_off]) {
 			wldbg->server_mode.connect_to = argv[pass_off];
+			/* increase pass offset so that the passes will get
+			 * the right arguments */
+			++pass_off;
+		}
 
 		if (server_mode_init(wldbg) < 0)
 			return -1;
@@ -865,14 +874,21 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *a
 		 * ATM */
 		if (interactive_init(wldbg) < 0)
 			return -1;
+
+		pass_num = 1;
+	} else {
+		pass_num = load_passes(wldbg, options, argc - pass_off,
+				       (const char **) argv + pass_off);
+		if (pass_num == -1) {
+			fprintf(stderr, "Error occured while loading passes...\n");
+			return -1;
+		}
 	}
 
-	/*
-	if (load_passes(wldbg, argc - 1, (const char **) argv + 1) <= 0) {
-		fprintf(stderr, "No passes loaded, exiting...\n");
+	if (pass_num == 0 && !options->server_mode) {
+		fprintf(stderr, "No passes loaded...\n");
 		return -1;
 	}
-	*/
 
 	return 0;
 }
@@ -904,6 +920,13 @@ int main(int argc, char *argv[])
 
 	if (parse_opts(&wldbg, &options, argc, argv) < 0)
 		goto err;
+
+#ifdef DEBUG
+	int i;
+	dbg("Program: %s, argc == %d\n", options.path, options.argc);
+	for (i = 0; i < options.argc; ++i)
+		dbg("\targ[%d]: %s\n", i, options.argv[i]);
+#endif /* DEBUG */
 
 	/* if some pass created
 	 * an error while initializing, do not proceed */
