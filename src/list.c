@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Marek Chalupa
+ * Copyright (c) 2014 - 2015 Marek Chalupa
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -45,7 +45,7 @@ list_dir(const char *path)
 				continue;
 
 			if (strcmp("so", dot + 1) == 0)
-				printf("    %s\n", entry->d_name);
+				printf("    %s (%s)\n", entry->d_name, path);
 		}
 	}
 
@@ -53,37 +53,23 @@ list_dir(const char *path)
 }
 
 void
-list_passes(int lng)
+list_passes(void)
 {
 	const char *env;
 	char path[256];
 
-	if (lng)
-		printf("hardcoded:\n");
 	printf("    list (hardcoded)\n    resolve (hardcoded)\n");
 
 	snprintf(path, sizeof path, "passes/%s", LT_OBJDIR);
-	if (lng)
-		printf("%s:\n", path);
 	list_dir(path);
 
 	if ((env = getenv("HOME"))) {
 		snprintf(path, sizeof path, "%s/.wldbg", env);
-		if (lng)
-			printf("%s:\n", path);
 		list_dir(path);
 	}
 
-	if (lng)
-		printf("/usr/local/lib/wldbg:\n");
 	list_dir("/usr/local/lib/wldbg");
-
-	if (lng)
-		printf("/usr/lib/wldbg:\n");
 	list_dir("/usr/lib/wldbg");
-
-	if (lng)
-		printf("/lib/wldbg:\n");
 	list_dir("/lib/wldbg");
 }
 
@@ -93,14 +79,13 @@ list_init(struct wldbg *wldbg,
 	  int argc, const char *argv[])
 {
 	(void) pass;
+	(void) argv;
 
 	if (argc == 1) {
-		list_passes(0);
-	} else if (argc == 2 && (strcmp(argv[1], "long") == 0
-		|| strcmp(argv[1], "l") == 0)) {
-		list_passes(1);
+		list_passes();
 	} else {
-		printf("Usage: wldbg list [long]\n\n");
+		printf("Usage: wldbg list\n\n");
+		printf("List all available passes\n");
 		wldbg->flags.error = 1;
 		exit(-1);
 	}
