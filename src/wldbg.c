@@ -43,7 +43,7 @@
 #include "wldbg-private.h"
 #include "resolve.h"
 #include "sockets.h"
-
+#include "getopt.h"
 #include "wayland/wayland-private.h"
 #include "wayland/wayland-util.h"
 #include "wayland/wayland-os.h"
@@ -55,7 +55,7 @@ int debug_verbose = 0;
 
 /* defined in interactive.c */
 int
-interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
+interactive_init(struct wldbg *wldbg, struct wldbg_options *opts,
 		 int argc, const char *argv[]);
 
 /* defined in passes.c */
@@ -810,52 +810,48 @@ server_mode_init(struct wldbg *wldbg)
 }
 
 static int
-parse_opts(struct wldbg *wldbg, struct cmd_options *opts, int argc, char *argv[])
+parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *argv[])
 {
-	/* XXX rework parsing arguments and passing options */
-	if (strcmp(argv[1], "--help") == 0 ||
-		strcmp(argv[1], "-h") == 0) {
+	int pass_off;
+
+	pass_off = get_opts(argc, argv, options);
+	if (pass_off == -1) {
 		help();
 		exit(1);
-	} else if (strcmp(argv[1], "--interactive") == 0 ||
-		strcmp(argv[1], "-i") == 0) {
-		if (interactive_init(wldbg, opts, argc - 2,
-				     (const char **) argv + 2) < 0)
+	}
+
+	if (options->interactive) {
+		if (argc - pass_off < 1) {
+			fprintf(stderr, "Need client to run\n");
 			return -1;
-	} else if (strcmp(argv[1], "--server-mode") == 0 ||
-		   strcmp(argv[1], "-s") == 0) {
+		}
+
+		if (interactive_init(wldbg, options, argc - pass_off,
+				     (const char **) argv + pass_off) < 0)
+			return -1;
+	} else if (options->server_mode) {
 		wldbg->flags.server_mode = 1;
 
-		if (argv[2])
-			wldbg->server_mode.connect_to = argv[2];
+		if (argv[pass_off])
+			wldbg->server_mode.connect_to = argv[pass_off];
 
 		if (server_mode_init(wldbg) < 0)
 			return -1;
 
 		/* server mode is interactive too -- at least
 		 * ATM */
-		if (interactive_init(wldbg, NULL, 0, NULL) < 0)
+		if (interactive_init(wldbg, options, 0, NULL) < 0)
 			return -1;
-	} else {
-		fprintf(stderr, "Not implemented yet\n");
-		abort();
-	}
-#if 0
-	} else if (strcmp(argv[1], "--one-by-one") == 0 ||
-		strcmp(argv[1], "-s" /* separate/split */) == 0) {
-
+	} else if (options->one_by_one) {
 		wldbg->flags.one_by_one = 1;
-		if (load_passes(wldbg, argc - 2, (const char **) argv + 2) <= 0) {
-			fprintf(stderr, "No passes loaded, exiting...\n");
-			return -1;
-		}
-	} else {
-		if (load_passes(wldbg, argc - 1, (const char **) argv + 1) <= 0) {
-			fprintf(stderr, "No passes loaded, exiting...\n");
-			return -1;
-		}
 	}
-#endif
+
+	/*
+	if (load_passes(wldbg, argc - 1, (const char **) argv + 1) <= 0) {
+		fprintf(stderr, "No passes loaded, exiting...\n");
+		return -1;
+	}
+	*/
 
 	return 0;
 }
@@ -863,8 +859,7 @@ parse_opts(struct wldbg *wldbg, struct cmd_options *opts, int argc, char *argv[]
 int main(int argc, char *argv[])
 {
 	struct wldbg wldbg;
-	/* XXX program info would be better name? */
-	struct cmd_options cmd_opts;
+	struct wldbg_options options;
 	struct wldbg_connection *conn;
 
 	if (argc == 1) {
@@ -883,10 +878,10 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	memset(&cmd_opts, 0 , sizeof cmd_opts);
+	memset(&options, 0 , sizeof options);
 	wldbg_init(&wldbg);
 
-	if (parse_opts(&wldbg, &cmd_opts, argc, argv) < 0)
+	if (parse_opts(&wldbg, &options, argc, argv) < 0)
 		goto err;
 
 	/* if some pass created
@@ -902,7 +897,7 @@ int main(int argc, char *argv[])
 	if (wldbg.flags.server_mode) {
 		printf("Listening for incoming connections...\n");
 	} else {
-		conn = spawn_client(&wldbg, cmd_opts.path, cmd_opts.argv);
+		conn = spawn_client(&wldbg, options.path, options.argv);
 		if (conn == NULL)
 			goto err;
 
@@ -912,16 +907,16 @@ int main(int argc, char *argv[])
 	if (wldbg_run(&wldbg) < 0)
 		goto err;
 
-	free(cmd_opts.path);
-	if (cmd_opts.argv)
-		free_arguments(cmd_opts.argv);
+	free(options.path);
+	if (options.argv)
+		free_arguments(options.argv);
 
 	wldbg_destroy(&wldbg);
 	return EXIT_SUCCESS;
 err:
-	free(cmd_opts.path);
-	if (cmd_opts.argv)
-		free_arguments(cmd_opts.argv);
+	free(options.path);
+	if (options.argv)
+		free_arguments(options.argv);
 
 	wldbg_destroy(&wldbg);
 	return EXIT_FAILURE;

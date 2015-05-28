@@ -153,13 +153,6 @@ struct wldbg_connection {
 void
 wldbg_foreach_connection(struct wldbg *wldbg,
 			 void (*func)(struct wldbg_connection *));
-
-struct cmd_options {
-	char *path;
-	int argc;
-	char **argv;
-};
-
 int
 copy_arguments(char ***to, int argc, const char*argv[]);
 

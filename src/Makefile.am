@@ -41,6 +41,8 @@ wldbg_SOURCES =			\
 	util.h			\
 	print.c			\
 	print.h			\
+	getopt.c		\
+	getopt.h		\
 	$(wayland_files)	\
 	$(hardcoded_passes)	\
 	$(interactive_sources)	\

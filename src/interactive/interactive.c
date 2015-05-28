@@ -35,6 +35,7 @@
 #include "resolve.h"
 #include "passes.h"
 #include "print.h"
+#include "getopt.h"
 
 /* defined in interactive-commands.c */
 int
@@ -200,7 +201,7 @@ handle_sigint(int fd, void *data)
 }
 
 int
-interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
+interactive_init(struct wldbg *wldbg, struct wldbg_options *opts,
 		 int argc, const char *argv[])
 {
 	struct pass *pass;
@@ -263,7 +264,6 @@ interactive_init(struct wldbg *wldbg, struct cmd_options *opts,
 	if (wldbg->flags.server_mode)
 		return 0;
 
-	/* TODO use getopt */
 	if (strcmp(argv[0], "--") == 0) {
 		++argv;
 		--argc;
