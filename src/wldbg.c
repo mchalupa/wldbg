@@ -55,8 +55,7 @@ int debug_verbose = 0;
 
 /* defined in interactive.c */
 int
-interactive_init(struct wldbg *wldbg, struct wldbg_options *opts,
-		 int argc, const char *argv[]);
+interactive_init(struct wldbg *wldbg);
 
 /* defined in passes.c */
 int
@@ -820,15 +819,39 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *a
 		exit(1);
 	}
 
+	if (options->one_by_one) {
+		wldbg->flags.one_by_one = 1;
+	}
+
 	if (options->interactive) {
 		if (argc - pass_off < 1) {
 			fprintf(stderr, "Need client to run\n");
 			return -1;
 		}
 
-		if (interactive_init(wldbg, options, argc - pass_off,
-				     (const char **) argv + pass_off) < 0)
+		/* set program and its arguments */
+		options->path = strdup(argv[pass_off]);
+		if (!options->path)
 			return -1;
+
+		options->argc = copy_arguments(&options->argv,
+					       argc - pass_off,
+					       (const char **) argv + pass_off);
+		if (options->argc == -1) {
+			free(options->path);
+			return -1;
+		}
+
+		/* this would be bug in copy_arguments */
+		assert(options->argc == argc - pass_off);
+
+		if (interactive_init(wldbg) < 0) {
+			free_arguments(options->argv);
+			free(options->path);
+			return -1;
+		}
+
+		return 0;
 	} else if (options->server_mode) {
 		wldbg->flags.server_mode = 1;
 
@@ -840,10 +863,8 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *a
 
 		/* server mode is interactive too -- at least
 		 * ATM */
-		if (interactive_init(wldbg, options, 0, NULL) < 0)
+		if (interactive_init(wldbg) < 0)
 			return -1;
-	} else if (options->one_by_one) {
-		wldbg->flags.one_by_one = 1;
 	}
 
 	/*

@@ -201,8 +201,7 @@ handle_sigint(int fd, void *data)
 }
 
 int
-interactive_init(struct wldbg *wldbg, struct wldbg_options *opts,
-		 int argc, const char *argv[])
+interactive_init(struct wldbg *wldbg)
 {
 	struct pass *pass;
 	struct wldbg_interactive *wldbgi;
@@ -259,25 +258,6 @@ interactive_init(struct wldbg *wldbg, struct wldbg_options *opts,
 	if (wldbg_monitor_fd(wldbg, wldbgi->sigint_fd,
 			     handle_sigint, wldbgi) < 0)
 		goto err_pass;
-
-	/* we can bail out here in server mode */
-	if (wldbg->flags.server_mode)
-		return 0;
-
-	if (strcmp(argv[0], "--") == 0) {
-		++argv;
-		--argc;
-	}
-
-	opts->path = strdup(argv[0]);
-	if (!opts->path)
-		goto err_pass;
-
-	opts->argc = copy_arguments(&opts->argv, argc, argv);
-	if (opts->argc == -1)
-		goto err_pass;
-
-	assert(opts->argc == argc);
 
 	return 0;
 

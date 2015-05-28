@@ -85,6 +85,13 @@ int get_opts(int argc, char *argv[], struct wldbg_options *opts)
 {
 	int n = 1;
 	for (; n < argc; ++n) {
+		/* separator */
+		if (strcmp("--", argv[n]) == 0) {
+			++n;
+			break;
+		}
+
+		/* options */
 		if (is_prefix_of("--", argv[n])) {
 			if (!set_opt(argv[n] + 2, opts))
 				return -1;
