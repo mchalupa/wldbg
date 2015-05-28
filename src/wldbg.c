@@ -241,6 +241,21 @@ wldbg_remove_callback(struct wldbg *wldbg, struct wldbg_fd_callback *cb)
 	return 0;
 }
 
+static int
+remove_connection(struct wldbg_connection *conn, struct wldbg_fd_callback *cb)
+{
+	struct wldbg *wldbg = conn->wldbg;
+
+	wldbg_remove_connection(conn);
+	if (wldbg_remove_callback(wldbg, cb) != 0)
+		return 0;
+
+	wldbg_connection_destroy(conn);
+
+	/* if connections_num is 0, that we're done */
+	return wldbg->connections_num;
+}
+
 int
 wldbg_dispatch(struct wldbg *wldbg)
 {
@@ -253,7 +268,6 @@ wldbg_dispatch(struct wldbg *wldbg)
 	assert(!wldbg->flags.error);
 
 	n = epoll_wait(wldbg->epoll_fd, &ev, 1, -1);
-
 
 	if (n < 0) {
 		/* don't print error when we has been interrupted
@@ -270,16 +284,8 @@ wldbg_dispatch(struct wldbg *wldbg)
 	conn = cb->data;
 
 	if (ev.events & EPOLLHUP) {
-		/* if we have no other clients to run,
-		 * this func will return 0, thus ending the loop */
-		ret = wldbg_remove_connection(conn);
-
-		if (wldbg_remove_callback(wldbg, cb) != 0)
-			ret = 0;
-
-		wldbg_connection_destroy(conn);
-
-		return ret;
+		/* if connections_num is 0, that we're done */
+		return remove_connection(conn, cb);
 	}
 
 	if (ev.events & EPOLLERR) {
@@ -290,7 +296,13 @@ wldbg_dispatch(struct wldbg *wldbg)
 	vdbg("cb [%p]: dispatching %p(%d, %p)\n",
 	     cb, cb->dispatch, cb->fd, cb->data);
 
-	return cb->dispatch(cb->fd, cb->data);
+	ret = cb->dispatch(cb->fd, cb->data);
+	if (ret <= 0) {
+		/* on error, remove connection */
+		return remove_connection(conn, cb);
+	}
+
+	return ret;
 }
 
 static void
