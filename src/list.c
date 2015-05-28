@@ -60,6 +60,7 @@ list_passes(void)
 
 	printf("    list (hardcoded)\n    resolve (hardcoded)\n");
 
+	list_dir(".");
 	snprintf(path, sizeof path, "passes/%s", LT_OBJDIR);
 	list_dir(path);
 
