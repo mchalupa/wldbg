@@ -45,7 +45,6 @@ load_pass(const char *path)
 
 	/* check if file exists */
 	if (access(path, F_OK) == -1) {
-		fprintf(stderr, "File doesn't exists\n");
 		return NULL;
 	}
 
