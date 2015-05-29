@@ -34,6 +34,8 @@ wldbg_SOURCES =			\
 	wldbg.h			\
 	wldbg-private.c		\
 	wldbg-private.h		\
+	wldbg-parsed-message.h	\
+	parse-message.c		\
 	passes.c		\
 	sockets.c		\
 	sockets.h		\
