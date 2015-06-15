@@ -543,12 +543,16 @@ print_bare_message(struct message *message, struct wl_list *filters)
 			len = DIV_ROUNDUP(p[pos], sizeof(uint32_t));
 
 			printf("array:");
-			for (j = 0; j < 8 && j < len; ++j) {
-				printf(" %04x", p[pos + j]);
-			}
+			if (len == 0)
+				printf("(nil)");
+			else {
+				/* print first 8* 4 bytes from array */
+				for (j = 0; j < 8 && j < len; ++j)
+					printf(" %04x", p[pos + j]);
 
-			if (len > j)
-				printf(" ...");
+				if (len > j)
+					printf(" ...");
+			}
 
 			pos += len;
 			break;
