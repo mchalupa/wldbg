@@ -33,5 +33,9 @@ TEST(map_insert)
 	assert(wldbg_ids_map_get(&m, 11) == NULL);
 	assert(wldbg_ids_map_get(&m, 10) == (void *) 0x10);
 
+	wldbg_ids_map_insert(&m, 0x55, (void *) 0x55);
+	assert(m.count == 0x55 + 1);
+	assert(wldbg_ids_map_get(&m, 0x55) == (void *) 0x55);
+
 	wldbg_ids_map_release(&m);
 }
