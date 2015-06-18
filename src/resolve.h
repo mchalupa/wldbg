@@ -32,8 +32,18 @@ wldbg_connection_get_resolved_objects(struct wldbg_connection *connection);
 int
 wldbg_add_resolve_pass(struct wldbg *wldbg);
 
-struct wldbg_ids_map *
-resolved_objects_get_objects(struct resolved_objects *ro);
+const struct wl_interface *
+resolved_objects_get(struct resolved_objects *ro, uint32_t id);
+
+const struct wl_interface *
+resolved_objects_get_interface(struct resolved_objects *ro, const char *name);
+
+void
+resolved_objects_interate(struct resolved_objects *ro,
+			  void (*func)(uint32_t id,
+				       const struct wl_interface *intf,
+				       void *data),
+			  void *data);
 
 struct resolved_objects *
 create_resolved_objects(void);

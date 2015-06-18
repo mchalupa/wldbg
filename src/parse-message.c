@@ -57,9 +57,8 @@ int wldbg_resolve_message(struct message *msg,
 	if (!wldbg_parse_message(msg, &out->base))
 		return 0;
 
-	interface = wldbg_ids_map_get(
-		resolved_objects_get_objects(msg->connection->resolved_objects),
-					     out->base.id);
+	interface = resolved_objects_get(msg->connection->resolved_objects,
+					 out->base.id);
 	/* if it is unknown interface to resolve or it is
 	 * "unknown" interface of FREE entry, return NULL */
 	if (!interface

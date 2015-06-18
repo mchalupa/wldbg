@@ -434,7 +434,7 @@ print_bare_message(struct message *message, struct wl_list *filters)
 	opcode = p[1] & 0xffff;
 	size = p[1] >> 16;
 
-	interface = wldbg_ids_map_get(resolved_objects_get_objects(conn->resolved_objects), id);
+	interface = resolved_objects_get(conn->resolved_objects, id);
 
 	if (filters && filter_match(filters, message, interface))
 		return;
@@ -520,8 +520,8 @@ print_bare_message(struct message *message, struct wl_list *filters)
 			pos += DIV_ROUNDUP(p[pos], sizeof(uint32_t));
 			break;
 		case 'o':
-			obj = wldbg_ids_map_get(resolved_objects_get_objects(conn->resolved_objects),
-						p[pos]);
+			obj = resolved_objects_get(conn->resolved_objects,
+						   p[pos]);
 			if (obj)
 				printf("%s@%u",
 					obj->name,

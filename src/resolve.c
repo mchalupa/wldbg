@@ -26,7 +26,9 @@
 #include <dlfcn.h>
 #include <assert.h>
 
-#define WL_HIDE_DEPRECATED
+/* for WL_SERVER_ID_START */
+#include "wayland/wayland-private.h"
+
 #include <wayland-server-protocol.h>
 #include <wayland-client-protocol.h>
 
@@ -37,8 +39,16 @@
 
 static struct wl_list shared_interfaces;
 
+struct resolved_objects_ids {
+	/* id's allocated by client */
+	struct wldbg_ids_map client_objects;
+	/* id's allocated by server */
+	struct wldbg_ids_map server_objects;
+};
+
 struct resolved_objects {
-	struct wldbg_ids_map objects;
+	struct resolved_objects_ids objects;
+
 	/* these are shared between connections */
 	struct wl_list *interfaces;
 
@@ -46,10 +56,69 @@ struct resolved_objects {
 	struct wl_list additional_interfaces;
 };
 
-struct wldbg_ids_map *
-resolved_objects_get_objects(struct resolved_objects *ro)
+const struct wl_interface *
+resolved_objects_get(struct resolved_objects *ro, uint32_t id)
 {
-	return &ro->objects;
+	if (id >= WL_SERVER_ID_START)
+		return wldbg_ids_map_get(&ro->objects.server_objects,
+					 id - WL_SERVER_ID_START);
+	else
+		return wldbg_ids_map_get(&ro->objects.client_objects, id);
+}
+
+const struct wl_interface *
+resolved_objects_get_interface(struct resolved_objects *ro, const char *name)
+{
+	unsigned int i;
+	const struct wl_interface *intf;
+
+	for (i = 0; i < ro->objects.client_objects.count; ++i) {
+		intf = wldbg_ids_map_get(&ro->objects.client_objects, i);
+		if (intf && strcmp(intf->name, name) == 0)
+			return intf;
+	}
+
+	for (i = 0; i < ro->objects.server_objects.count; ++i) {
+		intf = wldbg_ids_map_get(&ro->objects.server_objects,
+					 WL_SERVER_ID_START + i);
+		if (intf && strcmp(intf->name, name) == 0)
+			return intf;
+	}
+
+	return NULL;
+}
+
+void
+resolved_objects_interate(struct resolved_objects *ro,
+			  void (*func)(uint32_t id,
+				       const struct wl_interface *intf,
+				       void *data),
+			  void *data)
+{
+	unsigned int i;
+	const struct wl_interface *intf;
+
+	for (i = 0; i < ro->objects.client_objects.count; ++i) {
+		intf = wldbg_ids_map_get(&ro->objects.client_objects, i);
+		func(i, intf, data);
+	}
+
+	for (i = 0; i < ro->objects.server_objects.count; ++i) {
+		intf = wldbg_ids_map_get(&ro->objects.server_objects,
+					 WL_SERVER_ID_START + i);
+		func( WL_SERVER_ID_START + i, intf, data);
+	}
+}
+
+static void
+resolved_objects_put(struct resolved_objects *ro,
+		     uint32_t id, const struct wl_interface *intf)
+{
+	if (id >= WL_SERVER_ID_START)
+		wldbg_ids_map_insert(&ro->objects.server_objects,
+				     id - WL_SERVER_ID_START, intf);
+	else
+		wldbg_ids_map_insert(&ro->objects.client_objects, id, intf);
 }
 
 /* this pass analyze the connection and translates object id
@@ -306,7 +375,7 @@ get_new_ids(struct resolved_objects *ro, uint32_t *data,
 		if (!new_intf)
 			new_intf = &unknown_interface;
 
-		wldbg_ids_map_insert(&ro->objects, new_id, (void *) new_intf);
+		resolved_objects_put(ro, new_id, (void *) new_intf);
 
 		dbg("RESOLVE: Got new id %u (%s)\n", new_id, new_intf->name);
 
@@ -328,8 +397,7 @@ resolve_in(void *user_data, struct message *message)
 	id = data[0];
 	opcode = data[1] & 0xffff;
 
-	intf = wldbg_ids_map_get(&ro->objects, id);
-
+	intf = resolved_objects_get(ro, id);
 	if (intf) {
 		if (intf == &unknown_interface || intf == &free_entry)
 			return PASS_NEXT;
@@ -352,7 +420,7 @@ resolve_in(void *user_data, struct message *message)
 		/* handle delete_id event */
 		if (id == 1 /* wl_display */
 			&& opcode == WL_DISPLAY_DELETE_ID) {
-			wldbg_ids_map_insert(&ro->objects, data[2], &free_entry);
+			resolved_objects_put(ro, data[2], &free_entry);
 			dbg("RESOLVE: Freed id %u\n", data[2]);
 		} else
 			get_new_ids(ro, data, wl_message, NULL);
@@ -376,8 +444,7 @@ resolve_out(void *user_data, struct message *message)
 	id = data[0];
 	opcode = data[1] & 0xffff;
 
-	intf = wldbg_ids_map_get(&ro->objects, id);
-
+	intf = resolved_objects_get(ro, id);
 	if (intf) {
 		/* unknown interface */
 		if (intf == &unknown_interface || intf == &free_entry)
@@ -419,7 +486,8 @@ create_resolved_objects(void)
 		return NULL;
 	}
 
-	wldbg_ids_map_init(&ro->objects);
+	wldbg_ids_map_init(&ro->objects.client_objects);
+	wldbg_ids_map_init(&ro->objects.server_objects);
 	wl_list_init(&ro->additional_interfaces);
 
 	/* these are shared between connection */
@@ -428,9 +496,8 @@ create_resolved_objects(void)
 	ro->interfaces = &shared_interfaces;
 
 	/* id 0 is always empty and 1 is always display */
-	wldbg_ids_map_insert(&ro->objects, 0, NULL);
-	wldbg_ids_map_insert(&ro->objects, 1,
-			     get_interface(ro, "wl_display"));
+	resolved_objects_put(ro, 0, NULL);
+	resolved_objects_put(ro, 1, get_interface(ro, "wl_display"));
 
 	return ro;
 }
@@ -440,7 +507,8 @@ destroy_resolved_objects(struct resolved_objects *ro)
 {
 	struct interface *intf, *tmp;
 
-	wldbg_ids_map_release(&ro->objects);
+	wldbg_ids_map_release(&ro->objects.client_objects);
+	wldbg_ids_map_release(&ro->objects.server_objects);
 
 	wl_list_for_each_safe(intf, tmp, &ro->additional_interfaces, link) {
 		free(intf);
@@ -463,8 +531,6 @@ resolve_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 	int count = 0;
 	wl_list_for_each(i, &shared_interfaces, link)
 		count++;
-
-
 
 	/* get interfaces from libwayland.so */
 	parse_libwayland();

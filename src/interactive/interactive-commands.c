@@ -140,9 +140,8 @@ break_on_name(struct message *msg, struct breakpoint *b)
 	uint32_t id, opcode, bopcode;
 	const struct wl_interface *intf;
 	const struct wl_message *bmessage, *wl_message = NULL;
+	struct resolved_objects *ro = msg->connection->resolved_objects;
 
-	struct wldbg_ids_map *objects
-		= resolved_objects_get_objects(msg->connection->resolved_objects);
 
 	id = p[0];
 	opcode = p[1] & 0xffff;
@@ -154,7 +153,7 @@ break_on_name(struct message *msg, struct breakpoint *b)
 	if (bopcode != opcode)
 		return 0;
 
-	intf = wldbg_ids_map_get(objects, id);
+	intf = resolved_objects_get(ro, id);
 	if (!intf)
 		return 0;
 
@@ -170,23 +169,6 @@ break_on_name(struct message *msg, struct breakpoint *b)
 		return 1;
 
 	return 0;
-}
-
-static const struct wl_interface *
-get_interface_with_name(struct resolved_objects *ro, const char *name)
-{
-	unsigned int i;
-	const struct wl_interface *intf;
-	struct wldbg_ids_map *objects
-		= resolved_objects_get_objects(ro);
-
-	for (i = 0; i < objects->count; ++i) {
-		intf = wldbg_ids_map_get(objects, i);
-		if (intf && strcmp(intf->name, name) == 0)
-			return intf;
-	}
-
-	return NULL;
 }
 
 static struct breakpoint *
@@ -231,7 +213,7 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 		if ((at = strchr(buf, '@'))) {
 			/* split the string on '@' */
 			*at = 0;
-			intf = get_interface_with_name(ro, buf);
+			intf = resolved_objects_get_interface(ro, buf);
 			if (!intf) {
 				printf("Unknown interface\n");
 				goto err;
@@ -452,18 +434,17 @@ cmd_pass(struct wldbg_interactive *wldbgi,
 	return CMD_CONTINUE_QUERY;
 }
 
+void print_object(uint32_t id, const struct wl_interface *intf, void *data)
+{
+	(void) data;
+	printf("\t%u -> %s\n", id, intf ? intf->name : "NULL");
+}
+
 void
 print_objects(struct message *message)
 {
-	struct wldbg_ids_map *map
-		= resolved_objects_get_objects(message->connection->resolved_objects);
-	const struct wl_interface *intf;
-	uint32_t id;
-
-	for (id = 0; id < map->count; ++id) {
-		intf = wldbg_ids_map_get(map, id);
-		printf("\t%u -> %s\n", id, intf ? intf->name : "NULL");
-	}
+	resolved_objects_interate(message->connection->resolved_objects,
+				  print_object, NULL);
 }
 
 static void
