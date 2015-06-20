@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "wldbg.h"
@@ -50,9 +51,10 @@ wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
 
 	if (id >= map->count) {
 		size = (id - map->count + 1) * sizeof(struct wl_interface *);
-		wl_array_add(&map->data, size);
+		p = wl_array_add(&map->data, size);
 
-		/* XXX shouldn't we zero out the new memory? */
+		/* set newly allocated memory to 0s */
+		memset(p, 0, size);
 	}
 
 	p = ((const struct wl_interface **) map->data.data) + id;
