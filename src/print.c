@@ -516,7 +516,12 @@ print_bare_message(struct message *message, struct wl_list *filters)
 			printf("%f", wl_fixed_to_double(p[pos]));
 			break;
 		case 's':
-			printf("%u:\"%s\"", p[pos], (const char *) (p + pos + 1));
+			if (p[pos] > 0)
+				printf("%u:\"%s\"", p[pos],
+				       (const char *) (p + pos + 1));
+			else
+				printf("%u:\"\"", p[pos]);
+
 			pos += DIV_ROUNDUP(p[pos], sizeof(uint32_t));
 			break;
 		case 'o':
