@@ -70,7 +70,7 @@ wldbg_connection_create(struct wldbg *wldbg)
 	const char *sock_name = NULL;
 	int fd;
 
-	struct wldbg_connection *conn = malloc(sizeof *conn);
+	struct wldbg_connection *conn = calloc(1, sizeof *conn);
 	if (!conn)
 		return NULL;
 
