@@ -21,7 +21,8 @@ interactive_sources =				\
 
 # XXX do it conditional
 hardcoded_interfaces =				\
-	../protocols/xdg-shell-protocol.c
+	../protocols/xdg-shell-protocol.c	\
+	../protocols/wayland-drm-protocol.c
 
 AM_CPPFLAGS = -I..
 AM_CFLAGS =				\

@@ -304,6 +304,20 @@ add_hardcoded_xdg_shell(void)
 	add_shared_interface(intf);
 }
 
+extern const struct wl_interface wl_drm_interface;
+
+static void
+add_hardcoded_drm_interface(void)
+{
+	struct interface *intf;
+
+	intf = create_interface(&wl_drm_interface);
+	if (!intf)
+		return;
+
+	add_shared_interface(intf);
+}
+
 static int
 wl_message_new_id_pos(const char *signature)
 {
@@ -537,6 +551,7 @@ resolve_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 
 	/* this is a workaround until we have parser for binary */
 	add_hardcoded_xdg_shell();
+	add_hardcoded_drm_interface();
 
 	/* XXX
 	if (path_to_binary)
