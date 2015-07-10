@@ -50,4 +50,11 @@ wldbg_SOURCES =			\
 	$(hardcoded_passes)	\
 	$(interactive_sources)	\
 	$(hardcoded_interfaces)
+
+if ENABLE_DEBUG
+# enable debugging fetures. That include debugging messages
+# backtraces and syscall checks
+wldbg_SOURCES += debug.c
+endif
+
 wldbg_LDFLAGS = -ldl -lwayland-client

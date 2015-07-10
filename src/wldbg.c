@@ -51,6 +51,9 @@
 #ifdef DEBUG
 int debug = 0;
 int debug_verbose = 0;
+
+void
+init_syscalls_check(void);
 #endif
 
 /* defined in interactive.c */
@@ -931,6 +934,8 @@ int main(int argc, char *argv[])
 			|| strcmp(dbg_env, "v") == 0)
 			debug_verbose = 1;
 	}
+
+	init_syscalls_check();
 #endif
 
 	memset(&options, 0 , sizeof options);

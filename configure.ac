@@ -59,6 +59,7 @@ AC_ARG_ENABLE(debug,
 		,,enable_debug=yes)
 if test "x$enable_debug" != "xno"; then
 	AC_DEFINE(DEBUG, 1, [Enable debugging macros])
+	AM_CONDITIONAL(ENABLE_DEBUG, test true)
 	CFLAGS="$CFLAGS -g -O"
 fi
 
