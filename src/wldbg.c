@@ -485,7 +485,7 @@ dispatch_signals(int fd, void *data)
 		/* Just print message and let epoll exit with
 		 * the right exit code according to if it was HUP or ERR */
 		pid = waitpid(-1, &s, WNOHANG);
-		fprintf(stderr, "Client '%d' exited...\n",
+		fprintf(stderr, "Client '%d' exited %s...\n",
 			pid, WIFEXITED(s) ? "" : "abnormally");
 	} else if (si.ssi_signo == SIGINT) {
 		fprintf(stderr, "Interrupted...\n");
