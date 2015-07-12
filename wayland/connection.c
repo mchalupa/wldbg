@@ -413,6 +413,8 @@ int
 wl_connection_copy_fds(struct wl_connection *conn1, struct wl_connection *conn2)
 {
 	uint32_t size = wl_buffer_size(&conn1->fds_in);
+	void *data = conn1->fds_in.data;
+	int ret;
 
 	if (size == 0)
 		return 0;
@@ -424,9 +426,15 @@ wl_connection_copy_fds(struct wl_connection *conn1, struct wl_connection *conn2)
 			return -1;
 	}
 
+
+	/* copy fds from conn1 to conn2 */
+	ret = wl_buffer_put(&conn2->fds_out,
+			    ((char *) data) + conn1->fds_in.tail, size);
+
+	/* remove copied fds from conn1 */
 	conn1->fds_in.tail += size;
 
-	return wl_buffer_put(&conn2->fds_out, &conn1->fds_in.data, size);
+	return ret;
 }
 
 const char *
