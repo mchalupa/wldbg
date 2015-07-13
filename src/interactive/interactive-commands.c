@@ -872,13 +872,13 @@ const struct command commands[] = {
 	{"break", "b", cmd_break, NULL},
 	{"continue", "c", cmd_continue, NULL},
 	{"edit", "e", cmd_edit, NULL},
-	{"help", "h",  cmd_help, cmd_help_help},
-	{"hide", NULL,  cmd_hide, NULL},
+	{"help", NULL,  cmd_help, cmd_help_help},
+	{"hide", "h",  cmd_hide, NULL},
 	{"info", "i", cmd_info, NULL},
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
 	{"send", "s", cmd_send, NULL},
-	{"showonly", NULL, cmd_show_only, NULL},
+	{"showonly", "so", cmd_show_only, NULL},
 	{"quit", "q", cmd_quit, NULL},
 
 };
