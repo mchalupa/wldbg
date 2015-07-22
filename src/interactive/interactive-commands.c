@@ -291,21 +291,22 @@ cmd_info(struct wldbg_interactive *wldbgi,
 
 #define MATCH(buf, str) (strncmp((buf), (str "\n"), (sizeof((str)) + 1)) == 0)
 
-	if (MATCH(buf, "message")) {
+	if (MATCH(buf, "m") || MATCH(buf, "message")) {
 		printf("Sender: %s (no. %lu), size: %lu\n",
 			message->from == SERVER ? "server" : "client",
 			message->from == SERVER ? wldbgi->statistics.server_msg_no
 						: wldbgi->statistics.client_msg_no,
 			message->size);
-	} else if (MATCH(buf, "objects")) {
+	} else if (MATCH(buf, "o") || MATCH(buf, "objects")) {
 		print_objects(message);
-	} else if (MATCH(buf, "breakpoints")
-		   || MATCH(buf, "b")) {
+	} else if (MATCH(buf, "b") || MATCH(buf, "breakpoints")) {
 		print_breakpoints(wldbgi);
-	} else if (MATCH(buf, "proc")) {
+	} else if (MATCH(buf, "p") || MATCH(buf, "proc")
+		   || MATCH(buf, "process")) {
 		info_wldbg(wldbgi);
 		info_connections(wldbgi);
-	} else if (MATCH(buf, "conn")) {
+	} else if (MATCH(buf, "c") || MATCH(buf, "conn")
+		   || MATCH(buf, "connection")) {
 		info_connections(wldbgi);
 	} else {
 		printf("Unknown arguments\n");
