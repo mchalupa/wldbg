@@ -214,7 +214,7 @@ print_breakpoints(struct wldbg_interactive *wldbgi)
 	}
 
 	wl_list_for_each(b, &wldbgi->breakpoints, link) {
-		printf("%d: break on %s\n", b->id, b->description);
+		printf("%u: break on %s\n", b->id, b->description);
 	}
 }
 
