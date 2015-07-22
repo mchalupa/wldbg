@@ -573,7 +573,10 @@ print_bare_message(struct message *message, struct wl_list *filters)
 }
 
 void
-wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message)
+wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message, int force)
 {
-	print_bare_message(message, &wldbgi->print_filters);
+	if (force)
+		print_bare_message(message, NULL);
+	else
+		print_bare_message(message, &wldbgi->print_filters);
 }

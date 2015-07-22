@@ -616,6 +616,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 	uint32_t buffer[1024]; /* size of wl_connection buffer */
 	uint32_t size, opcode;
 	int where, interactive, i = 0;
+	struct message send_message;
 
 	(void) message;
 	(void) buf;
@@ -662,8 +663,15 @@ cmd_send(struct wldbg_interactive *wldbgi,
 		size = buffer[1] >> 16;
 	}
 
-	dbg("Sending id %u, opcode %u , size %u\n", buffer[0], opcode, size);
+	send_message.connection = message->connection;
+	send_message.data = buffer;
+	send_message.size = size;
+	send_message.from = where == CLIENT ? SERVER : CLIENT;
 
+	printf("send - ");
+	wldbgi_print_message(wldbgi, &send_message, 1 /* force */);
+
+	dbg("Sending id %u, opcode %u , size %u\n", buffer[0], opcode, size);
 	wl_connection_write(conn, buffer, size);
 
 	return CMD_CONTINUE_QUERY;

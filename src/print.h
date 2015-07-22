@@ -27,8 +27,10 @@
 
 struct wldbg_interactive;
 
+/* force = print no matter what filters we have */
 void
-wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message);
+wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message,
+                     int force);
 
 void
 print_bare_message(struct message *message, struct wl_list *filters);

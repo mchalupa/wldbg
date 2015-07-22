@@ -99,7 +99,7 @@ process_message(struct wldbg_interactive *wldbgi, struct message *message)
 	/* print message's description
 	 * This is default behaviour. XXX add possibility to
 	 * turn it off */
-	wldbgi_print_message(wldbgi, message);
+	wldbgi_print_message(wldbgi, message, 0 /* force */);
 
 	if (wldbgi->stop) {
 		dbg("Stopped at message no. %lu from %s\n",
