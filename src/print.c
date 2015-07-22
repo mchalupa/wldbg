@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Marek Chalupa
+ * Copyright (c) 2014 - 2015 Marek Chalupa
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -455,21 +455,19 @@ void
 print_bare_message(struct message *message, struct wl_list *filters)
 {
 	int i, is_buggy = 0;
-	uint32_t j, id, opcode, pos, len, size, *p;
+	uint32_t pos, len, *p;
 	const struct wl_interface *interface, *obj;
 	const char *signature;
 	const struct wl_message *wl_message = NULL;
 	struct wldbg_connection *conn = message->connection;
+	struct wldbg_parsed_message pm;
 
 	assert(conn->wldbg->flags.one_by_one
 		&& "This function is meant to be used in one-by-one mode");
 
+	wldbg_parse_message(message, &pm);
 	p = message->data;
-	id = p[0];
-	opcode = p[1] & 0xffff;
-	size = p[1] >> 16;
-
-	interface = resolved_objects_get(conn->resolved_objects, id);
+	interface = resolved_objects_get(conn->resolved_objects, pm.id);
 
 	if (filters && filter_match(filters, message))
 		return;
@@ -489,30 +487,31 @@ print_bare_message(struct message *message, struct wl_list *filters)
 		|| (message->from == SERVER && !interface->event_count)
 		|| (message->from == CLIENT && !interface->method_count)) {
 		/* print at least fall-back description */
-		printf("unknown@%u.[opcode %u][size %uB]\n", id, opcode, size);
+		printf("unknown@%u.[opcode %u][size %uB]\n",
+		       pm.id, pm.opcode, pm.size);
 		return;
 	}
 
 	if (message->from == SERVER) {
-		if ((uint32_t) interface->event_count <= opcode)
+		if ((uint32_t) interface->event_count <= pm.opcode)
 			is_buggy = 1;
 
-		wl_message = &interface->events[opcode];
+		wl_message = &interface->events[pm.opcode];
 	} else {
-		if ((uint32_t) interface->method_count <= opcode)
+		if ((uint32_t) interface->method_count <= pm.opcode)
 			is_buggy = 1;
 
-		wl_message = &interface->methods[opcode];
+		wl_message = &interface->methods[pm.opcode];
 	}
 
-	printf("%s@%u.", interface->name, id);
+	printf("%s@%u.", interface->name, pm.id);
 
 	/* catch buggy events/requests. We don't want them to make
 	 * wldbg crash */
 	if (!wl_message || !wl_message->signature || is_buggy) {
 		printf("_buggy %s_",
 			message->from == SERVER ? "event" : "request");
-		printf("[opcode %u][size %uB]\n", opcode, size);
+		printf("[opcode %u][size %uB]\n", pm.opcode, pm.size);
 		return;
 	} else {
 		printf("%s(", wl_message->name);
@@ -563,17 +562,15 @@ print_bare_message(struct message *message, struct wl_list *filters)
 			obj = resolved_objects_get(conn->resolved_objects,
 						   p[pos]);
 			if (obj)
-				printf("%s@%u",
-					obj->name,
-					p[pos]);
+				printf("%s@%u", obj->name, p[pos]);
 			else
 				printf("nil");
 			break;
 		case 'n':
 			printf("new id %s@",
 				(wl_message->types[i]) ?
-				 wl_message->types[i]->name :
-				  "[unknown]");
+					wl_message->types[i]->name :
+					"[unknown]");
 			if (p[pos] != 0)
 				printf("%u", p[pos]);
 			else
