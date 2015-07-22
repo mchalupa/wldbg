@@ -425,6 +425,31 @@ print_wl_keyboard_message(const struct wl_interface *wl_interface,
 	return 0;
 }
 
+void
+print_array(uint32_t *p, size_t len, size_t howmany)
+{
+	size_t j;
+
+	if (len == 0)
+		printf("(nil)");
+	else {
+		putchar('[');
+
+		/* print max first howmany elements from array */
+		for (j = 0; j < howmany && j < len; ++j) {
+			if (j > 0)
+				putchar(' ');
+
+			printf("%04x", *(p + j));
+		}
+
+		if (len > j)
+			printf(" ...");
+
+		putchar(']');
+	}
+}
+
 /* roughly based on wl_closure_print from connection.c */
 void
 print_bare_message(struct message *message, struct wl_list *filters)
@@ -558,16 +583,7 @@ print_bare_message(struct message *message, struct wl_list *filters)
 			len = DIV_ROUNDUP(p[pos], sizeof(uint32_t));
 
 			printf("array:");
-			if (len == 0)
-				printf("(nil)");
-			else {
-				/* print first 8* 4 bytes from array */
-				for (j = 0; j < 8 && j < len; ++j)
-					printf(" %04x", p[pos + j]);
-
-				if (len > j)
-					printf(" ...");
-			}
+			print_array(p + pos, len, 8);
 
 			pos += len;
 			break;
