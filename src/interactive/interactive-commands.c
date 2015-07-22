@@ -537,7 +537,7 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	(void) wldbgi;
 
 	if (*buf != '\0') {
-		sscanf(buf, "%128s", edstr);
+		sscanf(buf, "%127s", edstr);
 		editor = edstr;
 	} else
 		editor = getenv("$EDITOR");
