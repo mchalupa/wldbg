@@ -17,7 +17,8 @@ hardcoded_passes =			\
 interactive_sources =				\
 	interactive/interactive.c		\
 	interactive/interactive.h		\
-	interactive/interactive-commands.c
+	interactive/interactive-commands.c	\
+	interactive/breakpoints.c
 
 # XXX do it conditional
 hardcoded_interfaces =				\
