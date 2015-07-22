@@ -443,8 +443,8 @@ void print_object(uint32_t id, const struct wl_interface *intf, void *data)
 void
 print_objects(struct message *message)
 {
-	resolved_objects_interate(message->connection->resolved_objects,
-				  print_object, NULL);
+	resolved_objects_iterate(message->connection->resolved_objects,
+				 print_object, NULL);
 }
 
 static void

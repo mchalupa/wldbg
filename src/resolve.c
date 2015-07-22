@@ -89,11 +89,11 @@ resolved_objects_get_interface(struct resolved_objects *ro, const char *name)
 }
 
 void
-resolved_objects_interate(struct resolved_objects *ro,
-			  void (*func)(uint32_t id,
-				       const struct wl_interface *intf,
-				       void *data),
-			  void *data)
+resolved_objects_iterate(struct resolved_objects *ro,
+			 void (*func)(uint32_t id,
+				      const struct wl_interface *intf,
+				      void *data),
+			 void *data)
 {
 	unsigned int i;
 	const struct wl_interface *intf;
