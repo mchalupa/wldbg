@@ -36,7 +36,7 @@
 #include "interactive/interactive.h"
 #include "wldbg-private.h"
 #include "resolve.h"
-#include "wldbg-parsed-message.h"
+#include "wldbg-parse-message.h"
 
 size_t
 wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)

@@ -28,7 +28,7 @@
 #include "wldbg-private.h"
 #include "resolve.h"
 
-#include "wldbg-parsed-message.h"
+#include "wldbg-parse-message.h"
 
 int
 wldbg_parse_message(struct message *msg, struct wldbg_parsed_message *out)
