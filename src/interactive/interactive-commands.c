@@ -94,7 +94,7 @@ static void
 cmd_pass_help(int oneline)
 {
 	if (oneline) {
-		printf("Add, remove, list passes\n");
+		printf("Add, remove, list passes");
 		return;
 	}
 
@@ -317,6 +317,22 @@ cmd_info(struct wldbg_interactive *wldbgi,
 #undef MATCH
 }
 
+static void
+cmd_info_help(int oneline)
+{
+	if (oneline) {
+		printf("Show info about entities");
+		return;
+	}
+
+	printf("info WHAT (i WHAT)\n"
+	       "\n"
+	       "message (m)\n"
+	       "breakpoints (b)\n"
+	       "process (proc, p)\n"
+	       "connection (conn, c)\n");
+}
+
 static int
 cmd_next(struct wldbg_interactive *wldbgi,
 		struct message *message,
@@ -352,12 +368,12 @@ cmd_continue(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_help(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf);
+	 struct message *message, char *buf);
 
 static void
-cmd_help_help(int ol)
+cmd_help_help(int oneline)
 {
-	if (ol)
+	if (oneline)
 		printf("Show this help message");
 	else
 		printf("Print help message. Given argument 'all', print "
@@ -629,13 +645,35 @@ cmd_hide(struct wldbg_interactive *wldbgi,
 	return cmd_create_filter(wldbgi, buf, 0);
 }
 
+static void
+cmd_hide_help(int oneline)
+{
+	if (oneline)
+		printf("Hide particular messages");
+	else
+		printf("Hide messages matching given extended regular expression\n\n"
+		       "hide REGEXP\n");
+}
+
 static int
-cmd_show_only(struct wldbg_interactive *wldbgi,
+cmd_showonly(struct wldbg_interactive *wldbgi,
 	      struct message *message,
 	      char *buf)
 {
 	(void) message;
 	return cmd_create_filter(wldbgi, buf, 1);
+}
+
+static void
+cmd_showonly_help(int oneline)
+{
+	if (oneline)
+		printf("Show only particular messages");
+	else
+		printf("Show only messages matching given extended regular expression.\n"
+		       "Filters are accumulated, so the message is shown if\n"
+		       "it matches any of showonly commands\n\n"
+		       "showonly REGEXP\n");
 }
 
 /* defined in breakpoints */
@@ -651,12 +689,12 @@ const struct command commands[] = {
 	{"continue", "c", cmd_continue, NULL},
 	{"edit", "e", cmd_edit, NULL},
 	{"help", NULL,  cmd_help, cmd_help_help},
-	{"hide", "h",  cmd_hide, NULL},
-	{"info", "i", cmd_info, NULL},
+	{"hide", "h",  cmd_hide, cmd_hide_help},
+	{"info", "i", cmd_info, cmd_info_help},
 	{"next", "n",  cmd_next, NULL},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
 	{"send", "s", cmd_send, NULL},
-	{"showonly", "so", cmd_show_only, NULL},
+	{"showonly", "so", cmd_showonly, cmd_showonly_help},
 	{"quit", "q", cmd_quit, NULL},
 
 };
