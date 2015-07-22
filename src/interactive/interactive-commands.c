@@ -661,67 +661,6 @@ const struct command commands[] = {
 };
 
 static int
-cmd_help(struct wldbg_interactive *wldbgi,
-	 struct message *message, char *buf)
-{
-	size_t i;
-	int all = 0;
-
-	(void) wldbgi;
-	(void) message;
-
-	if (strcmp(buf, "all\n") == 0)
-		all = 1;
-
-	putchar ('\n');
-
-	for (i = 0; i < sizeof commands / sizeof *commands; ++i) {
-		if (all)
-			printf(" == ");
-		else
-			putchar('\t');
-		
-		printf("%s ", commands[i].name);
-
-		if (commands[i].shortcut)
-			printf("(%s)", commands[i].shortcut);
-
-		if (all)
-			printf(" ==\n\n");
-
-		if (commands[i].help) {
-			if (all) {
-				commands[i].help(0);
-			} else {
-				printf("\t -- ");
-				commands[i].help(1);
-			}	
-		}
-
-		if (all)
-			putchar('\n');
-		putchar('\n');
-	}
-
-	return CMD_CONTINUE_QUERY;
-}
-
-static char *
-next_word(char *str)
-{
-	int i = 0;
-
-	/* skip the first word if anything left */
-	while(isalpha(*(str + i)) && *(str + i) != 0)
-		++i;
-	/* skip whitespaces before the other word */
-	while (isspace(*(str + i)) && *(str + i) != 0)
-		++i;
-
-	return str + i;
-}
-
-static int
 is_the_cmd(char *buf, const struct command *cmd)
 {
 	int len = 0;
@@ -750,6 +689,85 @@ is_the_cmd(char *buf, const struct command *cmd)
 
 	vdbg("identifying command: no match\n");
 	return 0;
+}
+
+static int
+cmd_help(struct wldbg_interactive *wldbgi,
+	 struct message *message, char *buf)
+{
+	size_t i;
+	int all = 0, found = 0;
+
+	(void) wldbgi;
+	(void) message;
+
+	if (strcmp(buf, "all\n") == 0)
+		all = 1;
+
+	buf = skip_ws_to_newline(buf);
+	if (!all && *buf) {
+		for (i = 0; i < sizeof commands / sizeof *commands; ++i) {
+			if (is_the_cmd(buf, &commands[i])) {
+				found = 1;
+				if (commands[i].help)
+					commands[i].help(0);
+				else
+					printf("No help for this command\n");
+			}
+		}
+
+		if (!found)
+			printf("No such command\n");
+
+		return CMD_CONTINUE_QUERY;
+	}
+
+	putchar ('\n');
+
+	for (i = 0; i < sizeof commands / sizeof *commands; ++i) {
+		if (all)
+			printf(" == ");
+		else
+			printf("\t");
+		
+		printf("%-12s (%s)",
+		       commands[i].name,
+		       commands[i].shortcut ? commands[i].shortcut : "-");
+
+		if (all)
+			printf(" ==\n\n");
+
+		if (commands[i].help) {
+			if (all) {
+				commands[i].help(0);
+			} else {
+				printf("\t -- ");
+				commands[i].help(1);
+			}	
+		}
+
+		if (all)
+			putchar('\n');
+		putchar('\n');
+	}
+
+	fflush(stdout);
+	return CMD_CONTINUE_QUERY;
+}
+
+static char *
+next_word(char *str)
+{
+	int i = 0;
+
+	/* skip the first word if anything left */
+	while(isalpha(*(str + i)) && *(str + i) != 0)
+		++i;
+	/* skip whitespaces before the other word */
+	while (isspace(*(str + i)) && *(str + i) != 0)
+		++i;
+
+	return str + i;
 }
 
 int
