@@ -24,6 +24,7 @@
 #define _WLDBG_PRINT_H_
 
 #include <wayland/wayland-util.h> /* for wl_list */
+#include <regex.h>
 
 struct wldbg_interactive;
 
@@ -35,8 +36,12 @@ wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message,
 void
 print_bare_message(struct message *message, struct wl_list *filters);
 
+size_t
+wldbg_get_message_name(struct message *message, char *buff, size_t maxsize);
+
 struct print_filter {
 	char *filter;
+	regex_t regex;
 	struct wl_list link;
 	int show_only;
 };

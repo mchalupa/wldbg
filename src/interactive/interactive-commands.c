@@ -831,6 +831,13 @@ create_filter(const char *pattern)
 		return NULL;
 	}
 
+	if (regcomp(&pf->regex, pattern, REG_EXTENDED) != 0) {
+		fprintf(stderr, "Failed compiling regular expression\n");
+		free(pf->filter);
+		free(pf);
+		return NULL;
+	}
+
 	return pf;
 }
 

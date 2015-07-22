@@ -25,6 +25,7 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#include <regex.h>
 
 #include <linux/input.h>
 
@@ -35,65 +36,74 @@
 #include "interactive/interactive.h"
 #include "wldbg-private.h"
 #include "resolve.h"
+#include "wldbg-parsed-message.h"
+
+size_t
+wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)
+{
+	struct resolved_objects *ro = message->connection->resolved_objects;
+	struct wldbg_parsed_message pm;
+	const struct wl_interface *interface;
+	const struct wl_message *wl_message = NULL;
+	int ret;
+	size_t written;
+
+	wldbg_parse_message(message, &pm);
+	interface = resolved_objects_get(ro, pm.id);
+
+	/* put the interface name into the buffer */
+	ret = snprintf(buf, maxsize, "%s",
+		       interface ? interface->name : "unknown");
+	written = ret;
+	if (ret >= (int) maxsize)
+		return written;
+
+	/* create name of the message we got */
+	if (wl_message) {
+		ret = snprintf(buf + ret, maxsize - written,
+			       "@%d.%s", pm.id, wl_message->name);
+
+	} else {
+		ret = snprintf(buf + ret, maxsize - written,
+			       "@%d.%d", pm.id, pm.opcode);
+	}
+
+	written += ret;
+
+	// return how many characters we wrote or how
+	// many characters we'd wrote in the case of overflow
+	return written;
+}
 
 /* return 1 if some of filters matches - thus hide the message */
 static int
-filter_match(struct wl_list *filters, struct message *message,
-	     const struct wl_interface *interface)
+filter_match(struct wl_list *filters, struct message *message)
 {
-	const struct wl_message *wl_message = NULL;
 	struct print_filter *pf;
 	char buf[128];
-	char *at;
 	int ret, has_show_only = 0;
-	uint32_t *p = message->data;
-	uint32_t opcode = p[1] & 0xffff;
-
-	if (interface) {
-		if (message->from == SERVER)
-			wl_message = &interface->events[opcode];
-		else
-			wl_message = &interface->methods[opcode];
-	}
 
 	wl_list_for_each(pf, filters, link) {
-		/* compose the message name from message */
-		ret = snprintf(buf, sizeof buf, "%s",
-			       interface ? interface->name : "unknown");
+		ret = wldbg_get_message_name(message, buf, sizeof buf);
 		if (ret >= (int) sizeof buf) {
-			fprintf(stderr,	"BUG: buf too short for filter\n");
-			return 0;
+			fprintf(stderr, "BUG: buffer too small for message name\n");
+			continue;
 		}
 
-		if ((at = strchr(pf->filter, '@'))) {
-			if (wl_message) {
-				ret = snprintf(buf + ret, sizeof buf - ret,
-					       "@%s", wl_message->name);
-
-				if (ret >= (int) sizeof buf) {
-					fprintf(stderr,
-						"BUG: buf too short for filter\n");
-					return 0;
-				}
-			} else {
-				ret = snprintf(buf + ret, sizeof buf - ret,
-					       "@%d", opcode);
-				if (ret >= (int) sizeof buf) {
-					fprintf(stderr,
-						"BUG: buf too short for filter\n");
-					return 0;
-				}
-			}
-		}
+		/* run regular expression */
+		ret = regexec(&pf->regex, buf, 0, NULL, 0);
 
 		/* got we match? */
-		if (strcmp(pf->filter, buf) == 0) {
+		if (ret == 0) {
 			/* If this filter is show_only,
 			 * we must return 0, because we'd like to show this message */
 			if (pf->show_only)
 				return 0;
 
 			return 1;
+		} else if (ret != REG_NOMATCH) {
+			fprintf(stderr, "Executing regexp failed!\n");
+			return 0;
 		}
 
 		if (pf->show_only)
@@ -436,7 +446,7 @@ print_bare_message(struct message *message, struct wl_list *filters)
 
 	interface = resolved_objects_get(conn->resolved_objects, id);
 
-	if (filters && filter_match(filters, message, interface))
+	if (filters && filter_match(filters, message))
 		return;
 
 	if (conn->wldbg->flags.server_mode) {

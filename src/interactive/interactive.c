@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <assert.h>
 #include <sys/signalfd.h>
+#include <regex.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
@@ -172,6 +173,7 @@ wldbgi_destory(void *data)
 	wl_list_for_each_safe(b, btmp, &wldbgi->breakpoints, link)
 		free(b);
 	wl_list_for_each_safe(pf, pftmp, &wldbgi->print_filters, link) {
+		regfree(&pf->regex);
 		free(pf->filter);
 		free(pf);
 	}
