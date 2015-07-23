@@ -20,7 +20,8 @@ interactive_sources =				\
 	interactive/interactive-commands.c	\
 	interactive/interactive-commands.h	\
 	interactive/breakpoints.c		\
-	interactive/filters.c
+	interactive/filters.c			\
+	interactive/info.c
 
 # XXX do it conditional
 hardcoded_interfaces =				\

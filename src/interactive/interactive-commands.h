@@ -30,7 +30,7 @@
 int
 cmd_break(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 
-/* define in filters.c */
+/* defined in filters.c */
 int
 cmd_hide(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 
@@ -43,6 +43,12 @@ cmd_showonly(struct wldbg_interactive *wldbgi, struct message *message, char *bu
 void
 cmd_showonly_help(int oneline);
 
+/* defined in info.c */
+int
+cmd_info(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+
+void
+cmd_info_help(int oneline);
 
 
 #endif /* _WLDBG_INTERACTIVE_COMMANDS_H_ */
