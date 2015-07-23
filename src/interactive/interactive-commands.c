@@ -214,7 +214,7 @@ print_breakpoints(struct wldbg_interactive *wldbgi)
 	}
 
 	wl_list_for_each(b, &wldbgi->breakpoints, link) {
-		printf("%d: break on %s\n", b->id, b->description);
+		printf("%u: break on %s\n", b->id, b->description);
 	}
 }
 
@@ -537,7 +537,7 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	(void) wldbgi;
 
 	if (*buf != '\0') {
-		sscanf(buf, "%128s", edstr);
+		sscanf(buf, "%127s", edstr);
 		editor = edstr;
 	} else
 		editor = getenv("$EDITOR");

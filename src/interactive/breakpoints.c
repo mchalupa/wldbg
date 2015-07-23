@@ -248,7 +248,7 @@ delete_breakpoint(char *buf, struct wldbg_interactive *wldbgi)
 		}
 	}
 
-	printf("Haven't found breakpoint with id %u\n", id);
+	printf("Haven't found breakpoint with id %d\n", id);
 	return;
 }
 
