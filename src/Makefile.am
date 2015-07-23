@@ -18,6 +18,7 @@ interactive_sources =				\
 	interactive/interactive.c		\
 	interactive/interactive.h		\
 	interactive/interactive-commands.c	\
+	interactive/interactive-commands.h	\
 	interactive/breakpoints.c		\
 	interactive/filters.c
 

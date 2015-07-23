@@ -44,6 +44,7 @@
 #include "print.h"
 #include "wldbg-private.h"
 #include "resolve.h"
+#include "interactive-commands.h"
 
 void
 terminate_client(struct wldbg_connection *conn)
@@ -589,29 +590,6 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	/* continue or end?? */
 	return CMD_CONTINUE_QUERY;
 }
-
-/* defined in breakpoints */
-int
-cmd_break(struct wldbg_interactive *wldbgi,
-	  struct message *message,
-	  char *buf);
-
-/* define in filters.c */
-int
-cmd_hide(struct wldbg_interactive *wldbgi,
-	 struct message *message,
-	 char *buf);
-
-void
-cmd_hide_help(int oneline);
-
-int
-cmd_showonly(struct wldbg_interactive *wldbgi,
-	      struct message *message,
-	      char *buf);
-
-void
-cmd_showonly_help(int oneline);
 
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
