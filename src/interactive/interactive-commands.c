@@ -590,100 +590,28 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	return CMD_CONTINUE_QUERY;
 }
 
-static struct print_filter *
-create_filter(const char *pattern)
-{
-	struct print_filter *pf;
-
-	pf = malloc(sizeof *pf);
-	if (!pf) {
-		fprintf(stderr, "No memory\n");
-		return NULL;
-	}
-
-	pf->filter = strdup(pattern);
-	if (!pf->filter) {
-		fprintf(stderr, "No memory\n");
-		return NULL;
-	}
-
-	if (regcomp(&pf->regex, pattern, REG_EXTENDED) != 0) {
-		fprintf(stderr, "Failed compiling regular expression\n");
-		free(pf->filter);
-		free(pf);
-		return NULL;
-	}
-
-	return pf;
-}
-
-static int
-cmd_create_filter(struct wldbg_interactive *wldbgi,
-		  char *buf, int show_only)
-{
-	struct print_filter *pf;
-	char filter[128];
-
-	sscanf(buf, "%s", filter);
-
-	pf = create_filter(filter);
-	if (!pf)
-		return CMD_CONTINUE_QUERY;
-
-	pf->show_only = show_only;
-	wl_list_insert(wldbgi->print_filters.next, &pf->link);
-
-	printf("Filtering messages: %s%s\n",
-	       show_only ? "" : "hide ", filter);
-
-	return CMD_CONTINUE_QUERY;
-}
-
-static int
-cmd_hide(struct wldbg_interactive *wldbgi,
-	 struct message *message,
-	 char *buf)
-{
-	(void) message;
-	return cmd_create_filter(wldbgi, buf, 0);
-}
-
-static void
-cmd_hide_help(int oneline)
-{
-	if (oneline)
-		printf("Hide particular messages");
-	else
-		printf("Hide messages matching given extended regular expression\n\n"
-		       "hide REGEXP\n");
-}
-
-static int
-cmd_showonly(struct wldbg_interactive *wldbgi,
-	      struct message *message,
-	      char *buf)
-{
-	(void) message;
-	return cmd_create_filter(wldbgi, buf, 1);
-}
-
-static void
-cmd_showonly_help(int oneline)
-{
-	if (oneline)
-		printf("Show only particular messages");
-	else
-		printf("Show only messages matching given extended regular expression.\n"
-		       "Filters are accumulated, so the message is shown if\n"
-		       "it matches any of showonly commands\n\n"
-		       "showonly REGEXP\n");
-}
-
 /* defined in breakpoints */
 int
 cmd_break(struct wldbg_interactive *wldbgi,
 	  struct message *message,
 	  char *buf);
+
+/* define in filters.c */
+int
+cmd_hide(struct wldbg_interactive *wldbgi,
+	 struct message *message,
+	 char *buf);
+
+void
+cmd_hide_help(int oneline);
+
+int
+cmd_showonly(struct wldbg_interactive *wldbgi,
+	      struct message *message,
+	      char *buf);
+
+void
+cmd_showonly_help(int oneline);
 
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
