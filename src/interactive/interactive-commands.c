@@ -126,7 +126,7 @@ cmd_help_help(int oneline)
 		printf("Show this help message");
 	else
 		printf("Print help message. Given argument 'all', print "
-			"comprehensive help about all commands.");
+			"comprehensive help about all commands.\n");
 }
 
 /* XXX keep sorted! (in the future I'd like to do
@@ -210,12 +210,15 @@ cmd_help(struct wldbg_interactive *wldbgi,
 
 	putchar ('\n');
 
+	if (!all)
+		printf("Try 'help all' or 'help command_name' for verbose output\n\n");
+
 	for (i = 0; i < sizeof commands / sizeof *commands; ++i) {
 		if (all)
 			printf(" == ");
 		else
 			printf("\t");
-		
+
 		printf("%-12s (%s)",
 		       commands[i].name,
 		       commands[i].shortcut ? commands[i].shortcut : "-");
@@ -229,7 +232,7 @@ cmd_help(struct wldbg_interactive *wldbgi,
 			} else {
 				printf("\t -- ");
 				commands[i].help(1);
-			}	
+			}
 		}
 
 		if (all)
