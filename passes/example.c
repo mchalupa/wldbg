@@ -94,6 +94,8 @@ example_init(struct wldbg *wldbg, struct wldbg_pass *pass,
 	if (!data)
 		return -1;
 
+	(void) wldbg;
+
 	printf("-- Initializing example pass --\n\n");
 	for (i = 0; i < argc; ++i)
 		printf("\targument[%d]: %s\n", i, argv[i]);

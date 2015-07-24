@@ -29,6 +29,16 @@ If you do not know what passes are available, use:
 
   $ wldbg list
 
+To get better understanding how it works, there's exapmle pass
+in passes/example.c that is also compiled with other passes
+in that directory. Run it as follows:
+
+  $ wldbg example -- wayland_client
+
+NOTE: at the moment the passes are not installed, so you must run
+wldbg from the directory where are your passes (the .so files)
+or from the source directory.
+
 === Using interactive mode
 
 To run wldbg in interactive mode, just do:
