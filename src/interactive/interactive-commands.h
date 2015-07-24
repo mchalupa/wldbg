@@ -50,5 +50,11 @@ cmd_info(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 void
 cmd_info_help(int oneline);
 
+/* defined in pass.c */
+void
+cmd_pass_help(int oneline);
+
+int
+cmd_pass(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 
 #endif /* _WLDBG_INTERACTIVE_COMMANDS_H_ */
