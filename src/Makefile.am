@@ -22,7 +22,8 @@ interactive_sources =				\
 	interactive/breakpoints.c		\
 	interactive/filters.c			\
 	interactive/info.c			\
-	interactive/pass.c
+	interactive/pass.c			\
+	interactive/edit.c
 
 # XXX do it conditional
 hardcoded_interfaces =				\
