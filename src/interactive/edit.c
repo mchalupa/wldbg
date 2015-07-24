@@ -151,6 +151,7 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 		if (ret < 0) {
 			perror("Constituting a command");
 			destroy_message_tmpfile(msg_file);
+			free(cmd);
 			return CMD_CONTINUE_QUERY;
 		} else if ((size_t) ret >= size) { /* cmd string too small */
 			size *= 2;
