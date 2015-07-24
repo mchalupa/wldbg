@@ -23,7 +23,8 @@ interactive_sources =				\
 	interactive/filters.c			\
 	interactive/info.c			\
 	interactive/pass.c			\
-	interactive/edit.c
+	interactive/edit.c			\
+	interactive/send.c
 
 # XXX do it conditional
 hardcoded_interfaces =				\
