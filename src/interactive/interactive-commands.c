@@ -23,27 +23,15 @@
  * SOFTWARE.
  */
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <signal.h>
 #include <assert.h>
-#include <sys/signalfd.h>
 #include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <ctype.h>
 
 #include "wayland/wayland-private.h"
 
-#include "wldbg.h"
-#include "wldbg-pass.h"
 #include "interactive.h"
-#include "passes.h"
-#include "util.h"
-#include "print.h"
 #include "wldbg-private.h"
-#include "resolve.h"
 #include "interactive-commands.h"
 
 void
