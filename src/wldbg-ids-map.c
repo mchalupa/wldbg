@@ -23,31 +23,55 @@
  * SOFTWARE.
  */
 
-#ifndef _WLDBG_UTIL_H_
-#define _WLDBG_UTIL_H_
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
-#include "wayland/wayland-util.h"
-
-#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
-
-/* we need just something like dynamic array. Wl_map is pain in the ass
- * for our purpose - belive me, I tried it ;) */
-struct wldbg_ids_map {
-	uint32_t count;
-	struct wl_array data;
-};
+#include "wldbg.h"
+#include "wldbg-pass.h"
+#include "wldbg-ids-map.h"
 
 void
-wldbg_ids_map_init(struct wldbg_ids_map *map);
+wldbg_ids_map_init(struct wldbg_ids_map *map)
+{
+	map->count = 0;
+	wl_array_init(&map->data);
+}
 
 void
-wldbg_ids_map_release(struct wldbg_ids_map *map);
+wldbg_ids_map_release(struct wldbg_ids_map *map)
+{
+	map->count = 0;
+	wl_array_release(&map->data);
+}
 
 void
 wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
-			const struct wl_interface *intf);
+			const struct wl_interface *intf)
+{
+	const struct wl_interface **p;
+	size_t size;
+
+	if (id >= map->count) {
+		size = (id - map->count + 1) * sizeof(struct wl_interface *);
+		p = wl_array_add(&map->data, size);
+
+		/* set newly allocated memory to 0s */
+		memset(p, 0, size);
+	}
+
+	p = ((const struct wl_interface **) map->data.data) + id;
+	assert(p);
+
+	map->count = map->data.size / sizeof(struct wl_interface *);
+	*p = intf;
+}
 
 const struct wl_interface *
-wldbg_ids_map_get(struct wldbg_ids_map *map, uint32_t id);
+wldbg_ids_map_get(struct wldbg_ids_map *map, uint32_t id)
+{
+	if (id < map->count)
+		return ((struct wl_interface **) map->data.data)[id];
 
-#endif /* _WLDBG_UTIL_H_ */
+	return NULL;
+}

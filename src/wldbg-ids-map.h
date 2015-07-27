@@ -23,55 +23,29 @@
  * SOFTWARE.
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#ifndef _WLDBG_IDS_MAP_H_
+#define _WLDBG_IDS_MAP_H_
 
-#include "wldbg.h"
-#include "wldbg-pass.h"
-#include "util.h"
+#include "wayland/wayland-util.h"
 
-void
-wldbg_ids_map_init(struct wldbg_ids_map *map)
-{
-	map->count = 0;
-	wl_array_init(&map->data);
-}
+/* we need just something like dynamic array. Wl_map is pain in the ass
+ * for our purpose - belive me, I tried it ;) */
+struct wldbg_ids_map {
+	uint32_t count;
+	struct wl_array data;
+};
 
 void
-wldbg_ids_map_release(struct wldbg_ids_map *map)
-{
-	map->count = 0;
-	wl_array_release(&map->data);
-}
+wldbg_ids_map_init(struct wldbg_ids_map *map);
+
+void
+wldbg_ids_map_release(struct wldbg_ids_map *map);
 
 void
 wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
-			const struct wl_interface *intf)
-{
-	const struct wl_interface **p;
-	size_t size;
-
-	if (id >= map->count) {
-		size = (id - map->count + 1) * sizeof(struct wl_interface *);
-		p = wl_array_add(&map->data, size);
-
-		/* set newly allocated memory to 0s */
-		memset(p, 0, size);
-	}
-
-	p = ((const struct wl_interface **) map->data.data) + id;
-	assert(p);
-
-	map->count = map->data.size / sizeof(struct wl_interface *);
-	*p = intf;
-}
+			const struct wl_interface *intf);
 
 const struct wl_interface *
-wldbg_ids_map_get(struct wldbg_ids_map *map, uint32_t id)
-{
-	if (id < map->count)
-		return ((struct wl_interface **) map->data.data)[id];
+wldbg_ids_map_get(struct wldbg_ids_map *map, uint32_t id);
 
-	return NULL;
-}
+#endif /* _WLDBG_IDS_MAP_H_ */

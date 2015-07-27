@@ -33,6 +33,8 @@
 
 #include "wldbg-parse-message.h"
 
+#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
+
 int
 wldbg_parse_message(struct message *msg, struct wldbg_parsed_message *out)
 {

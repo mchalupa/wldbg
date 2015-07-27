@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "util.h"
+#include "wldbg-ids-map.h"
 #include "test-runner.h"
 
 TEST(map_create)

@@ -37,7 +37,6 @@
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
 #include "wldbg-pass.h"
-#include "util.h"
 
 #ifdef DEBUG
 

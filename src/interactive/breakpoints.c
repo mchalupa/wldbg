@@ -34,7 +34,6 @@
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "interactive.h"
-#include "util.h"
 #include "print.h"
 #include "wldbg-private.h"
 #include "resolve.h"

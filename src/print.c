@@ -34,12 +34,13 @@
 
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
-#include "util.h"
 #include "print.h"
 #include "interactive/interactive.h"
 #include "wldbg-private.h"
 #include "resolve.h"
 #include "wldbg-parse-message.h"
+
+#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
 
 size_t
 wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)

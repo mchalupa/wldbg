@@ -38,7 +38,10 @@
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "wldbg-private.h"
+#include "wldbg-ids-map.h"
 #include "passes.h"
+
+#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
 
 static struct wl_list shared_interfaces;
 

@@ -28,7 +28,6 @@
 #include "wayland/wayland-private.h"
 
 #include "interactive.h"
-#include "util.h"
 #include "wldbg-private.h"
 #include "resolve.h"
 #include "interactive-commands.h"

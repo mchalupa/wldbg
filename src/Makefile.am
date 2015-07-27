@@ -47,8 +47,8 @@ wldbg_SOURCES =			\
 	passes.c		\
 	sockets.c		\
 	sockets.h		\
-	util.c			\
-	util.h			\
+	wldbg-ids-map.c		\
+	wldbg-ids-map.h		\
 	print.c			\
 	print.h			\
 	getopt.c		\

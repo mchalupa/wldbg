@@ -19,5 +19,5 @@ AM_CPPFLAGS =					\
 map_test_SOURCES =				\
 	$(test_runner)				\
 	map-test.c				\
-	$(top_builddir)/src/util.c		\
+	$(top_builddir)/src/wldbg-ids-map.c	\
 	$(top_builddir)/wayland/wayland-util.c
