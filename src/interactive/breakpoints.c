@@ -41,27 +41,6 @@
 
 static unsigned int breakpoint_next_id = 1;
 
-int str_to_uint(char *str)
-{
-	char *num, *numtmp;
-
-	/* skip ws to first digit or newline */
-	numtmp = num = skip_ws_to_newline(str);
-
-	if (*num == '\n')
-		return -1;
-
-	/* check that it is a number */
-	while (!isspace(*numtmp)) {
-		if (!isdigit(*numtmp))
-			return -1;
-
-		++numtmp;
-	}
-
-	return atoi(num);
-}
-
 static int
 break_on_side(struct message *msg, struct breakpoint *b)
 {
