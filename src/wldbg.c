@@ -50,6 +50,7 @@
 #include "wayland/wayland-private.h"
 #include "wayland/wayland-util.h"
 #include "wayland/wayland-os.h"
+#include "util.h"
 
 #ifdef DEBUG
 int debug = 0;

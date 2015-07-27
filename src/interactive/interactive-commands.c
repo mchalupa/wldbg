@@ -28,11 +28,10 @@
 #include <sys/wait.h>
 #include <ctype.h>
 
-#include "wayland/wayland-private.h"
-
 #include "interactive.h"
 #include "wldbg-private.h"
 #include "interactive-commands.h"
+#include "util.h"
 
 void
 terminate_client(struct wldbg_connection *conn)

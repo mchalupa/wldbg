@@ -26,7 +26,10 @@
 #ifndef _WLDBG_INTERACTIVE_H_
 #define _WLDBG_INTERACTIVE_H_
 
+#include <stdint.h>
+
 #include "wldbg.h"
+#include "wayland/wayland-util.h"
 
 struct wldbg_interactive {
 	struct wldbg *wldbg;

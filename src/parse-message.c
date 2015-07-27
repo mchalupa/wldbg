@@ -28,12 +28,11 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include "wldbg-private.h"
 #include "resolve.h"
+#include "util.h"
 
+#include "wldbg-private.h"
 #include "wldbg-parse-message.h"
-
-#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
 
 int
 wldbg_parse_message(struct message *msg, struct wldbg_parsed_message *out)

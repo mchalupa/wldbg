@@ -40,6 +40,7 @@
 #include "passes.h"
 #include "print.h"
 #include "getopt.h"
+#include "util.h"
 
 /* defined in interactive-commands.c */
 int

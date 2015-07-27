@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 - 2015 Marek Chalupa
+ * Copyright (c) 2015 Marek Chalupa
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -23,45 +23,32 @@
  * SOFTWARE.
  */
 
-#ifndef _WLDBG_RESOLVE_H_
-#define _WLDBG_RESOLVE_H_
+#ifndef _WLDBG_UTIL_H_
+#define _WLDBG_UTIL_H_
 
-#include <stdint.h>
+#ifndef DIV_ROUNDUP
+#define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
+#endif
 
 struct wldbg;
-struct resolved_objects;
 struct wldbg_connection;
 
-struct resolved_objects *
-wldbg_connection_get_resolved_objects(struct wldbg_connection *connection);
+/* defined in wldbg.c */
+void
+wldbg_foreach_connection(struct wldbg *wldbg,
+			 void (*func)(struct wldbg_connection *));
+
+/* defined in util.c */
+int
+copy_arguments(char ***to, int argc, const char*argv[]);
+
+void
+free_arguments(char **argv);
+
+char *
+skip_ws_to_newline(char *str);
 
 int
-wldbg_add_resolve_pass(struct wldbg *wldbg);
+str_to_uint(char *str);
 
-const struct wl_interface *
-resolved_objects_get(struct resolved_objects *ro, uint32_t id);
-
-const struct wl_interface *
-resolved_objects_get_interface(struct resolved_objects *ro, const char *name);
-
-void
-resolved_objects_iterate(struct resolved_objects *ro,
-			 void (*func)(uint32_t id,
-				      const struct wl_interface *intf,
-				      void *data),
-			 void *data);
-
-void
-resolved_objects_interate(struct resolved_objects *ro,
-			  void (*func)(uint32_t id,
-				       const struct wl_interface *intf,
-				       void *data),
-			  void *data);
-
-struct resolved_objects *
-create_resolved_objects(void);
-
-void
-destroy_resolved_objects(struct resolved_objects *ro);
-
-#endif /* _WLDBG_RESOLVE_H_ */
+#endif /* _WLDBG_UTIL_H_ */

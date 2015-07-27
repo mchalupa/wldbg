@@ -34,6 +34,7 @@
 
 #include "wldbg.h"
 #include "wldbg-private.h"
+#include "util.h"
 #include "wldbg-pass.h"
 
 /* hardcoded passes */

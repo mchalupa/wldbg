@@ -29,14 +29,13 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include "wayland/wayland-private.h"
-
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "interactive.h"
 #include "print.h"
 #include "wldbg-private.h"
 #include "resolve.h"
+#include "util.h"
 
 static unsigned int breakpoint_next_id = 1;
 

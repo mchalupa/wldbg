@@ -40,7 +40,6 @@ AM_CFLAGS =				\
 wldbg_SOURCES =			\
 	wldbg.c			\
 	wldbg.h			\
-	wldbg-private.c		\
 	wldbg-private.h		\
 	wldbg-parse-message.h	\
 	parse-message.c		\
@@ -53,6 +52,8 @@ wldbg_SOURCES =			\
 	print.h			\
 	getopt.c		\
 	getopt.h		\
+	util.c			\
+	util.h			\
 	$(wayland_files)	\
 	$(hardcoded_passes)	\
 	$(interactive_sources)	\
