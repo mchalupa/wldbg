@@ -54,6 +54,13 @@ wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)
 	wldbg_parse_message(message, &pm);
 	interface = resolved_objects_get(ro, pm.id);
 
+	if (interface) {
+		if (message->from == SERVER)
+			wl_message = &interface->events[pm.opcode];
+		else
+			wl_message = &interface->methods[pm.opcode];
+	}
+
 	/* put the interface name into the buffer */
 	ret = snprintf(buf, maxsize, "%s",
 		       interface ? interface->name : "unknown");
@@ -98,6 +105,8 @@ filter_match(struct wl_list *filters, struct message *message)
 
 		/* got we match? */
 		if (ret == 0) {
+			vdbg("filter: '%s' <-> '%s' MATCH\n", pf->filter, buf);
+
 			/* If this filter is show_only,
 			 * we must return 0, because we'd like to show this message */
 			if (pf->show_only)
