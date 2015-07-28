@@ -158,7 +158,7 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 	const struct wl_interface *intf = NULL;
 	char *at;
 
-	b= calloc(1, sizeof *b);
+	b = calloc(1, sizeof *b);
 	if (!b) {
 		fprintf(stderr, "Out of memory\n");
 		return NULL;
@@ -171,10 +171,14 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 	if (strcmp(buf, "server\n") == 0) {
 		b->applies = break_on_side;
 		b->description = strdup("message from server");
+		if (!b->description)
+			goto err_mem;
 		b->small_data = SERVER;
 	} else if (strcmp(buf, "client\n") == 0) {
 		b->applies = break_on_side;
 		b->description = strdup("message from client");
+		if (!b->description)
+			goto err_mem;
 		b->small_data = CLIENT;
 	} else if (strncmp(buf, "id ", 3) == 0) {
 		id = str_to_uint(buf + 3);
@@ -185,6 +189,8 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 
 		b->applies = break_on_id;
 		b->description = strdup("break on id XXX");
+		if (!b->description)
+			goto err_mem;
 		snprintf(b->description + 12, 4, "%d", id);
 		b->small_data = id;
 	} else if (strncmp(buf, "re ", 3) == 0) {
