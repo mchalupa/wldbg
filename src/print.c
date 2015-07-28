@@ -417,7 +417,8 @@ print_wl_keyboard_message(const struct wl_interface *wl_interface,
 		return 0;
 
 	if (strcmp(wl_message->name, "modifiers") == 0) {
-		if (pos == 2 || p == 0)
+		/* pos == 2 is serial, pos == 6 is group (layout) */
+		if (pos == 2 || pos == 6 || p == 0)
 			return 0;
 
 		print_modifiers(p);
