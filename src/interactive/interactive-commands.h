@@ -30,6 +30,9 @@
 int
 cmd_break(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 
+void
+cmd_break_help(int oneline);
+
 /* defined in filters.c */
 int
 cmd_hide(struct wldbg_interactive *wldbgi, struct message *message, char *buf);

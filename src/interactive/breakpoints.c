@@ -329,3 +329,23 @@ cmd_break(struct wldbg_interactive *wldbgi,
 
 	return CMD_CONTINUE_QUERY;
 }
+
+void
+cmd_break_help(int oneline)
+{
+	if (oneline) {
+		printf("Set or delete breakpoints");
+		return;
+	}
+
+	printf("Set or delete breakpoints\n"
+	       "\n"
+	       "\tbreakpoint id ID                - break on id ID\n"
+	       "\tbreakpoint side server|client   - break on message from server/client\n"
+	       "\tbreakpoint re REGEXP            - break on given REGEXP\n"
+	       "\tbreakpoint interface@message    - break on known interface@message\n"
+	       "\tbreakpoint delete ID            - delete breakpoint id\n"
+	       "\tbreakpoint d ID                 - delete breakpoint id\n"
+	       "\n"
+	       "Example: b re wl_surface.*\n");
+}
