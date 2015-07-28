@@ -28,6 +28,7 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
+#include <regex.h>
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
@@ -38,6 +39,24 @@
 #include "util.h"
 
 static unsigned int breakpoint_next_id = 1;
+
+struct breakpoint_re_data
+{
+	regex_t re;
+	char *pattern;
+};
+
+void
+free_breakpoint(struct breakpoint *b)
+{
+	assert(b);
+
+	if (b->data_destr)
+		b->data_destr(b->data);
+
+	free(b->description);
+	free(b);
+}
 
 static int
 break_on_side(struct message *msg, struct breakpoint *b)
@@ -96,11 +115,46 @@ break_on_name(struct message *msg, struct breakpoint *b)
 	return 0;
 }
 
+static int
+break_on_regex(struct message *msg, struct breakpoint *b)
+{
+	char buf[128];
+	int ret;
+	regex_t *re = b->data;
+
+	ret = wldbg_get_message_name(msg, buf, sizeof buf);
+	if (ret >= (int) sizeof buf) {
+		fprintf(stderr, "BUG: buffer too small for message name\n");
+		return 0;
+	}
+
+	/* run regular expression */
+	ret = regexec(re, buf, 0, NULL, 0);
+
+	/* got we match? */
+	if (ret == 0) {
+		return 1;
+	} else if (ret != REG_NOMATCH)
+		fprintf(stderr, "Executing regexp failed!\n");
+
+	return 0;
+}
+
+static void
+breakpoint_re_data_free(void *data)
+{
+	struct breakpoint_re_data *rd = data;
+	regfree(&rd->re);
+	free(rd->pattern);
+	free(rd);
+}
+
 static struct breakpoint *
 create_breakpoint(struct resolved_objects *ro, char *buf)
 {
 	int id, i, opcode;
 	struct breakpoint *b;
+	struct breakpoint_re_data *rd;
 	const struct wl_interface *intf = NULL;
 	char *at;
 
@@ -133,7 +187,27 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 		b->description = strdup("break on id XXX");
 		snprintf(b->description + 12, 4, "%d", id);
 		b->small_data = id;
+	} else if (strncmp(buf, "re ", 3) == 0) {
+		b->applies = break_on_regex;
+		rd = malloc(sizeof *rd);
+		if (!rd)
+			goto err_mem;
 
+		b->data = rd;
+		b->data_destr = breakpoint_re_data_free;
+		rd->pattern = strdup(remove_newline(skip_ws(buf + 3)));
+		if (!rd->pattern)
+			goto err_mem;
+
+		if (regcomp(&rd->re, rd->pattern, REG_EXTENDED) != 0) {
+			fprintf(stderr, "Failed compiling regular expression\n");
+			goto err;
+		}
+
+		printf("regex: %s\n", rd->pattern);
+		b->description = strdupf("regex matching '%s'", rd->pattern);
+		if (!b->description)
+			goto err_mem;
 	} else {
 		if ((at = strchr(buf, '@'))) {
 			/* split the string on '@' */
@@ -190,21 +264,12 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 	dbg("Created breakpoint %u\n", b->id);
 
 	return b;
+
+err_mem:
+	fprintf(stderr, "Out of memory\n");
 err:
-	free(b);
+	free_breakpoint(b);
 	return NULL;
-}
-
-void
-free_breakpoint(struct breakpoint *b)
-{
-	assert(b);
-
-	if (b->data_destr && b->data)
-		b->data_destr(b->data);
-	if (b->description)
-		free(b->description);
-	free(b);
 }
 
 static void

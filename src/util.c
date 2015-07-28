@@ -30,6 +30,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #include <wldbg.h>
 
@@ -77,11 +78,24 @@ free_arguments(char **argv)
 	free(arg_tmp);
 }
 
+/* skip white-space characters until
+ * you reach non-ws character or new line */
 char *
 skip_ws_to_newline(char *str)
 {
 	char *p = str;
 	while (*p && *p != '\n' && isspace(*p))
+		++p;
+
+	return p;
+}
+
+/* skip white-space characters */
+char *
+skip_ws(char *str)
+{
+	char *p = str;
+	while (*p && isspace(*p))
 		++p;
 
 	return p;
@@ -106,4 +120,67 @@ int str_to_uint(char *str)
 	}
 
 	return atoi(num);
+}
+
+/* possibly inefficient, but easy implementation */
+char *
+strdupf(const char *fmt, ...)
+{
+	char *str;
+	char dummy[2];
+	int size, size2;
+	va_list vl;
+
+	va_start(vl, fmt);
+	/* get size of the string we'll create */
+	size = vsnprintf(dummy, sizeof dummy, fmt, vl);
+	va_end(vl);
+	if (size < 0)
+		return NULL;
+	/* if the string has size that fits to dummy,
+	 * just strdup it */
+	if (size < (int) sizeof dummy)
+		return strdup(dummy);
+
+	/* else create new string with desired size
+	 * and print into it. size is without terminating 0,
+	 * thus +1*/
+	size += 1;
+	str = malloc(size);
+	if (!str)
+		return NULL;
+
+	va_start(vl, fmt);
+	size2 = vsnprintf(str, size, fmt, vl);
+	va_end(vl);
+
+	if (size2 < 0) {
+		free(str);
+		return NULL;
+	} else if (size2 >= size) {
+		free(str);
+		return NULL;
+	}
+
+
+	return str;
+}
+
+char *
+remove_newline(char *str)
+{
+	char *p = str;
+	if (!p)
+		return NULL;
+
+	while (*p) {
+		if (*p == '\n') {
+			*p = 0;
+			break;
+		}
+
+		++p;
+	}
+
+	return str;
 }

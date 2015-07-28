@@ -32,11 +32,16 @@
 
 struct wldbg;
 struct wldbg_connection;
+struct message;
 
 /* defined in wldbg.c */
 void
 wldbg_foreach_connection(struct wldbg *wldbg,
 			 void (*func)(struct wldbg_connection *));
+
+/* defined in print.c */
+size_t
+wldbg_get_message_name(struct message *message, char *buf, size_t maxsize);
 
 /* defined in util.c */
 int
@@ -48,7 +53,16 @@ free_arguments(char **argv);
 char *
 skip_ws_to_newline(char *str);
 
+char *
+skip_ws(char *str);
+
 int
 str_to_uint(char *str);
+
+char *
+strdupf(const char *fmt, ...);
+
+char *
+remove_newline(char *str);
 
 #endif /* _WLDBG_UTIL_H_ */
