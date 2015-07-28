@@ -157,6 +157,11 @@ process_interactive(void *user_data, struct message *message)
 	return PASS_STOP;
 }
 
+/* forward declaration of free_breakpoint,
+ * defined in breakpoints.c */
+void
+free_breakpoint(struct breakpoint *b);
+
 static void
 wldbgi_destory(void *data)
 {
@@ -175,7 +180,7 @@ wldbgi_destory(void *data)
 		free(wldbgi->last_command);
 
 	wl_list_for_each_safe(b, btmp, &wldbgi->breakpoints, link)
-		free(b);
+		free_breakpoint(b);
 	wl_list_for_each_safe(pf, pftmp, &wldbgi->print_filters, link) {
 		regfree(&pf->regex);
 		free(pf->filter);
