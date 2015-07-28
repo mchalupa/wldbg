@@ -183,7 +183,7 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 	} else if (strncmp(buf, "id ", 3) == 0) {
 		id = str_to_uint(buf + 3);
 		if (id == -1) {
-			printf("Wrong id\n");
+			printf("Wrong id, try help break (help b)\n");
 			goto err;
 		}
 
@@ -206,11 +206,11 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 			goto err_mem;
 
 		if (regcomp(&rd->re, rd->pattern, REG_EXTENDED) != 0) {
-			fprintf(stderr, "Failed compiling regular expression\n");
+			fprintf(stderr, "Failed compiling regular expression."
+					" Is the syntax OK?\n");
 			goto err;
 		}
 
-		printf("regex: %s\n", rd->pattern);
 		b->description = strdupf("regex matching '%s'", rd->pattern);
 		if (!b->description)
 			goto err_mem;
@@ -220,7 +220,8 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 			*at = 0;
 			intf = resolved_objects_get_interface(ro, buf);
 			if (!intf) {
-				printf("Unknown interface\n");
+				printf("Wldbg does not know the interface. "
+				       "It has not been probably resolved yet\n");
 				goto err;
 			}
 
@@ -246,29 +247,26 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 					}
 
 			if (opcode == -1) {
-				printf("Couldn't find method/event name\n");
+				printf("Couldn't find method/event name for given interface\n");
 				goto err;
 			}
 
 			b->small_data = opcode;
 			b->applies = break_on_name;
-			b->description = malloc(1024);
-			if (!b->description) {
-				printf("No memory\n");
-				goto err;
-			}
+			b->description = malloc(256);
+			if (!b->description)
+				goto err_mem;
 
+			/* dont care about overflow, this is satisfactory description */
 			snprintf(b->description, 1024, "break on %s@%s",
 				 intf->name, ((struct wl_message *) b->data)->name);
 		} else {
-			printf("Wrong syntax\n");
+			printf("Wrong syntax. Try help break (help b) for more info\n");
 			goto err;
 		}
 	}
 
 	++breakpoint_next_id;
-	dbg("Created breakpoint %u\n", b->id);
-
 	return b;
 
 err_mem:
@@ -324,7 +322,7 @@ cmd_break(struct wldbg_interactive *wldbgi,
 	b = create_breakpoint(ro, buf);
 	if (b) {
 		wl_list_insert(wldbgi->breakpoints.next, &b->link);
-		printf("created breakpoint %u\n", b->id);
+		printf("Created breakpoint %u: %s\n", b->id, b->description);
 	}
 
 	return CMD_CONTINUE_QUERY;
@@ -340,12 +338,12 @@ cmd_break_help(int oneline)
 
 	printf("Set or delete breakpoints\n"
 	       "\n"
-	       "\tbreakpoint id ID                - break on id ID\n"
-	       "\tbreakpoint side server|client   - break on message from server/client\n"
-	       "\tbreakpoint re REGEXP            - break on given REGEXP\n"
-	       "\tbreakpoint interface@message    - break on known interface@message\n"
-	       "\tbreakpoint delete ID            - delete breakpoint id\n"
-	       "\tbreakpoint d ID                 - delete breakpoint id\n"
+	       "\tbreak id ID                - break on id ID\n"
+	       "\tbreak side server|client   - break on message from server/client\n"
+	       "\tbreak re REGEXP            - break on given REGEXP\n"
+	       "\tbreak interface@message    - break on known interface@message\n"
+	       "\tbreak delete ID            - delete breakpoint id\n"
+	       "\tbreak d ID                 - delete breakpoint id\n"
 	       "\n"
 	       "Example: b re wl_surface.*\n");
 }
