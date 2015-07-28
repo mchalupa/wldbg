@@ -2,8 +2,7 @@
 test_runner =					\
 	$(top_builddir)/wayland/test-runner.c	\
 	$(top_builddir)/wayland/test-runner.h	\
-	$(top_builddir)/wayland/test-helpers.c	\
-	$(top_builddir)/wayland/test-helpers.h
+	$(top_builddir)/wayland/test-helpers.c
 
 
 check_PROGRAMS = 				\
