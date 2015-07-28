@@ -54,15 +54,21 @@ If everything goes well, you'll see:
 wldbg is now waiting for your input. By typing 'c' or 'continue', the program
 will continue in running. Other usefull commands are:
 
-'h' or 'help'  -- show help message
+'help'         -- show help message
+'help COMMAND' -- show help to COMMAND
+
 'b' or 'break' -- stop running on specified messages
-                  (b id 10 -- stop on messages with id 10)
+                       b id 10        -- stop on messages with id 10
+		       b re REGEXP    -- stop on any message matching regexp)
 'i' or 'info'  -- show information about running state
-                  i b(reakpoints) -- info about breakpoints
-		  i objects -- info about objects
-'hide'         -- hide specified messages, i. e.:
-                  hide wl_pointer -- hide everything for/from wl_pointer
-		  hide wl_display@done -- hide done messages from wl_display
+                      i b(reakpoints) -- info about breakpoints
+		      i objects       -- info about objects
+		      i proc          -- info about process
+'h' or 'hide   -- hide specified messages matching REGEXP, e. g.:
+                      h wl_pointer.*      -- hide everything for/from wl_pointer
+		      h wl_display@.*done -- hide done messages from wl_display
+'so' or 'showonly' -- show only messages matching REGEXP
+                      so wl_keyboard.*modifiers -- show only modifers even
 's' or 'send'  -- send message to client/server (in wire format)
 'e' or 'edit'  -- edit message that we stopped at
 'q' or 'quit'  -- exit wldbg
