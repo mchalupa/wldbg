@@ -1,5 +1,6 @@
 
 bin_PROGRAMS = wldbg
+lib_LTLIBRARIES = libwldbg.la
 
 wayland_files =				\
 	../wayland/connection.c		\
@@ -31,18 +32,27 @@ hardcoded_interfaces =				\
 	../protocols/xdg-shell-protocol.c	\
 	../protocols/wayland-drm-protocol.c
 
+# libwldbg contains functions that we provide to
+# passses, like wldbg_parse_message etc.
+libwldbg_la_SOURCES = 		\
+	parse-message.c
+
+include_HEADERS = 		\
+	wldbg.h			\
+	wldbg-pass.h		\
+	wldbg-parse-message.h
+
 AM_CPPFLAGS = -I..
 AM_CFLAGS =				\
 	$(CFLAGS)			\
 	$(WAYLAND_SERVER_CFLAGS)	\
 	$(WAYLAND_CLIENT_CFLAGS)
 
+wldbg_LDFLAGS = -ldl -lwayland-client
+wldbg_LDADD = libwldbg.la
 wldbg_SOURCES =			\
 	wldbg.c			\
-	wldbg.h			\
 	wldbg-private.h		\
-	wldbg-parse-message.h	\
-	parse-message.c		\
 	passes.c		\
 	sockets.c		\
 	sockets.h		\
@@ -59,10 +69,10 @@ wldbg_SOURCES =			\
 	$(interactive_sources)	\
 	$(hardcoded_interfaces)
 
+
 if ENABLE_DEBUG
 # enable debugging fetures. That include debugging messages
 # backtraces and syscall checks
 wldbg_SOURCES += debug.c
 endif
 
-wldbg_LDFLAGS = -ldl -lwayland-client
