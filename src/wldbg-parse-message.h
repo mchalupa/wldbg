@@ -71,4 +71,7 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg);
 void
 wldbg_resolved_message_reset_iterator(struct wldbg_resolved_message *msg);
 
+size_t
+wldbg_get_message_name(struct message *message, char *buff, size_t maxsize);
+
 #endif /*  _WLDBG_PARSED_MESSAGE_H_ */

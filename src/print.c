@@ -41,50 +41,6 @@
 #include "resolve.h"
 #include "util.h"
 
-size_t
-wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)
-{
-	struct resolved_objects *ro = message->connection->resolved_objects;
-	struct wldbg_parsed_message pm;
-	const struct wl_interface *interface;
-	const struct wl_message *wl_message = NULL;
-	int ret;
-	size_t written;
-
-	wldbg_parse_message(message, &pm);
-	interface = resolved_objects_get(ro, pm.id);
-
-	if (interface) {
-		if (message->from == SERVER)
-			wl_message = &interface->events[pm.opcode];
-		else
-			wl_message = &interface->methods[pm.opcode];
-	}
-
-	/* put the interface name into the buffer */
-	ret = snprintf(buf, maxsize, "%s",
-		       interface ? interface->name : "unknown");
-	written = ret;
-	if (ret >= (int) maxsize)
-		return written;
-
-	/* create name of the message we got */
-	if (wl_message) {
-		ret = snprintf(buf + ret, maxsize - written,
-			       "@%d.%s", pm.id, wl_message->name);
-
-	} else {
-		ret = snprintf(buf + ret, maxsize - written,
-			       "@%d.%d", pm.id, pm.opcode);
-	}
-
-	written += ret;
-
-	// return how many characters we wrote or how
-	// many characters we'd wrote in the case of overflow
-	return written;
-}
-
 /* return 1 if some of filters matches - thus hide the message */
 static int
 filter_match(struct wl_list *filters, struct message *message)

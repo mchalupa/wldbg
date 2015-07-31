@@ -39,9 +39,6 @@ wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message,
 void
 print_bare_message(struct message *message, struct wl_list *filters);
 
-size_t
-wldbg_get_message_name(struct message *message, char *buff, size_t maxsize);
-
 struct print_filter {
 	char *filter;
 	regex_t regex;
