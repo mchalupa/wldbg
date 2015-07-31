@@ -53,11 +53,8 @@
 #include "util.h"
 
 #ifdef DEBUG
-int debug = 0;
-int debug_verbose = 0;
-
 void
-init_syscalls_check(void);
+debug_init(void);
 #endif
 
 /* defined in interactive.c */
@@ -927,16 +924,7 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef DEBUG
-	const char *dbg_env = getenv("WLDBG_DEBUG");
-	if (dbg_env) {
-		debug = 1;
-
-		if (strcmp(dbg_env, "verbose") == 0
-			|| strcmp(dbg_env, "v") == 0)
-			debug_verbose = 1;
-	}
-
-	init_syscalls_check();
+	debug_init();
 #endif
 
 	memset(&options, 0 , sizeof options);

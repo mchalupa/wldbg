@@ -40,8 +40,34 @@
 #include <stdarg.h>
 #include <execinfo.h>
 
+int debug = 0;
+int debug_verbose = 0;
+const char *debug_domain = NULL;
+
 static int abort_on_check_failure;
 static int dbg_on_check_failure;
+
+static void
+init_syscalls_check(void);
+
+void
+debug_init(void)
+{
+	const char *dbg_env = getenv("WLDBG_DEBUG");
+	if (dbg_env) {
+		debug = 1;
+
+		if (strcmp(dbg_env, "verbose") == 0
+			|| strcmp(dbg_env, "v") == 0) {
+			debug_verbose = 1;
+		} else if (strncmp(dbg_env + strlen(dbg_env) - 2, ".c", 2) == 0) {
+			debug_verbose = 1;
+			debug_domain = dbg_env;
+		}
+	}
+
+	init_syscalls_check();
+}
 
 /* copied from weston, modified */
 static void
@@ -98,7 +124,7 @@ close(int fd)
 	return ret;
 }
 
-void
+static void
 init_syscalls_check(void)
 {
 	const char *env = getenv("WLDBG_SYSCALLS_CHECK");

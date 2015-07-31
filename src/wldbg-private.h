@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <sys/signalfd.h>
 #include <sys/un.h>
+#include <string.h>
 
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
@@ -42,31 +43,38 @@
 
 extern int debug;
 extern int debug_verbose;
+extern const char *debug_domain;
 
-#define vdbg(...) 							\
-	do {								\
-		if (!debug_verbose) break;				\
-		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
-				__FILE__, __LINE__);			\
-		fprintf(stderr,	__VA_ARGS__);				\
-	} while (0)
+#define vdbg(...)                                   \
+    do {                                            \
+        if (!debug_verbose) break;                  \
+        if (debug_domain                            \
+            && strcmp(debug_domain, __FILE__) != 0) \
+            break;                                  \
+        fprintf(stderr, "[%d | %s: %d] ", getpid(), \
+                __FILE__, __LINE__);                \
+        fprintf(stderr,    __VA_ARGS__);            \
+    } while (0)
 
 
 
-#define dbg(...) 							\
-	do {								\
-		if (!debug) break;					\
-		fprintf(stderr, "[%d | %s: %d] ", getpid(),		\
-				__FILE__, __LINE__);			\
-		fprintf(stderr,	__VA_ARGS__);				\
-	} while (0)
+#define dbg(...)                                    \
+    do {                                            \
+        if (!debug) break;                          \
+        if (debug_domain                            \
+            && strcmp(debug_domain, __FILE__) != 0) \
+            break;                                  \
+        fprintf(stderr, "[%d | %s: %d] ", getpid(), \
+                __FILE__, __LINE__);                \
+        fprintf(stderr,    __VA_ARGS__);            \
+    } while (0)
 
-#define ifdbg(cond, ...)			\
-	do {					\
-		if (!debug) break;		\
-		if (cond)			\
-			dbg(__VA_ARGS__);	\
-	} while (0)
+#define ifdbg(cond, ...)                            \
+    do {                                            \
+        if (!debug) break;                          \
+        if (cond)                                   \
+            dbg(__VA_ARGS__);                       \
+    } while (0)
 
 #else
 
