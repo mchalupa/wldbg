@@ -475,9 +475,6 @@ print_bare_message(struct message *message, struct wl_list *filters)
 	struct wldbg_connection *conn = message->connection;
 	struct wldbg_parsed_message pm;
 
-	assert(conn->wldbg->flags.one_by_one
-		&& "This function is meant to be used in one-by-one mode");
-
 	wldbg_parse_message(message, &pm);
 	p = message->data;
 	interface = resolved_objects_get(conn->resolved_objects, pm.id);

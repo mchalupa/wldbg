@@ -71,9 +71,9 @@ set_opt(const char *arg, struct wldbg_options *opts)
 		dbg("Command line option: server-mode\n");
 		opts->server_mode = 1;
 		match = 1;
-	} else if (is_prefix_of(arg, "one-by-one")) {
-		dbg("Command line option: one-by-one\n");
-		opts->one_by_one = 1;
+	} else if (is_prefix_of(arg, "pass-whole-buffer")) {
+		dbg("Command line option: pass-whole-buffer\n");
+		opts->pass_whole_buffer = 1;
 		match = 1;
 	}
 

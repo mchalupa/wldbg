@@ -31,7 +31,7 @@
 struct wldbg_options {
 	unsigned int interactive;
 	unsigned int server_mode;
-	unsigned int one_by_one ;
+	unsigned int pass_whole_buffer ;
 
 	/* parsed path to the program and
 	 * its arguments */

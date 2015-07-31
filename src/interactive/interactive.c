@@ -246,7 +246,11 @@ interactive_init(struct wldbg *wldbg)
 		= "Interactive pass for wldbg (hardcoded)";
 	pass->wldbg_pass.flags = WLDBG_PASS_LOAD_ONCE;
 
-	wldbg->flags.one_by_one = 1;
+	if (wldbg->flags.pass_whole_buffer) {
+		fprintf(stderr, "Interactive mode needs separate messages, "
+				"but pass-whole-buffer flag is on.\n");
+		goto err_pass;
+	}
 
 	/* remove default SIGINT handler */
 	sigdelset(&wldbg->handled_signals, SIGINT);

@@ -71,12 +71,12 @@ info_wldbg(struct wldbg_interactive *wldbgi)
 	printf("Monitored fds num: %d\n", wl_list_length(&wldbg->monitored_fds));
 	printf("Resolving objects: %d\n", wldbg->resolving_objects);
 	printf("Flags:"
-	       "\tone_by_one : %u\n"
-	       "\trunning    : %u\n"
-	       "\terror      : %u\n"
-	       "\texit       : %u\n"
-	       "\tserver_mode: %u\n",
-	       wldbg->flags.one_by_one,
+	       "\tpass_whole_buffer : %u\n"
+	       "\trunning           : %u\n"
+	       "\terror             : %u\n"
+	       "\texit              : %u\n"
+	       "\tserver_mode       : %u\n",
+	       wldbg->flags.pass_whole_buffer,
 	       wldbg->flags.running,
 	       wldbg->flags.error,
 	       wldbg->flags.exit,

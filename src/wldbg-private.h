@@ -92,11 +92,16 @@ struct wldbg {
 	unsigned int resolving_objects : 1;
 
 	struct {
-		unsigned int one_by_one		: 1;
-		unsigned int running		: 1;
-		unsigned int error		: 1;
-		unsigned int exit		: 1;
-		unsigned int server_mode	: 1;
+        /* pass whole buffer to passes instead of just messages */
+		unsigned int pass_whole_buffer : 1;
+        /* wldbg is running in main loop */
+		unsigned int running           : 1;
+        /* some pass raised error */
+		unsigned int error             : 1;
+        /* some pass asked to exit */
+		unsigned int exit              : 1;
+        /* running in server mode */
+		unsigned int server_mode       : 1;
 	} flags;
 
 	struct {

@@ -406,7 +406,7 @@ process_data(struct wldbg_connection *conn,
 	message->size = len;
 	message->connection = conn;
 
-	if (wldbg->flags.one_by_one) {
+	if (!wldbg->flags.pass_whole_buffer) {
 		ret = process_one_by_one(write_wl_conn, message);
 	} else {
 		/* process passes */
@@ -849,8 +849,8 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *a
 		exit(1);
 	}
 
-	if (options->one_by_one) {
-		wldbg->flags.one_by_one = 1;
+	if (options->pass_whole_buffer) {
+		wldbg->flags.pass_whole_buffer = 1;
 	}
 
 	if (options->interactive) {
@@ -867,19 +867,16 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *a
 		options->argc = copy_arguments(&options->argv,
 					       argc - pass_off,
 					       (const char **) argv + pass_off);
-		if (options->argc == -1) {
-			free(options->path);
+		if (options->argc == -1)
+			/* opts will be freed at the exit of main */
 			return -1;
-		}
 
 		/* this would be bug in copy_arguments */
 		assert(options->argc == argc - pass_off);
 
-		if (interactive_init(wldbg) < 0) {
-			free_arguments(options->argv);
-			free(options->path);
+		if (interactive_init(wldbg) < 0)
+			/* opts will be freed at the exit of main */
 			return -1;
-		}
 
 		return 0;
 	} else if (options->server_mode) {
