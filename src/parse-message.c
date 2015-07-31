@@ -91,13 +91,16 @@ int wldbg_resolve_message(struct message *msg,
 }
 
 static const char *
-signature_get_type(const char *sig)
+signature_get_type(const char *sig, unsigned int *nullable)
 {
 	assert(sig);
 
-	/* skip versions and nullable flags */
-	while(*sig && (*sig == '?' || isdigit(*sig)))
+	*nullable = 0;
+	while(*sig && (*sig == '?' || isdigit(*sig))) {
+		if (*sig == '?')
+			*nullable = 1;
 		++sig;
+	}
 
 	return sig;
 }
@@ -105,7 +108,8 @@ signature_get_type(const char *sig)
 static void
 initialize_iterator(struct wldbg_resolved_message *msg)
 {
-	const char *sig = signature_get_type(msg->wl_message->signature);
+	const char *sig = signature_get_type(msg->wl_message->signature,
+					     &msg->cur_arg.nullable);
 
 	msg->signature_position = sig;
 	msg->cur_arg.type = *sig;
@@ -133,16 +137,20 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 		return &msg->cur_arg;
 	}
 
+	/* need to store type before getting next argument,
+	 * so that we know where to shift in data */
 	type = *msg->signature_position;
 	p = msg->cur_arg.ptr;
 
 	msg->signature_position
-		= signature_get_type(msg->signature_position + 1);
+		= signature_get_type(msg->signature_position + 1,
+				     &msg->cur_arg.nullable);
 	msg->cur_arg.type = *msg->signature_position;
 
 	if (msg->cur_arg.type == 0)
 		return NULL;
 
+	/* find data of next argument */
 	switch (type) {
 	case 'u':
 	case 'i':

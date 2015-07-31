@@ -44,6 +44,8 @@ struct wldbg_parsed_message {
 struct wldbg_resolved_arg {
 	/* type of argument */
 	char type;
+	/* can be null? */
+	unsigned int nullable;
 	/* pointer to the data in message */
 	uint32_t *ptr;
 };
