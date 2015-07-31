@@ -55,8 +55,8 @@ int wldbg_resolve_message(struct message *msg,
 {
 	const struct wl_interface *interface;
 
-	/* clear message */
-	memset(msg, 0, sizeof *msg);
+	/* clear out */
+	memset(out, 0, sizeof *out);
 
 	if (!wldbg_parse_message(msg, &out->base))
 		return 0;
