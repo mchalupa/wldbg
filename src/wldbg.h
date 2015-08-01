@@ -26,6 +26,8 @@
 #ifndef _WLDBG_H_
 #define _WLDBG_H_
 
+#include "wldbg-pass.h"
+
 struct wldbg;
 struct wldbg_connection;
 
