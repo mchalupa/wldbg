@@ -57,8 +57,13 @@ int wldbg_resolve_message(struct message *msg,
 
 	/* clear out */
 	memset(out, 0, sizeof *out);
-
 	if (!wldbg_parse_message(msg, &out->base))
+		return 0;
+
+	assert(msg->connection && "Message has no connection set");
+	/* if we're not resolving objects, just
+	 * cease parsing here */
+	if (!msg->connection->resolved_objects)
 		return 0;
 
 	interface = resolved_objects_get(msg->connection->resolved_objects,
@@ -112,8 +117,20 @@ initialize_iterator(struct wldbg_resolved_message *msg)
 					     &msg->cur_arg.nullable);
 
 	msg->signature_position = sig;
+	msg->data_position = msg->base.data;
+
 	msg->cur_arg.type = *sig;
-	msg->cur_arg.ptr = msg->base.data;
+	/* set pointer to data. If this is string or array that
+	 * is NULL, set it to NULL, otherwise make it pointing
+	 * to the data */
+	if ((*sig == 'a' || *sig == 's')) {
+		if (*msg->data_position == 0)
+			msg->cur_arg.ptr = NULL;
+		else
+			/* skip size argument and point
+			 * to data itself */
+			msg->cur_arg.ptr = msg->base.data + 1;
+	}
 }
 
 void
@@ -127,9 +144,8 @@ wldbg_resolved_message_reset_iterator(struct wldbg_resolved_message *msg)
 struct wldbg_resolved_arg *
 wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 {
-	size_t off = 0;
+	size_t size, off = 0;
 	char type;
-	uint32_t *p;
 
 	/* first iteration */
 	if (msg->signature_position == NULL) {
@@ -140,8 +156,13 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 	/* need to store type before getting next argument,
 	 * so that we know where to shift in data */
 	type = *msg->signature_position;
-	p = msg->cur_arg.ptr;
 
+	/* calling next_argument on iterator that reached
+	 * the end */
+	if (type == 0)
+		return NULL;
+
+	/* set new type and position in signature */
 	msg->signature_position
 		= signature_get_type(msg->signature_position + 1,
 				     &msg->cur_arg.nullable);
@@ -158,17 +179,34 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 	case 'o':
 	case 'n':
 	case 'h':
-		off = 1;
+		msg->cur_arg.ptr = ++msg->data_position;
 		break;
 	case 's':
 	case 'a':
-		off = DIV_ROUNDUP(*p, sizeof(uint32_t)) + 1;
+		/* msg->data_position now points to
+		 * size argument of previous string/array */
+		size = *msg->data_position;
+		if (size == 0) {
+			++msg->data_position;
+		} else {
+			off = DIV_ROUNDUP(size, sizeof(uint32_t));
+			msg->data_position += off + 1;
+		}
 		break;
 	default:
 		fprintf(stderr, "Warning: unhandled type: %c\n", type);
 	}
 
-	msg->cur_arg.ptr += off;
+	/* ok, we now point to the current argument.
+	 * Check if it is string or array and set ptr */
+	 if ((msg->cur_arg.type == 'a' || msg->cur_arg.type == 's')) {
+		if (*msg->data_position == 0)
+			msg->cur_arg.ptr = NULL;
+		else
+			/* skip size argument and point
+			 * to data itself */
+			msg->cur_arg.ptr = msg->data_position + 1;
+	}
 
 	return &msg->cur_arg;
 }

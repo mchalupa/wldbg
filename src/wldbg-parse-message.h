@@ -26,6 +26,7 @@
 #ifndef _WLDBG_PARSED_MESSAGE_H_
 #define _WLDBG_PARSED_MESSAGE_H_
 
+#include <stdlib.h> /* size_t */
 #include <stdint.h>
 
 struct message;
@@ -58,6 +59,7 @@ struct wldbg_resolved_message {
 	/* position of arguments iterator */
 	struct wldbg_resolved_arg cur_arg;
 	const char *signature_position;
+    uint32_t *data_position;
 };
 
 int wldbg_parse_message(struct message *msg, struct wldbg_parsed_message *out);
