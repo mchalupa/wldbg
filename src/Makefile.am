@@ -11,7 +11,7 @@ wayland_files =				\
 	../wayland/wayland-private.h
 
 hardcoded_passes =			\
-	list.c				\
+	list-pass.c			\
 	resolve-pass.c
 
 interactive_sources =				\
