@@ -1,5 +1,6 @@
 
-lib_LTLIBRARIES = dump.la example.la
+pass_libdir=$(libdir)/wldbg
+pass_lib_LTLIBRARIES = dump.la example.la
 
 AM_CPPFLAGS = -I$(top_builddir)/src
 
