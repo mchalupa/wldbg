@@ -70,6 +70,7 @@ AC_SUBST([TESTS_CFLAGS])
 AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 passes/Makefile
-		 tests/Makefile])
+		 tests/Makefile
+		 src/wldbg.pc])
 
 AC_OUTPUT

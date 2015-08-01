@@ -76,3 +76,6 @@ if ENABLE_DEBUG
 wldbg_SOURCES += debug.c
 endif
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = wldbg.pc
+
