@@ -38,6 +38,7 @@
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
 #include "wldbg-pass.h"
+#include "wldbg-ids-map.h"
 
 #ifdef DEBUG
 
@@ -163,6 +164,23 @@ struct wldbg_connection {
 
 	struct resolved_objects *resolved_objects;
 	struct wl_list link;
+};
+
+struct resolved_objects_ids {
+	/* id's allocated by client */
+	struct wldbg_ids_map client_objects;
+	/* id's allocated by server */
+	struct wldbg_ids_map server_objects;
+};
+
+struct resolved_objects {
+	struct resolved_objects_ids objects;
+
+	/* these are shared between connections */
+	struct wl_list *interfaces;
+
+	/* these are specific for connection */
+	struct wl_list additional_interfaces;
 };
 
 #endif /* _WLDBG_PRIVATE_H_ */

@@ -12,8 +12,7 @@ wayland_files =				\
 
 hardcoded_passes =			\
 	list.c				\
-	resolve.c			\
-	resolve.h
+	resolve-pass.c
 
 interactive_sources =				\
 	interactive/interactive.c		\
@@ -35,6 +34,10 @@ hardcoded_interfaces =				\
 # libwldbg contains functions that we provide to
 # passses, like wldbg_parse_message etc.
 libwldbg_la_SOURCES = 		\
+	wldbg-ids-map.c		\
+	wldbg-ids-map.h		\
+	resolve.h		\
+	resolve.c		\
 	parse-message.c
 
 include_HEADERS = 		\
@@ -56,8 +59,6 @@ wldbg_SOURCES =			\
 	passes.c		\
 	sockets.c		\
 	sockets.h		\
-	wldbg-ids-map.c		\
-	wldbg-ids-map.h		\
 	print.c			\
 	print.h			\
 	getopt.c		\
@@ -66,9 +67,8 @@ wldbg_SOURCES =			\
 	util.h			\
 	$(wayland_files)	\
 	$(hardcoded_passes)	\
-	$(interactive_sources)	\
-	$(hardcoded_interfaces)
-
+	$(hardcoded_interfaces)	\
+	$(interactive_sources)
 
 if ENABLE_DEBUG
 # enable debugging fetures. That include debugging messages
