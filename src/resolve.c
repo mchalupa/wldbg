@@ -36,11 +36,8 @@
 #include <wayland-client-protocol.h>
 
 #include "wldbg.h"
-#include "wldbg-pass.h"
 #include "wldbg-private.h"
 #include "wldbg-ids-map.h"
-#include "passes.h"
-#include "util.h"
 
 const struct wl_interface *
 resolved_objects_get(struct resolved_objects *ro, uint32_t id)
