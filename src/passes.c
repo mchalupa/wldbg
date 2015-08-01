@@ -40,6 +40,10 @@
 /* hardcoded passes */
 extern struct wldbg_pass wldbg_pass_list;
 
+#ifndef LIBDIR
+#error "Need defined LIBDIR (was made in Makefile.am)"
+#endif
+
 static struct wldbg_pass *
 load_pass(const char *path)
 {
@@ -132,11 +136,12 @@ alloc_pass(const char *name)
 }
 
 /* searching for .so file in folders (in this order)
- *   ./passes/.libs/file.so
- *   $HOME/.wldbg/file.so
- *   /usr/local/lib/wldbg/file.so
- *   /usr/lib/wldbg/file.so
- *   /lib/wldbg/file.so
+ *   ./passes/.libs/
+ *   $HOME/.wldbg/
+ *   LIBDIR/wldbg/
+ *   /usr/local/lib/wldbg/
+ *   /usr/lib/wldbg/
+ *   /lib/wldbg/
  */
 struct pass *
 create_pass(const char *name)
@@ -180,6 +185,16 @@ create_pass(const char *name)
 				dbg("Trying '%s'\n", path);
 				wldbg_pass = load_pass(path);
 			}
+		}
+
+		/* libdir/wldbg */
+		if (!wldbg_pass && errno != EEXIST) {
+			if (build_path(path, LIBDIR, "/wldbg/",
+				       name) < 0)
+				return NULL;
+
+			dbg("Trying '%s'\n", path);
+			wldbg_pass = load_pass(path);
 		}
 
 		/* default paths

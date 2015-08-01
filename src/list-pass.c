@@ -72,6 +72,9 @@ list_passes(void)
 		list_dir(path);
 	}
 
+	snprintf(path, sizeof path, "%s/wldbg", LIBDIR);
+	list_dir(path);
+
 	list_dir("/usr/local/lib/wldbg");
 	list_dir("/usr/lib/wldbg");
 	list_dir("/lib/wldbg");
