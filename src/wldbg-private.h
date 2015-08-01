@@ -183,4 +183,9 @@ struct resolved_objects {
 	struct wl_list additional_interfaces;
 };
 
+int
+wldbg_monitor_fd(struct wldbg *wldbg, int fd,
+                int (*dispatch)(int fd, void *data),
+                void *data);
+
 #endif /* _WLDBG_PRIVATE_H_ */

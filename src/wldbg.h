@@ -46,9 +46,4 @@ struct message {
 	struct wldbg_connection *connection;
 };
 
-int
-wldbg_monitor_fd(struct wldbg *wldbg, int fd,
-		 int (*dispatch)(int fd, void *data),
-		 void *data);
-
 #endif /* _WLDBG_H_ */
