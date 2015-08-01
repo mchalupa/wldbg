@@ -6,7 +6,8 @@ test_runner =					\
 
 
 check_PROGRAMS = 				\
-	map-test
+	map-test				\
+	parse-message-test
 
 TESTS = $(check_PROGRAMS)
 
@@ -20,3 +21,13 @@ map_test_SOURCES =				\
 	map-test.c				\
 	$(top_builddir)/src/wldbg-ids-map.c	\
 	$(top_builddir)/wayland/wayland-util.c
+
+parse_message_test_LDADD = 			\
+	$(top_builddir)/src/libwldbg.la
+parse_message_test_LDFLAGS =			\
+	-lwayland-client			\
+	$(AM_LDFLAGS)
+
+parse_message_test_SOURCES =			\
+	$(test_runner)				\
+	parse-message-test.c
