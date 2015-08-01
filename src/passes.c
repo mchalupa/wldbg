@@ -273,7 +273,7 @@ int
 load_passes(struct wldbg *wldbg, struct wldbg_options *opts,
 	    int argc, const char *argv[])
 {
-	int i, rest, count, pass_num = 0, pass_created = 0;
+	int rest, count, pass_num = 0, pass_created = 0;
 	struct pass *pass;
 	char *comma;
 
@@ -309,6 +309,7 @@ load_passes(struct wldbg *wldbg, struct wldbg_options *opts,
 				*comma = '\0';
 
 #ifdef DEBUG
+			int i;
 			dbg("Pass %d:\n", pass_num);
 			for (i = 0; i < count; ++i) {
 				dbg("\targ[%d]: %s\n", i, argv[argc - rest + i]);

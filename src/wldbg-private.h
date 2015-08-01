@@ -77,9 +77,10 @@ extern const char *debug_domain;
             dbg(__VA_ARGS__);                       \
     } while (0)
 
-#else
+#else /* DEBUG */
 
 #define dbg(...)
+#define vdbg(...)
 #define ifdbg(cond, ...)
 
 #endif /* DEBUG */
