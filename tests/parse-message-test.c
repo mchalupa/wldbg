@@ -118,33 +118,33 @@ TEST(resolved_iterator_test)
 	assert(arg != NULL);
 	assert(arg->type == 's');
 	assert(!arg->nullable);
-	assert(arg->ptr == data + 1);
-	assert(*arg->ptr == 0xdee1);
+	assert(arg->data == data + 1);
+	assert(*arg->data == 0xdee1);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 'a');
 	assert(arg->nullable);
-	assert(arg->ptr == NULL);
+	assert(arg->data == NULL);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 's');
 	assert(arg->nullable);
-	assert(arg->ptr == NULL);
+	assert(arg->data == NULL);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 'a');
 	assert(!arg->nullable);
-	assert(arg->ptr == data + 8);
-	assert(*arg->ptr == 0xaaa1);
+	assert(arg->data == data + 8);
+	assert(*arg->data == 0xaaa1);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 's');
 	assert(arg->nullable);
-	assert(arg->ptr == NULL);
+	assert(arg->data == NULL);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg == NULL);
@@ -157,33 +157,33 @@ TEST(resolved_iterator_test)
 	assert(arg != NULL);
 	assert(arg->type == 's');
 	assert(!arg->nullable);
-	assert(arg->ptr == data + 1);
-	assert(*arg->ptr == 0xdee1);
+	assert(arg->data == data + 1);
+	assert(*arg->data == 0xdee1);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 'a');
 	assert(arg->nullable);
-	assert(arg->ptr == NULL);
+	assert(arg->data == NULL);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 's');
 	assert(arg->nullable);
-	assert(arg->ptr == NULL);
+	assert(arg->data == NULL);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 'a');
 	assert(!arg->nullable);
-	assert(arg->ptr == data + 8);
-	assert(*arg->ptr == 0xaaa1);
+	assert(arg->data == data + 8);
+	assert(*arg->data == 0xaaa1);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 's');
 	assert(arg->nullable);
-	assert(arg->ptr == NULL);
+	assert(arg->data == NULL);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg == NULL);
@@ -211,22 +211,22 @@ TEST(resolve_message_test2)
 	assert(arg != NULL);
 	assert(arg->type == 'u');
 	assert(!arg->nullable);
-	assert(arg->ptr == data + 0);
-	assert(*arg->ptr == 123);
+	assert(arg->data == data + 0);
+	assert(*arg->data == 123);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 's');
 	assert(!arg->nullable);
-	assert(arg->ptr == data + 2);
-	assert(*(arg->ptr - 1) == 17);
+	assert(arg->data == data + 2);
+	assert(*(arg->data - 1) == 17);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg != NULL);
 	assert(arg->type == 'u');
 	assert(!arg->nullable);
-	assert(arg->ptr == data + 7);
-	assert(*arg->ptr == 12);
+	assert(arg->data == data + 7);
+	assert(*arg->data == 12);
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg == NULL);

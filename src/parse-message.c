@@ -125,16 +125,16 @@ initialize_iterator(struct wldbg_resolved_message *msg)
 	 * to the data */
 	if ((*sig == 'a' || *sig == 's')) {
 		if (*msg->data_position == 0)
-			msg->cur_arg.ptr = NULL;
+			msg->cur_arg.data = NULL;
 		else
 			/* skip size argument and point
 			 * to data itself */
-			msg->cur_arg.ptr = msg->base.data + 1;
+			msg->cur_arg.data = msg->base.data + 1;
 	} else {
-		msg->cur_arg.ptr = msg->base.data;
+		msg->cur_arg.data = msg->base.data;
 	}
 
-	assert(!*sig || *sig == 'a' || *sig == 's' || msg->cur_arg.ptr);
+	assert(!*sig || *sig == 'a' || *sig == 's' || msg->cur_arg.data);
 }
 
 void
@@ -207,18 +207,18 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 	}
 
 	/* ok, we now point to the current argument.
-	 * Check if it is string or array and set ptr */
+	 * Check if it is string or array and set data */
 	type = msg->cur_arg.type;
 	if ((type == 'a' || type == 's')) {
 		/* msg->data_position is the size of string/array */
 		if (*msg->data_position == 0)
-			msg->cur_arg.ptr = NULL;
+			msg->cur_arg.data = NULL;
 		else
 			/* skip size argument and point
 			 * to data itself */
-			msg->cur_arg.ptr = msg->data_position + 1;
+			msg->cur_arg.data = msg->data_position + 1;
 	} else
-		msg->cur_arg.ptr = msg->data_position;
+		msg->cur_arg.data = msg->data_position;
 
 	return &msg->cur_arg;
 }
