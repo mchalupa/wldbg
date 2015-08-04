@@ -44,11 +44,13 @@ TEST(parse_base_message_fail)
 }
 
 static const struct wl_message dummy_requests[] = {
-	{ "foo", "4i?o2ih", NULL }
+	{ "foo", "4i?o2ih", NULL },
+	{ "empty", "", NULL },
 };
 
 static const struct wl_message dummy_events[] = {
-	{ "foo", "1s?a?sa?2s", NULL }
+	{ "foo", "1s?a?sa?2s", NULL },
+	{ "foo2", "1usu", NULL },
 };
 
 static const struct wl_interface dummy_interface = {
@@ -59,9 +61,11 @@ static const struct wl_interface dummy_interface = {
 
 TEST(resolved_message_iterator_types)
 {
+	uint32_t data[] = {1,2,3,4};
 	struct wldbg_resolved_message rm = {
 		.wl_interface = &dummy_interface,
 		.wl_message = &dummy_requests[0],
+		.base.data = data,
 	};
 
 	wldbg_resolved_message_reset_iterator(&rm);
@@ -180,6 +184,66 @@ TEST(resolved_iterator_test)
 	assert(arg->type == 's');
 	assert(arg->nullable);
 	assert(arg->ptr == NULL);
+
+	arg = wldbg_resolved_message_next_argument(&rm);
+	assert(arg == NULL);
+	arg = wldbg_resolved_message_next_argument(&rm);
+	assert(arg == NULL);
+}
+
+TEST(resolve_message_test2)
+{
+	/* { "foo2", "1usu", NULL } */
+	uint32_t data[] = { 123,
+			    17 /* string size */,
+			    0xdee1, 0xdee2, 0xdee3, 0xdee4, 0xdee5,
+			    12 };
+	struct wldbg_resolved_message rm = {
+		.wl_interface = &dummy_interface,
+		.wl_message = &dummy_events[1],
+		.base.data = data
+	};
+
+	wldbg_resolved_message_reset_iterator(&rm);
+	struct wldbg_resolved_arg *arg;
+
+	arg = wldbg_resolved_message_next_argument(&rm);
+	assert(arg != NULL);
+	assert(arg->type == 'u');
+	assert(!arg->nullable);
+	assert(arg->ptr == data + 0);
+	assert(*arg->ptr == 123);
+
+	arg = wldbg_resolved_message_next_argument(&rm);
+	assert(arg != NULL);
+	assert(arg->type == 's');
+	assert(!arg->nullable);
+	assert(arg->ptr == data + 2);
+	assert(*(arg->ptr - 1) == 17);
+
+	arg = wldbg_resolved_message_next_argument(&rm);
+	assert(arg != NULL);
+	assert(arg->type == 'u');
+	assert(!arg->nullable);
+	assert(arg->ptr == data + 7);
+	assert(*arg->ptr == 12);
+
+	arg = wldbg_resolved_message_next_argument(&rm);
+	assert(arg == NULL);
+	arg = wldbg_resolved_message_next_argument(&rm);
+	assert(arg == NULL);
+}
+
+TEST(message_no_arguments)
+{
+	/* test message with signature "" */
+	struct wldbg_resolved_message rm = {
+		.wl_interface = &dummy_interface,
+		.wl_message = &dummy_requests[1],
+	};
+
+	wldbg_resolved_message_reset_iterator(&rm);
+	struct wldbg_resolved_arg *arg;
 
 	arg = wldbg_resolved_message_next_argument(&rm);
 	assert(arg == NULL);

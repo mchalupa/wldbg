@@ -130,13 +130,18 @@ initialize_iterator(struct wldbg_resolved_message *msg)
 			/* skip size argument and point
 			 * to data itself */
 			msg->cur_arg.ptr = msg->base.data + 1;
+	} else {
+		msg->cur_arg.ptr = msg->base.data;
 	}
+
+	assert(!*sig || *sig == 'a' || *sig == 's' || msg->cur_arg.ptr);
 }
 
 void
 wldbg_resolved_message_reset_iterator(struct wldbg_resolved_message *msg)
 {
 	msg->signature_position = NULL;
+	msg->data_position = NULL;
 	memset(&msg->cur_arg, 0,
 	       sizeof(struct wldbg_resolved_arg));
 }
@@ -150,6 +155,10 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 	/* first iteration */
 	if (msg->signature_position == NULL) {
 		initialize_iterator(msg);
+		/* message has no arguments? */
+		if (msg->cur_arg.type == 0)
+			return NULL;
+
 		return &msg->cur_arg;
 	}
 
@@ -179,7 +188,7 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 	case 'o':
 	case 'n':
 	case 'h':
-		msg->cur_arg.ptr = ++msg->data_position;
+		++msg->data_position;
 		break;
 	case 's':
 	case 'a':
@@ -190,23 +199,26 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 			++msg->data_position;
 		} else {
 			off = DIV_ROUNDUP(size, sizeof(uint32_t));
-			msg->data_position += off + 1;
+			msg->data_position += (off + 1);
 		}
 		break;
 	default:
-		fprintf(stderr, "Warning: unhandled type: %c\n", type);
+		fprintf(stderr, "Warning: unhandled type: %d (%c)\n", type, type);
 	}
 
 	/* ok, we now point to the current argument.
 	 * Check if it is string or array and set ptr */
-	 if ((msg->cur_arg.type == 'a' || msg->cur_arg.type == 's')) {
+	type = msg->cur_arg.type;
+	if ((type == 'a' || type == 's')) {
+		/* msg->data_position is the size of string/array */
 		if (*msg->data_position == 0)
 			msg->cur_arg.ptr = NULL;
 		else
 			/* skip size argument and point
 			 * to data itself */
 			msg->cur_arg.ptr = msg->data_position + 1;
-	}
+	} else
+		msg->cur_arg.ptr = msg->data_position;
 
 	return &msg->cur_arg;
 }
