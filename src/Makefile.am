@@ -45,7 +45,10 @@ include_HEADERS = 		\
 	wldbg-pass.h		\
 	wldbg-parse-message.h
 
-AM_CPPFLAGS = -I.. -DLIBDIR='"$(libdir)"'
+AM_CPPFLAGS =			\
+	-I$(top_srcdir)		\
+	-I$(top_srcdir)/src	\
+	-DLIBDIR='"$(libdir)"'
 AM_CFLAGS =				\
 	$(CFLAGS)			\
 	$(WAYLAND_SERVER_CFLAGS)	\
@@ -57,6 +60,7 @@ wldbg_SOURCES =			\
 	wldbg.c			\
 	wldbg-private.h		\
 	passes.c		\
+	passes.h		\
 	sockets.c		\
 	sockets.h		\
 	print.c			\

@@ -2,7 +2,7 @@
 pass_libdir=$(libdir)/wldbg
 pass_lib_LTLIBRARIES = dump.la example.la
 
-AM_CPPFLAGS = -I$(top_builddir)/src
+AM_CPPFLAGS =  -I$(top_srcdir) -I$(top_srcdir)/src
 
 dump_la_LDFLAGS = -module -avoid-version
 dump_la_SOURCES = dump.c
