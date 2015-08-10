@@ -142,6 +142,17 @@ cmd_showonly(struct wldbg_interactive *wldbgi,
 	return cmd_create_filter(wldbgi, buf, 1);
 }
 
+void
+cmd_filter_help(int oneline)
+{
+	printf("Mange filters created by showonly and hide commands");
+	if (oneline)
+		return;
+
+	printf("\n\n"
+	       " :: filter delete|remove|d|r ID\n");
+}
+
 static void
 remove_filter(struct wldbg_interactive *wldbgi, char *buf)
 {
@@ -149,8 +160,15 @@ remove_filter(struct wldbg_interactive *wldbgi, char *buf)
 	int found = 0;
 	struct print_filter *pf, *tmp;
 
-	if (sscanf(buf, "%u", &id) != 1)
-		printf("Failed parsing filter's id\n");
+	if (!*buf || *buf == '\n') {
+		cmd_filter_help(0);
+		return;
+	}
+
+	if (sscanf(buf, "%u", &id) != 1) {
+		printf("Failed parsing filter's id '%s'\n", buf);
+		return;
+	}
 
 	wl_list_for_each_safe(pf, tmp, &wldbgi->print_filters, link) {
 		if (pf->id == id) {
@@ -168,17 +186,6 @@ remove_filter(struct wldbg_interactive *wldbgi, char *buf)
 		printf("Didn't find filter with id '%u'\n", id);
 }
 
-void
-cmd_filter_help(int oneline)
-{
-	printf("Mange filters created by showonly and hide commands");
-	if (oneline)
-		return;
-
-	printf("\n\n"
-	       " :: filter delete|remove|d|r ID\n");
-}
-
 int
 cmd_filter(struct wldbg_interactive *wldbgi,
 	   struct wldbg_message *message, char *buf)
@@ -188,9 +195,10 @@ cmd_filter(struct wldbg_interactive *wldbgi,
 	if (strncmp(buf, "delete", 6) == 0
 	    || strncmp(buf, "remove", 6) == 0)
 	    remove_filter(wldbgi, skip_ws_to_newline(buf + 6));
-
-	if ((*buf == 'd' || *buf == 'r') && isspace(buf[1]))
+	else if ((*buf == 'd' || *buf == 'r') && isspace(buf[1]))
 	    remove_filter(wldbgi, skip_ws_to_newline(buf + 1));
+	else
+		cmd_filter_help(0);
 
 	return CMD_CONTINUE_QUERY;
 }
