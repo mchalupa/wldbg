@@ -133,7 +133,7 @@ cmd_help_help(int oneline)
 const struct command commands[] = {
 	{"break", "b", cmd_break, cmd_break_help},
 	{"continue", "c", cmd_continue, NULL},
-	{"edit", "e", cmd_edit, NULL},
+	{"edit", "e", cmd_edit, cmd_edit_help},
 	{"help", NULL,  cmd_help, cmd_help_help},
 	{"hide", "h",  cmd_hide, cmd_hide_help},
 	{"info", "i", cmd_info, cmd_info_help},

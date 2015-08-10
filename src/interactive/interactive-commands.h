@@ -64,6 +64,9 @@ cmd_pass(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 int
 cmd_edit(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 
+void
+cmd_edit_help(int);
+
 /* defined in send.c */
 int
 cmd_send(struct wldbg_interactive *wldbgi, struct message *message, char *buf);

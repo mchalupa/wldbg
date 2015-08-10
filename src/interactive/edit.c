@@ -110,6 +110,18 @@ destroy_message_tmpfile(char *file)
 	free(file);
 }
 
+void
+cmd_edit_help(int oneline)
+{
+	printf("Edit message");
+	if (oneline)
+		return;
+
+	printf(" :: edit [editor]\n\n"
+	       "Edit message wldbg stopped on. If no editor is given,\n"
+	       "wldbg looks for one in EDITOR env. variable.\n");
+}
+
 int
 cmd_edit(struct wldbg_interactive *wldbgi,
 	 struct message *message,
@@ -128,6 +140,8 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	} else
 		editor = getenv("$EDITOR");
 
+	/* XXX add inline editing (just dump the message to command line
+	 * and edit it in place */
 	if (!editor) {
 		fprintf(stderr, "No edtor to use. Use 'edit editor_name' or "
 				"set $EDITOR environment variable\n");
