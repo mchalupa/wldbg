@@ -71,4 +71,7 @@ cmd_edit_help(int);
 int
 cmd_send(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
 
+void
+cmd_send_help(int oneline);
+
 #endif /* _WLDBG_INTERACTIVE_COMMANDS_H_ */
