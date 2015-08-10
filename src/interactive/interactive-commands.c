@@ -44,6 +44,14 @@ terminate_client(struct wldbg_connection *conn)
 	waitpid(pid, NULL, 0);
 }
 
+static void
+cmd_quit_help(int oneline)
+{
+	if (oneline)
+		printf("Quit wldbg");
+
+}
+
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
 		struct message *message,
@@ -81,6 +89,14 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 	return CMD_END_QUERY;
 }
 
+static void
+cmd_next_help(int oneline)
+{
+	if (oneline)
+		printf("Wait for next message and stop on it");
+
+}
+
 static int
 cmd_next(struct wldbg_interactive *wldbgi,
 		struct message *message,
@@ -96,6 +112,14 @@ cmd_next(struct wldbg_interactive *wldbgi,
 
 	wldbgi->stop = 1;
 	return CMD_END_QUERY;
+}
+
+static void
+cmd_continue_help(int oneline)
+{
+	if (oneline)
+		printf("Continue running program");
+
 }
 
 static int
@@ -132,16 +156,16 @@ cmd_help_help(int oneline)
  * binary search in this array */
 const struct command commands[] = {
 	{"break", "b", cmd_break, cmd_break_help},
-	{"continue", "c", cmd_continue, NULL},
+	{"continue", "c", cmd_continue, cmd_continue_help},
 	{"edit", "e", cmd_edit, cmd_edit_help},
 	{"help", NULL,  cmd_help, cmd_help_help},
 	{"hide", "h",  cmd_hide, cmd_hide_help},
 	{"info", "i", cmd_info, cmd_info_help},
-	{"next", "n",  cmd_next, NULL},
+	{"next", "n",  cmd_next, cmd_next_help},
 	{"pass", NULL, cmd_pass, cmd_pass_help},
 	{"send", "s", cmd_send, cmd_send_help},
 	{"showonly", "so", cmd_showonly, cmd_showonly_help},
-	{"quit", "q", cmd_quit, NULL},
+	{"quit", "q", cmd_quit, cmd_quit_help},
 
 };
 
