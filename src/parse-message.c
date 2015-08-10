@@ -66,8 +66,7 @@ int wldbg_resolve_message(struct message *msg,
 	if (!msg->connection->resolved_objects)
 		return 0;
 
-	interface = resolved_objects_get(msg->connection->resolved_objects,
-					 out->base.id);
+	interface = wldbg_message_get_object(msg, out->base.id);
 	/* if it is unknown interface to resolve or it is
 	 * "unknown" interface of FREE entry, return NULL */
 	if (!interface
@@ -237,7 +236,6 @@ wldbg_resolved_message_get_name(struct wldbg_resolved_message *msg,
 size_t
 wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)
 {
-	struct resolved_objects *ro = message->connection->resolved_objects;
 	struct wldbg_parsed_message pm;
 	const struct wl_interface *interface;
 	const struct wl_message *wl_message = NULL;
@@ -245,7 +243,7 @@ wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)
 	size_t written;
 
 	wldbg_parse_message(message, &pm);
-	interface = resolved_objects_get(ro, pm.id);
+	interface = wldbg_message_get_object(message, pm.id);
 
 	if (interface) {
 		if (message->from == SERVER)

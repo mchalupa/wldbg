@@ -48,4 +48,17 @@ struct message {
 	struct wldbg_connection *connection;
 };
 
+const struct wl_interface *
+wldbg_message_get_object(struct message *msg, uint32_t id);
+
+const struct wl_interface *
+wldbg_message_get_interface(struct message *msg, const char *name);
+
+void
+wldbg_message_objects_iterate(struct message *message,
+			      void (*func)(uint32_t id,
+			                   const struct wl_interface *intf,
+			                   void *data),
+			      void *data);
+
 #endif /* _WLDBG_H_ */

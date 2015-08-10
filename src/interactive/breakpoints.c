@@ -85,7 +85,6 @@ break_on_name(struct message *msg, struct breakpoint *b)
 	uint32_t id, opcode, bopcode;
 	const struct wl_interface *intf;
 	const struct wl_message *bmessage, *wl_message = NULL;
-	struct resolved_objects *ro = msg->connection->resolved_objects;
 
 	id = p[0];
 	opcode = p[1] & 0xffff;
@@ -97,7 +96,7 @@ break_on_name(struct message *msg, struct breakpoint *b)
 	if (bopcode != opcode)
 		return 0;
 
-	intf = resolved_objects_get(ro, id);
+	intf = wldbg_message_get_object(msg, id);
 	if (!intf)
 		return 0;
 
@@ -150,7 +149,7 @@ breakpoint_re_data_free(void *data)
 }
 
 static struct breakpoint *
-create_breakpoint(struct resolved_objects *ro, char *buf)
+create_breakpoint(struct message *message, char *buf)
 {
 	int id, i, opcode;
 	struct breakpoint *b;
@@ -218,7 +217,7 @@ create_breakpoint(struct resolved_objects *ro, char *buf)
 		if ((at = strchr(buf, '@'))) {
 			/* split the string on '@' */
 			*at = 0;
-			intf = resolved_objects_get_interface(ro, buf);
+			intf = wldbg_message_get_interface(message, buf);
 			if (!intf) {
 				printf("Wldbg does not know the interface. "
 				       "It has not been probably resolved yet\n");
@@ -307,7 +306,6 @@ cmd_break(struct wldbg_interactive *wldbgi,
 	  char *buf)
 {
 	struct breakpoint *b;
-	struct resolved_objects *ro = message->connection->resolved_objects;
 
 	(void) message;
 
@@ -319,7 +317,7 @@ cmd_break(struct wldbg_interactive *wldbgi,
 		return CMD_CONTINUE_QUERY;
 	}
 
-	b = create_breakpoint(ro, buf);
+	b = create_breakpoint(message, buf);
 	if (b) {
 		wl_list_insert(wldbgi->breakpoints.next, &b->link);
 		printf("Created breakpoint %u: %s\n", b->id, b->description);

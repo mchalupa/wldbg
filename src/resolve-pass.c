@@ -346,7 +346,7 @@ resolve_in(void *user_data, struct message *message)
 	id = data[0];
 	opcode = data[1] & 0xffff;
 
-	intf = resolved_objects_get(ro, id);
+	intf = wldbg_message_get_object(message, id);
 	if (intf) {
 		if (intf == &unknown_interface || intf == &free_entry)
 			return PASS_NEXT;
@@ -393,7 +393,7 @@ resolve_out(void *user_data, struct message *message)
 	id = data[0];
 	opcode = data[1] & 0xffff;
 
-	intf = resolved_objects_get(ro, id);
+	intf = wldbg_message_get_object(message, id);
 	if (intf) {
 		/* unknown interface */
 		if (intf == &unknown_interface || intf == &free_entry)

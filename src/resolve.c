@@ -39,7 +39,7 @@
 #include "wldbg-private.h"
 #include "wldbg-ids-map.h"
 
-const struct wl_interface *
+static const struct wl_interface *
 resolved_objects_get(struct resolved_objects *ro, uint32_t id)
 {
 	if (id >= WL_SERVER_ID_START)
@@ -50,10 +50,21 @@ resolved_objects_get(struct resolved_objects *ro, uint32_t id)
 }
 
 const struct wl_interface *
-resolved_objects_get_interface(struct resolved_objects *ro, const char *name)
+wldbg_message_get_object(struct message *msg, uint32_t id)
+{
+	struct resolved_objects *ro = msg->connection->resolved_objects;
+	if (!ro)
+		return NULL;
+
+	return resolved_objects_get(ro, id);
+}
+
+const struct wl_interface *
+wldbg_message_get_interface(struct message *msg, const char *name)
 {
 	unsigned int i;
 	const struct wl_interface *intf;
+	struct resolved_objects *ro = msg->connection->resolved_objects;
 
 	for (i = 0; i < ro->objects.client_objects.count; ++i) {
 		intf = wldbg_ids_map_get(&ro->objects.client_objects, i);
@@ -71,7 +82,7 @@ resolved_objects_get_interface(struct resolved_objects *ro, const char *name)
 	return NULL;
 }
 
-void
+static void
 resolved_objects_iterate(struct resolved_objects *ro,
 			 void (*func)(uint32_t id,
 				      const struct wl_interface *intf,
@@ -93,3 +104,16 @@ resolved_objects_iterate(struct resolved_objects *ro,
 	}
 }
 
+void
+wldbg_message_objects_iterate(struct message *message,
+			      void (*func)(uint32_t id,
+			                   const struct wl_interface *intf,
+			                   void *data),
+			      void *data)
+{
+	struct resolved_objects *ro = message->connection->resolved_objects;
+	if (!ro)
+		return;
+
+	resolved_objects_iterate(ro, func, data);
+}

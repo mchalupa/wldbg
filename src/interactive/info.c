@@ -43,8 +43,7 @@ print_object(uint32_t id, const struct wl_interface *intf, void *data)
 static void
 print_objects(struct message *message)
 {
-	resolved_objects_iterate(message->connection->resolved_objects,
-				 print_object, NULL);
+	wldbg_message_objects_iterate(message, print_object, NULL);
 }
 
 static void
