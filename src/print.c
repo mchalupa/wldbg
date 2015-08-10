@@ -31,6 +31,7 @@
 #include <regex.h>
 
 #include <linux/input.h>
+#include <wayland-client-protocol.h>
 
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
@@ -40,6 +41,7 @@
 #include "print.h"
 #include "resolve.h"
 #include "util.h"
+
 
 /* return 1 if some of filters matches - thus hide the message */
 static int
@@ -394,6 +396,39 @@ print_wl_keyboard_message(const struct wl_interface *wl_interface,
 	return 0;
 }
 
+static int
+print_wl_seat_message(const struct wl_interface *wl_interface,
+		      const struct wl_message *wl_message, uint32_t p)
+{
+	int n = 0;
+	if (strcmp(wl_interface->name, "wl_seat") != 0)
+		return 0;
+
+	if (strcmp(wl_message->name, "capabilities") == 0) {
+		if (p & WL_SEAT_CAPABILITY_KEYBOARD) {
+			printf("keyboard");
+			n = 1;
+		}
+
+		if (p & WL_SEAT_CAPABILITY_POINTER) {
+			printf("%spointer", n ? " | " : "");
+			n = 1;
+		}
+
+		if (p & WL_SEAT_CAPABILITY_TOUCH) {
+			printf("%stouch", n ? " | " : "");
+			n = 1;
+		}
+
+		if (!n)
+			printf("none");
+
+		return 1;
+	}
+
+	return 0;
+}
+
 void
 print_array(uint32_t *p, size_t len, size_t howmany)
 {
@@ -505,9 +540,15 @@ print_bare_message(struct message *message, struct wl_list *filters)
 
 		switch (signature[i]) {
 		case 'u':
-			if (!print_wl_keyboard_message(interface,
-						       wl_message, pos, p[pos]))
-				printf("%u", p[pos]);
+			if (print_wl_keyboard_message(interface,
+						      wl_message, pos, p[pos]))
+				break;
+
+			if (print_wl_seat_message(interface,
+						  wl_message, p[pos]))
+				break;
+
+			printf("%u", p[pos]);
 			break;
 		case 'i':
 			printf("%d", p[pos]);
