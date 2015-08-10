@@ -35,7 +35,7 @@
 #include "wldbg-parse-message.h"
 
 int
-wldbg_parse_message(struct message *msg, struct wldbg_parsed_message *out)
+wldbg_parse_message(struct wldbg_message *msg, struct wldbg_parsed_message *out)
 {
 	uint32_t *p = msg->data;
 
@@ -50,7 +50,7 @@ wldbg_parse_message(struct message *msg, struct wldbg_parsed_message *out)
 	return 1;
 }
 
-int wldbg_resolve_message(struct message *msg,
+int wldbg_resolve_message(struct wldbg_message *msg,
 			  struct wldbg_resolved_message *out)
 {
 	const struct wl_interface *interface;
@@ -234,7 +234,7 @@ wldbg_resolved_message_get_name(struct wldbg_resolved_message *msg,
 }
 
 size_t
-wldbg_get_message_name(struct message *message, char *buf, size_t maxsize)
+wldbg_get_message_name(struct wldbg_message *message, char *buf, size_t maxsize)
 {
 	struct wldbg_parsed_message pm;
 	const struct wl_interface *interface;

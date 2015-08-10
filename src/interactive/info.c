@@ -41,7 +41,7 @@ print_object(uint32_t id, const struct wl_interface *intf, void *data)
 }
 
 static void
-print_objects(struct message *message)
+print_objects(struct wldbg_message *message)
 {
 	wldbg_message_objects_iterate(message, print_object, NULL);
 }
@@ -163,7 +163,7 @@ cmd_info_help(int oneline)
 
 int
 cmd_info(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf)
+	 struct wldbg_message *message, char *buf)
 {
 
 #define MATCH(buf, str) (strncmp((buf), (str "\n"), (sizeof((str)) + 1)) == 0)

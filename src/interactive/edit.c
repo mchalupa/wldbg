@@ -37,7 +37,7 @@
 #include "print.h"
 
 static char *
-store_message_to_tmpfile(struct message *message)
+store_message_to_tmpfile(struct wldbg_message *message)
 {
 	int fd, ret;
 	/* I don't suppose anybody would attack this program,
@@ -75,7 +75,7 @@ store_message_to_tmpfile(struct message *message)
 }
 
 static int
-read_message_from_tmpfile(char *file, struct message *message)
+read_message_from_tmpfile(char *file, struct wldbg_message *message)
 {
 	int fd, ret;
 	assert(file);
@@ -124,7 +124,7 @@ cmd_edit_help(int oneline)
 
 int
 cmd_edit(struct wldbg_interactive *wldbgi,
-	 struct message *message,
+	 struct wldbg_message *message,
 	 char *buf)
 {
 	const char *editor;

@@ -310,7 +310,7 @@ wldbg_dispatch(struct wldbg *wldbg)
 }
 
 static void
-run_passes(struct message *message)
+run_passes(struct wldbg_message *message)
 {
 	struct pass *pass;
 	struct wldbg *wldbg = message->connection->wldbg;
@@ -334,7 +334,7 @@ run_passes(struct message *message)
 
 static int
 process_one_by_one(struct wl_connection *write_conn,
-		   struct message *message)
+		   struct wldbg_message *message)
 {
 	int n = 0;
 	size_t rest = message->size;
@@ -380,7 +380,7 @@ process_data(struct wldbg_connection *conn,
 	int ret = 0;
 	struct wl_connection *write_wl_conn;
 	struct wldbg *wldbg = conn->wldbg;
-	struct message *message = &wldbg->message;
+	struct wldbg_message *message = &wldbg->message;
 	char *buffer = wldbg->buffer;
 
 	/* reset the message */

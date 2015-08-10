@@ -48,7 +48,7 @@ struct example_data {
 };
 
 static int
-example_in(void *user_data, struct message *message)
+example_in(void *user_data, struct wldbg_message *message)
 {
 	struct example_data *data = user_data;
 
@@ -63,7 +63,7 @@ example_in(void *user_data, struct message *message)
 }
 
 static int
-example_out(void *user_data, struct message *message)
+example_out(void *user_data, struct wldbg_message *message)
 {
 	struct example_data *data = user_data;
 

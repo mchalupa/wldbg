@@ -50,7 +50,7 @@ resolved_objects_get(struct resolved_objects *ro, uint32_t id)
 }
 
 const struct wl_interface *
-wldbg_message_get_object(struct message *msg, uint32_t id)
+wldbg_message_get_object(struct wldbg_message *msg, uint32_t id)
 {
 	struct resolved_objects *ro = msg->connection->resolved_objects;
 	if (!ro)
@@ -60,7 +60,7 @@ wldbg_message_get_object(struct message *msg, uint32_t id)
 }
 
 const struct wl_interface *
-wldbg_message_get_interface(struct message *msg, const char *name)
+wldbg_message_get_interface(struct wldbg_message *msg, const char *name)
 {
 	unsigned int i;
 	const struct wl_interface *intf;
@@ -105,7 +105,7 @@ resolved_objects_iterate(struct resolved_objects *ro,
 }
 
 void
-wldbg_message_objects_iterate(struct message *message,
+wldbg_message_objects_iterate(struct wldbg_message *message,
 			      void (*func)(uint32_t id,
 			                   const struct wl_interface *intf,
 			                   void *data),

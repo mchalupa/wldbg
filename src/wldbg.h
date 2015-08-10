@@ -31,7 +31,7 @@
 struct wldbg;
 struct wldbg_connection;
 
-struct message {
+struct wldbg_message {
 	/* raw data in message */
 	void *data;
 
@@ -49,13 +49,13 @@ struct message {
 };
 
 const struct wl_interface *
-wldbg_message_get_object(struct message *msg, uint32_t id);
+wldbg_message_get_object(struct wldbg_message *msg, uint32_t id);
 
 const struct wl_interface *
-wldbg_message_get_interface(struct message *msg, const char *name);
+wldbg_message_get_interface(struct wldbg_message *msg, const char *name);
 
 void
-wldbg_message_objects_iterate(struct message *message,
+wldbg_message_objects_iterate(struct wldbg_message *message,
 			      void (*func)(uint32_t id,
 			                   const struct wl_interface *intf,
 			                   void *data),

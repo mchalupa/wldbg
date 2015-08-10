@@ -32,7 +32,7 @@
 
 struct wldbg;
 struct wldbg_connection;
-struct message;
+struct wldbg_message;
 
 /* defined in wldbg.c */
 void
@@ -41,7 +41,7 @@ wldbg_foreach_connection(struct wldbg *wldbg,
 
 /* defined in print.c */
 size_t
-wldbg_get_message_name(struct message *message, char *buf, size_t maxsize);
+wldbg_get_message_name(struct wldbg_message *message, char *buf, size_t maxsize);
 
 /* defined in util.c */
 int

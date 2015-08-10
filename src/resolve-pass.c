@@ -333,7 +333,7 @@ get_new_ids(struct resolved_objects *ro, uint32_t *data,
 }
 
 static int
-resolve_in(void *user_data, struct message *message)
+resolve_in(void *user_data, struct wldbg_message *message)
 {
 	uint32_t id, opcode;
 	uint32_t *data = message->data;
@@ -379,7 +379,7 @@ resolve_in(void *user_data, struct message *message)
 }
 
 static int
-resolve_out(void *user_data, struct message *message)
+resolve_out(void *user_data, struct wldbg_message *message)
 {
 	uint32_t id, opcode;
 	uint32_t *data = message->data;

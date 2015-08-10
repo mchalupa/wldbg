@@ -45,7 +45,7 @@
 
 /* return 1 if some of filters matches - thus hide the message */
 static int
-filter_match(struct wl_list *filters, struct message *message)
+filter_match(struct wl_list *filters, struct wldbg_message *message)
 {
 	struct print_filter *pf;
 	char buf[128];
@@ -456,7 +456,7 @@ print_array(uint32_t *p, size_t len, size_t howmany)
 
 /* roughly based on wl_closure_print from connection.c */
 void
-print_bare_message(struct message *message, struct wl_list *filters)
+print_bare_message(struct wldbg_message *message, struct wl_list *filters)
 {
 	int i, is_buggy = 0;
 	uint32_t pos, len, *p;
@@ -602,7 +602,8 @@ print_bare_message(struct message *message, struct wl_list *filters)
 }
 
 void
-wldbgi_print_message(struct wldbg_interactive *wldbgi, struct message *message, int force)
+wldbgi_print_message(struct wldbg_interactive *wldbgi,
+		     struct wldbg_message *message, int force)
 {
 	if (force)
 		print_bare_message(message, NULL);

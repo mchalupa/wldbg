@@ -56,14 +56,14 @@ cmd_send_help(int oneline)
 
 int
 cmd_send(struct wldbg_interactive *wldbgi,
-		struct message *message,
-		char *buf)
+	 struct wldbg_message *message,
+	 char *buf)
 {
 	struct wl_connection *conn;
 	uint32_t buffer[1024]; /* size of wl_connection buffer */
 	uint32_t size, opcode;
 	int where, interactive, i = 0;
-	struct message send_message;
+	struct wldbg_message send_message;
 	char *endptr;
 	long val;
 

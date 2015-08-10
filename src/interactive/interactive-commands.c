@@ -54,7 +54,7 @@ cmd_quit_help(int oneline)
 
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
-		struct message *message,
+		struct wldbg_message *message,
 		char *buf)
 {
 	int chr;
@@ -99,7 +99,7 @@ cmd_next_help(int oneline)
 
 static int
 cmd_next(struct wldbg_interactive *wldbgi,
-		struct message *message,
+		struct wldbg_message *message,
 		char *buf)
 {
 	(void) message;
@@ -124,7 +124,7 @@ cmd_continue_help(int oneline)
 
 static int
 cmd_continue(struct wldbg_interactive *wldbgi,
-		struct message *message,
+		struct wldbg_message *message,
 		char *buf)
 {
 	(void) message;
@@ -140,7 +140,7 @@ cmd_continue(struct wldbg_interactive *wldbgi,
 
 static int
 cmd_help(struct wldbg_interactive *wldbgi,
-	 struct message *message, char *buf);
+	 struct wldbg_message *message, char *buf);
 
 static void
 cmd_help_help(int oneline)
@@ -203,7 +203,7 @@ is_the_cmd(char *buf, const struct command *cmd)
 
 static int
 cmd_help(struct wldbg_interactive *wldbgi,
-	 struct message *message, char *buf)
+	 struct wldbg_message *message, char *buf)
 {
 	size_t i;
 	int all = 0, found = 0;
@@ -285,7 +285,7 @@ next_word(char *str)
 
 int
 run_command(char *buf,
-		struct wldbg_interactive *wldbgi, struct message *message)
+	    struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 {
 	size_t n;
 

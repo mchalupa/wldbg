@@ -99,7 +99,7 @@ cmd_hide_help(int oneline)
 
 int
 cmd_hide(struct wldbg_interactive *wldbgi,
-	 struct message *message,
+	 struct wldbg_message *message,
 	 char *buf)
 {
 	(void) message;
@@ -127,7 +127,7 @@ cmd_showonly_help(int oneline)
 
 int
 cmd_showonly(struct wldbg_interactive *wldbgi,
-	      struct message *message,
+	      struct wldbg_message *message,
 	      char *buf)
 {
 	(void) message;
@@ -181,7 +181,7 @@ cmd_filter_help(int oneline)
 
 int
 cmd_filter(struct wldbg_interactive *wldbgi,
-	   struct message *message, char *buf)
+	   struct wldbg_message *message, char *buf)
 {
 	(void) message;
 

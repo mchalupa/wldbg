@@ -101,7 +101,7 @@ list_init(struct wldbg *wldbg,
 }
 
 static int
-list_in(void *user_data, struct message *message)
+list_in(void *user_data, struct wldbg_message *message)
 {
 	(void) user_data;
 	(void) message;
@@ -110,7 +110,7 @@ list_in(void *user_data, struct message *message)
 }
 
 static int
-list_out(void *user_data, struct message *message)
+list_out(void *user_data, struct wldbg_message *message)
 {
 	(void) user_data;
 	(void) message;

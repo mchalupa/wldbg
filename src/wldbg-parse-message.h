@@ -29,7 +29,7 @@
 #include <stdlib.h> /* size_t */
 #include <stdint.h>
 
-struct message;
+struct wldbg_message;
 struct wl_message;
 struct wl_interface;
 struct wldbg_connection;
@@ -66,8 +66,8 @@ struct wldbg_resolved_message {
     uint32_t *data_position;
 };
 
-int wldbg_parse_message(struct message *msg, struct wldbg_parsed_message *out);
-int wldbg_resolve_message(struct message *msg,
+int wldbg_parse_message(struct wldbg_message *msg, struct wldbg_parsed_message *out);
+int wldbg_resolve_message(struct wldbg_message *msg,
 			  struct wldbg_resolved_message *out);
 char *
 wldbg_resolved_message_get_name(struct wldbg_resolved_message *msg,
@@ -80,6 +80,6 @@ void
 wldbg_resolved_message_reset_iterator(struct wldbg_resolved_message *msg);
 
 size_t
-wldbg_get_message_name(struct message *message, char *buff, size_t maxsize);
+wldbg_get_message_name(struct wldbg_message *message, char *buff, size_t maxsize);
 
 #endif /*  _WLDBG_PARSED_MESSAGE_H_ */

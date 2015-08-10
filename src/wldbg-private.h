@@ -92,7 +92,7 @@ struct wldbg {
 	int epoll_fd;
 	int signals_fd;
 
-	struct message message;
+	struct wldbg_message message;
 	char *buffer;
 
 	sigset_t handled_signals;

@@ -28,20 +28,20 @@
 
 /* defined in breakpoints */
 int
-cmd_break(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+cmd_break(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
 
 void
 cmd_break_help(int oneline);
 
 /* defined in filters.c */
 int
-cmd_hide(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+cmd_hide(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
 
 void
 cmd_hide_help(int oneline);
 
 int
-cmd_showonly(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+cmd_showonly(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
 
 void
 cmd_showonly_help(int oneline);
@@ -51,11 +51,11 @@ cmd_filter_help(int oneline);
 
 int
 cmd_filter(struct wldbg_interactive *wldbgi,
-	   struct message *message, char *buf);
+	   struct wldbg_message *message, char *buf);
 
 /* defined in info.c */
 int
-cmd_info(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+cmd_info(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
 
 void
 cmd_info_help(int oneline);
@@ -65,18 +65,18 @@ void
 cmd_pass_help(int oneline);
 
 int
-cmd_pass(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+cmd_pass(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
 
 /* defined in edit.c */
 int
-cmd_edit(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+cmd_edit(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
 
 void
 cmd_edit_help(int);
 
 /* defined in send.c */
 int
-cmd_send(struct wldbg_interactive *wldbgi, struct message *message, char *buf);
+cmd_send(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
 
 void
 cmd_send_help(int oneline);

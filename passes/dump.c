@@ -58,7 +58,7 @@ struct dump {
 };
 
 static void
-dump_to_file(struct message *message, struct dump *dump)
+dump_to_file(struct wldbg_message *message, struct dump *dump)
 {
 	if (write(dump->file_fd, message->data, message->size)
 		!= (ssize_t) message->size) {
@@ -67,7 +67,7 @@ dump_to_file(struct message *message, struct dump *dump)
 }
 
 static void
-dump_message(struct message *message, struct dump *dump)
+dump_message(struct wldbg_message *message, struct dump *dump)
 {
 	uint32_t i;
 	uint32_t *data = message->data;
@@ -115,7 +115,7 @@ dump_message(struct message *message, struct dump *dump)
 }
 
 static int
-dump_in(void *user_data, struct message *message)
+dump_in(void *user_data, struct wldbg_message *message)
 {
 	struct dump *dump = user_data;
 
@@ -137,7 +137,7 @@ dump_in(void *user_data, struct message *message)
 }
 
 static int
-dump_out(void *user_data, struct message *message)
+dump_out(void *user_data, struct wldbg_message *message)
 {
 	struct dump *dump = user_data;
 

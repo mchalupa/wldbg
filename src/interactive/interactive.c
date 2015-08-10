@@ -45,13 +45,13 @@
 /* defined in interactive-commands.c */
 int
 cmd_quit(struct wldbg_interactive *wldbgi,
-		struct message *message, char *buf);
+		struct wldbg_message *message, char *buf);
 
 void free_breakpoint(struct breakpoint *);
 
 #define INPUT_BUFFER_SIZE 512
 static void
-query_user(struct wldbg_interactive *wldbgi, struct message *message)
+query_user(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 {
 	int ret;
 	char buf[INPUT_BUFFER_SIZE];
@@ -99,7 +99,7 @@ query_user(struct wldbg_interactive *wldbgi, struct message *message)
 }
 
 static int
-process_message(struct wldbg_interactive *wldbgi, struct message *message)
+process_message(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 {
 	/* print message's description
 	 * This is default behaviour. XXX add possibility to
@@ -122,7 +122,7 @@ process_message(struct wldbg_interactive *wldbgi, struct message *message)
 }
 
 static int
-process_interactive(void *user_data, struct message *message)
+process_interactive(void *user_data, struct wldbg_message *message)
 {
 	struct wldbg_interactive *wldbgi = user_data;
 	struct breakpoint *b;

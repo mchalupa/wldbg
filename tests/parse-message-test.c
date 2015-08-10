@@ -9,7 +9,7 @@ TEST(parse_base_message)
 {
 	int ret;
 	uint32_t data[] = { 123, 0x0040feef, 0xd00d, 0xdeed };
-	struct message msg = {
+	struct wldbg_message msg = {
 		.data = data
 	};
 
@@ -27,7 +27,7 @@ TEST(parse_base_message_fail)
 {
 	int ret;
 	uint32_t data[] = { 123, 0x0002feef, 0xd00d, 0xdeed };
-	struct message msg = {
+	struct wldbg_message msg = {
 		.data = data
 	};
 

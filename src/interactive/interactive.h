@@ -71,7 +71,7 @@ struct command {
 	const char *shortcut;
 	/* function to be called for the command. The last argument
 	 * is the rest of user's input */
-	int (*func)(struct wldbg_interactive *, struct message *, char *);
+	int (*func)(struct wldbg_interactive *, struct wldbg_message *, char *);
 	/* this function prints help for the command.
 	 * If argument is not zero, then print short, oneline description */
 	void (*help)(int oneline);
@@ -89,7 +89,7 @@ extern const struct command commands[];
 
 int
 run_command(char *buf,
-		struct wldbg_interactive *wldbgi, struct message *message);
+		struct wldbg_interactive *wldbgi, struct wldbg_message *message);
 
 
 struct breakpoint {
@@ -99,7 +99,7 @@ struct breakpoint {
 
 	/* this function returns true if wldbg should stop
 	 * on given message */
-	int (*applies)(struct message *, struct breakpoint *);
+	int (*applies)(struct wldbg_message *, struct breakpoint *);
 	void *data;
 	uint64_t small_data;
 	/* function to destroy data */

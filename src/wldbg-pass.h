@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 
-struct message;
+struct wldbg_message;
 struct wldbg;
 
 /* flags for passes */
@@ -44,10 +44,10 @@ struct wldbg_pass {
 	void (*destroy)(void *user_data);
 
 	/* function that will be run for messages from server */
-	int (*server_pass)(void *user_data, struct message *message);
+	int (*server_pass)(void *user_data, struct wldbg_message *message);
 
 	/* function that will be run for messages from client */
-	int (*client_pass)(void *user_data, struct message *message);
+	int (*client_pass)(void *user_data, struct wldbg_message *message);
 
 	/* print help for the pass */
 	void (*help)(void *user_data);

@@ -110,8 +110,8 @@ remove_pass(struct wldbg *wldbg, const char *name)
 
 int
 cmd_pass(struct wldbg_interactive *wldbgi,
-		struct message *message,
-		char *buf)
+	 struct wldbg_message *message,
+	 char *buf)
 {
 	(void) message;
 	(void) buf;

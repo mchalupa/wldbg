@@ -59,7 +59,7 @@ free_breakpoint(struct breakpoint *b)
 }
 
 static int
-break_on_side(struct message *msg, struct breakpoint *b)
+break_on_side(struct wldbg_message *msg, struct breakpoint *b)
 {
 	if (msg->from == b->small_data)
 		return 1;
@@ -68,7 +68,7 @@ break_on_side(struct message *msg, struct breakpoint *b)
 }
 
 static int
-break_on_id(struct message *msg, struct breakpoint *b)
+break_on_id(struct wldbg_message *msg, struct breakpoint *b)
 {
 	uint32_t *p = msg->data;
 
@@ -79,7 +79,7 @@ break_on_id(struct message *msg, struct breakpoint *b)
 }
 
 static int
-break_on_name(struct message *msg, struct breakpoint *b)
+break_on_name(struct wldbg_message *msg, struct breakpoint *b)
 {
 	uint32_t *p = msg->data;
 	uint32_t id, opcode, bopcode;
@@ -115,7 +115,7 @@ break_on_name(struct message *msg, struct breakpoint *b)
 }
 
 static int
-break_on_regex(struct message *msg, struct breakpoint *b)
+break_on_regex(struct wldbg_message *msg, struct breakpoint *b)
 {
 	char buf[128];
 	int ret;
@@ -149,7 +149,7 @@ breakpoint_re_data_free(void *data)
 }
 
 static struct breakpoint *
-create_breakpoint(struct message *message, char *buf)
+create_breakpoint(struct wldbg_message *message, char *buf)
 {
 	int id, i, opcode;
 	struct breakpoint *b;
@@ -302,7 +302,7 @@ delete_breakpoint(char *buf, struct wldbg_interactive *wldbgi)
 
 int
 cmd_break(struct wldbg_interactive *wldbgi,
-	  struct message *message,
+	  struct wldbg_message *message,
 	  char *buf)
 {
 	struct breakpoint *b;
