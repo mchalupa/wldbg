@@ -32,6 +32,7 @@
 #include "wldbg.h"
 #include "interactive.h"
 #include "print.h"
+#include "util.h"
 
 static struct print_filter *
 create_filter(const char *pattern)
@@ -82,15 +83,6 @@ cmd_create_filter(struct wldbg_interactive *wldbgi,
 	return CMD_CONTINUE_QUERY;
 }
 
-int
-cmd_hide(struct wldbg_interactive *wldbgi,
-	 struct message *message,
-	 char *buf)
-{
-	(void) message;
-	return cmd_create_filter(wldbgi, buf, 0);
-}
-
 void
 cmd_hide_help(int oneline)
 {
@@ -102,12 +94,19 @@ cmd_hide_help(int oneline)
 }
 
 int
-cmd_showonly(struct wldbg_interactive *wldbgi,
-	      struct message *message,
-	      char *buf)
+cmd_hide(struct wldbg_interactive *wldbgi,
+	 struct message *message,
+	 char *buf)
 {
 	(void) message;
-	return cmd_create_filter(wldbgi, buf, 1);
+
+	buf = skip_ws_to_newline(buf);
+	if (!*buf || *buf == '\n') {
+		cmd_hide_help(0);
+		return CMD_CONTINUE_QUERY;
+	}
+
+	return cmd_create_filter(wldbgi, buf, 0);
 }
 
 void
@@ -120,4 +119,21 @@ cmd_showonly_help(int oneline)
 		       "Filters are accumulated, so the message is shown if\n"
 		       "it matches any of showonly commands\n\n"
 		       "showonly REGEXP\n");
+}
+
+int
+cmd_showonly(struct wldbg_interactive *wldbgi,
+	      struct message *message,
+	      char *buf)
+{
+	(void) message;
+
+	buf = skip_ws_to_newline(buf);
+	if (!*buf || *buf == '\n') {
+		cmd_showonly_help(0);
+		return CMD_CONTINUE_QUERY;
+	}
+
+
+	return cmd_create_filter(wldbgi, buf, 1);
 }
