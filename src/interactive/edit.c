@@ -156,7 +156,7 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	do {
 		cmd = malloc(sizeof(char) * size);
 		if (!cmd) {
-			fprintf(stderr, "No memory");
+			fprintf(stderr, "No memory\n");
 			destroy_message_tmpfile(msg_file);
 			return CMD_CONTINUE_QUERY;
 		}
@@ -178,7 +178,7 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	/* XXX maybe use popen? */
 	if (system(cmd) != 0) {
 		fprintf(stderr, "Executing edit command has returned"
-				" non-zero value");
+				" non-zero value\n");
 	} else {
 		read_message_from_tmpfile(msg_file, message);
 	}
