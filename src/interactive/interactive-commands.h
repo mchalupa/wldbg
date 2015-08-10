@@ -46,6 +46,13 @@ cmd_showonly(struct wldbg_interactive *wldbgi, struct message *message, char *bu
 void
 cmd_showonly_help(int oneline);
 
+void
+cmd_filter_help(int oneline);
+
+int
+cmd_filter(struct wldbg_interactive *wldbgi,
+	   struct message *message, char *buf);
+
 /* defined in info.c */
 int
 cmd_info(struct wldbg_interactive *wldbgi, struct message *message, char *buf);

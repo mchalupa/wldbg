@@ -158,6 +158,7 @@ const struct command commands[] = {
 	{"break", "b", cmd_break, cmd_break_help},
 	{"continue", "c", cmd_continue, cmd_continue_help},
 	{"edit", "e", cmd_edit, cmd_edit_help},
+	{"filter", "f", cmd_filter, cmd_filter_help},
 	{"help", NULL,  cmd_help, cmd_help_help},
 	{"hide", "h",  cmd_hide, cmd_hide_help},
 	{"info", "i", cmd_info, cmd_info_help},

@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "wayland/wayland-private.h"
 
@@ -37,6 +38,7 @@
 static struct print_filter *
 create_filter(const char *pattern)
 {
+	static unsigned int pf_id;
 	struct print_filter *pf;
 
 	pf = malloc(sizeof *pf);
@@ -57,6 +59,8 @@ create_filter(const char *pattern)
 		free(pf);
 		return NULL;
 	}
+
+	pf->id = pf_id++;
 
 	return pf;
 }
@@ -136,4 +140,57 @@ cmd_showonly(struct wldbg_interactive *wldbgi,
 
 
 	return cmd_create_filter(wldbgi, buf, 1);
+}
+
+static void
+remove_filter(struct wldbg_interactive *wldbgi, char *buf)
+{
+	unsigned int id;
+	int found = 0;
+	struct print_filter *pf, *tmp;
+
+	if (sscanf(buf, "%u", &id) != 1)
+		printf("Failed parsing filter's id\n");
+
+	wl_list_for_each_safe(pf, tmp, &wldbgi->print_filters, link) {
+		if (pf->id == id) {
+			found = 1;
+			wl_list_remove(&pf->link);
+
+			regfree(&pf->regex);
+			free(pf->filter);
+			free(pf);
+			break;
+		}
+	}
+
+	if (!found)
+		printf("Didn't find filter with id '%u'\n", id);
+}
+
+void
+cmd_filter_help(int oneline)
+{
+	printf("Mange filters created by showonly and hide commands");
+	if (oneline)
+		return;
+
+	printf("\n\n"
+	       " :: filter delete|remove|d|r ID\n");
+}
+
+int
+cmd_filter(struct wldbg_interactive *wldbgi,
+	   struct message *message, char *buf)
+{
+	(void) message;
+
+	if (strncmp(buf, "delete", 6) == 0
+	    || strncmp(buf, "remove", 6) == 0)
+	    remove_filter(wldbgi, skip_ws_to_newline(buf + 6));
+
+	if ((*buf == 'd' || *buf == 'r') && isspace(buf[1]))
+	    remove_filter(wldbgi, skip_ws_to_newline(buf + 1));
+
+	return CMD_CONTINUE_QUERY;
 }

@@ -28,9 +28,10 @@
 #include "wayland/wayland-private.h"
 
 #include "interactive.h"
+#include "interactive-commands.h"
 #include "wldbg-private.h"
 #include "resolve.h"
-#include "interactive-commands.h"
+#include "print.h"
 
 static void
 print_object(uint32_t id, const struct wl_interface *intf, void *data)
@@ -58,6 +59,23 @@ print_breakpoints(struct wldbg_interactive *wldbgi)
 
 	wl_list_for_each(b, &wldbgi->breakpoints, link) {
 		printf("%u: break on %s\n", b->id, b->description);
+	}
+}
+
+static void
+print_filters(struct wldbg_interactive *wldbgi)
+{
+	struct print_filter *pf;
+
+	if (wl_list_empty(&wldbgi->print_filters)) {
+		printf("No filters\n");
+		return;
+	}
+
+	wl_list_for_each(pf, &wldbgi->print_filters, link) {
+		printf("%u: %s %s\n", pf->id,
+		       pf->show_only ? "show" : "hide",
+		       pf->filter);
 	}
 }
 
@@ -127,6 +145,23 @@ info_connections(struct wldbg_interactive *wldbgi)
 	}
 }
 
+void
+cmd_info_help(int oneline)
+{
+	if (oneline) {
+		printf("Show info about entities");
+		return;
+	}
+
+	printf("info WHAT (i WHAT)\n"
+	       "\n"
+	       "message (m)\n"
+	       "breakpoints (b)\n"
+	       "filters (f)\n"
+	       "process (proc, p)\n"
+	       "connection (conn, c)\n");
+}
+
 int
 cmd_info(struct wldbg_interactive *wldbgi,
 		struct message *message, char *buf)
@@ -144,6 +179,8 @@ cmd_info(struct wldbg_interactive *wldbgi,
 		print_objects(message);
 	} else if (MATCH(buf, "b") || MATCH(buf, "breakpoints")) {
 		print_breakpoints(wldbgi);
+	} else if (MATCH(buf, "f") || MATCH(buf, "filters")) {
+		print_filters(wldbgi);
 	} else if (MATCH(buf, "p") || MATCH(buf, "proc")
 		   || MATCH(buf, "process")) {
 		info_wldbg(wldbgi);
@@ -153,25 +190,10 @@ cmd_info(struct wldbg_interactive *wldbgi,
 		info_connections(wldbgi);
 	} else {
 		printf("Unknown arguments\n");
+		cmd_info_help(0);
 	}
 
 	return CMD_CONTINUE_QUERY;
 
 #undef MATCH
-}
-
-void
-cmd_info_help(int oneline)
-{
-	if (oneline) {
-		printf("Show info about entities");
-		return;
-	}
-
-	printf("info WHAT (i WHAT)\n"
-	       "\n"
-	       "message (m)\n"
-	       "breakpoints (b)\n"
-	       "process (proc, p)\n"
-	       "connection (conn, c)\n");
 }

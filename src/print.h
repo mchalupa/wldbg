@@ -44,6 +44,7 @@ struct print_filter {
 	regex_t regex;
 	struct wl_list link;
 	int show_only;
+    unsigned int id;
 };
 
 #endif /* _WLDBG_PRINT_H_ */
