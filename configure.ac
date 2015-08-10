@@ -1,7 +1,7 @@
 AC_PREREQ([2.64])
 
 m4_define([wldbg_major_version], [0])
-m4_define([wldbg_minor_version], [0])
+m4_define([wldbg_minor_version], [2])
 m4_define([wldbg_micro_version], [0])
 m4_define([wldbg_version],
           [wldbg_major_version.wldbg_minor_version.wldbg_micro_version])
