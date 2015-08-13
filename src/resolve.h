@@ -64,4 +64,7 @@ create_resolved_objects(void);
 void
 destroy_resolved_objects(struct resolved_objects *ro);
 
+extern const struct wl_interface free_entry;
+extern const struct wl_interface unknown_interface;
+
 #endif /* _WLDBG_RESOLVE_H_ */

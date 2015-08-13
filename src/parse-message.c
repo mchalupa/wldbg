@@ -50,6 +50,19 @@ wldbg_parse_message(struct wldbg_message *msg, struct wldbg_parsed_message *out)
 	return 1;
 }
 
+static inline int
+is_valid_interface(const struct wl_interface *intf)
+{
+	if (!intf)
+		return 0;
+
+	/* out special interfaces 'unknown' and 'free' */
+	if (intf->version < 0)
+		return 0;
+
+	return 1;
+}
+
 int wldbg_resolve_message(struct wldbg_message *msg,
 			  struct wldbg_resolved_message *out)
 {
@@ -68,10 +81,8 @@ int wldbg_resolve_message(struct wldbg_message *msg,
 
 	interface = wldbg_message_get_object(msg, out->base.id);
 	/* if it is unknown interface to resolve or it is
-	 * "unknown" interface of FREE entry, return NULL */
-	if (!interface
-		|| (msg->from == SERVER && !interface->event_count)
-		|| (msg->from == CLIENT && !interface->method_count))
+	 * "unknown" interface of FREE entry, bail out */
+	if (!is_valid_interface(interface))
 		return 0;
 
 	out->wl_interface = interface;
@@ -245,19 +256,23 @@ wldbg_get_message_name(struct wldbg_message *message, char *buf, size_t maxsize)
 	wldbg_parse_message(message, &pm);
 	interface = wldbg_message_get_object(message, pm.id);
 
-	if (interface) {
+	if (is_valid_interface(interface)) {
 		if (message->from == SERVER)
 			wl_message = &interface->events[pm.opcode];
 		else
 			wl_message = &interface->methods[pm.opcode];
-	}
 
-	/* put the interface name into the buffer */
-	ret = snprintf(buf, maxsize, "%s",
-		       interface ? interface->name : "unknown");
-	written = ret;
+		/* put the interface name into the buffer */
+		ret = snprintf(buf, maxsize, "%s", interface->name);
+	} else
+		ret = snprintf(buf, maxsize, "unknown");
+
+	if (ret < 0)
+		return 0;
 	if (ret >= (int) maxsize)
-		return written;
+		return ret;
+
+	written = ret;
 
 	/* create name of the message we got */
 	if (wl_message) {
@@ -268,6 +283,9 @@ wldbg_get_message_name(struct wldbg_message *message, char *buf, size_t maxsize)
 		ret = snprintf(buf + ret, maxsize - written,
 			       "@%d.%d", pm.id, pm.opcode);
 	}
+
+	if (ret < 0)
+		return written;
 
 	written += ret;
 

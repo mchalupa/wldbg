@@ -39,6 +39,18 @@
 #include "wldbg-private.h"
 #include "wldbg-ids-map.h"
 
+/* special interfaces that will be set to
+ * id's that has been deleted or are unknown.
+ * To differ them from others they have
+ * negative versions */
+const struct wl_interface free_entry = {
+	"FREE", -0x3, 0, NULL, 0, NULL
+};
+
+const struct wl_interface unknown_interface = {
+	"unknown", -0xf00, 0, NULL, 0, NULL
+};
+
 static const struct wl_interface *
 resolved_objects_get(struct resolved_objects *ro, uint32_t id)
 {

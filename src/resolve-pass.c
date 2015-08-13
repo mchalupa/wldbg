@@ -59,18 +59,6 @@ resolved_objects_put(struct resolved_objects *ro,
 /* this pass analyze the connection and translates object id
  * to human-readable names */
 
-/* special interfaces that will be set to
- * id's that has been deleted or are unknown */
-struct wl_interface free_entry = {
-	"FREE",
-	1, 0, NULL, 0, NULL
-};
-
-struct wl_interface unknown_interface = {
-	"unknown",
-	1, 0, NULL, 0, NULL
-};
-
 struct interface
 {
 	const struct wl_interface *interface;
