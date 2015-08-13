@@ -37,7 +37,11 @@ static void
 print_object(uint32_t id, const struct wl_interface *intf, void *data)
 {
 	(void) data;
-	printf("\t%u -> %s\n", id, intf ? intf->name : "NULL");
+	if (id >= WL_SERVER_ID_START)
+		printf("\tSRV %u -> %s\n",
+		       id - WL_SERVER_ID_START, intf ? intf->name : "NULL");
+	else
+		printf("\t%u -> %s\n", id, intf ? intf->name : "NULL");
 }
 
 static void
