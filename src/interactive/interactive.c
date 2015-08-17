@@ -35,10 +35,10 @@
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "wldbg-private.h"
+#include "wldbg-parse-message.h"
 #include "interactive.h"
 #include "resolve.h"
 #include "passes.h"
-#include "print.h"
 #include "getopt.h"
 #include "util.h"
 
@@ -104,7 +104,7 @@ process_message(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 	/* print message's description
 	 * This is default behaviour. XXX add possibility to
 	 * turn it off */
-	wldbgi_print_message(wldbgi, message, 0 /* force */);
+	wldbg_message_print(message);
 
 	if (wldbgi->stop) {
 		dbg("Stopped at message no. %lu from %s\n",

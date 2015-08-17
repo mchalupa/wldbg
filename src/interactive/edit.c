@@ -34,7 +34,6 @@
 
 #include "wldbg-private.h"
 #include "interactive.h"
-#include "print.h"
 
 static char *
 store_message_to_tmpfile(struct wldbg_message *message)

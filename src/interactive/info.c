@@ -31,7 +31,6 @@
 #include "interactive-commands.h"
 #include "wldbg-private.h"
 #include "resolve.h"
-#include "print.h"
 
 static void
 print_object(uint32_t id, const struct wl_interface *intf, void *data)

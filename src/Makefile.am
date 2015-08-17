@@ -38,6 +38,7 @@ libwldbg_la_SOURCES = 		\
 	wldbg-ids-map.h		\
 	resolve.h		\
 	resolve.c		\
+	print.c			\
 	parse-message.c
 
 include_HEADERS = 		\
@@ -63,8 +64,6 @@ wldbg_SOURCES =			\
 	passes.h		\
 	sockets.c		\
 	sockets.h		\
-	print.c			\
-	print.h			\
 	getopt.c		\
 	getopt.h		\
 	util.c			\

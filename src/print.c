@@ -39,7 +39,6 @@
 #include "interactive/interactive.h"
 #include "wldbg-private.h"
 #include "wldbg-parse-message.h"
-#include "print.h"
 #include "resolve.h"
 #include "util.h"
 
@@ -430,7 +429,7 @@ print_wl_seat_message(const struct wl_interface *wl_interface,
 	return 0;
 }
 
-void
+static void
 print_array(uint32_t *p, size_t len, size_t howmany)
 {
 	size_t j;
@@ -455,7 +454,7 @@ print_array(uint32_t *p, size_t len, size_t howmany)
 	}
 }
 
-void
+static void
 print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 	  uint32_t pos, struct wldbg_message *message)
 {
@@ -520,7 +519,7 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 }
 
 void
-print_bare_message(struct wldbg_message *message, struct wl_list *filters)
+wldbg_message_print(struct wldbg_message *message)
 {
 	int is_buggy = 0;
 	uint32_t pos;
@@ -595,12 +594,3 @@ print_bare_message(struct wldbg_message *message, struct wl_list *filters)
 	printf(")\n");
 }
 
-void
-wldbgi_print_message(struct wldbg_interactive *wldbgi,
-		     struct wldbg_message *message, int force)
-{
-	if (force)
-		print_bare_message(message, NULL);
-	else
-		print_bare_message(message, &wldbgi->print_filters);
-}

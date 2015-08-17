@@ -31,8 +31,8 @@
 #include "wayland/wayland-private.h"
 
 #include "wldbg-private.h"
+#include "wldbg-parse-message.h"
 #include "interactive.h"
-#include "print.h"
 #include "util.h"
 
 void
@@ -158,7 +158,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 	send_message.from = where == CLIENT ? SERVER : CLIENT;
 
 	printf("resolved as: ");
-	wldbgi_print_message(wldbgi, &send_message, 1 /* force */);
+	wldbg_message_print(&send_message);
 
 	printf("Send this message? [y/n] ");
 	if (getchar() != 'y')

@@ -67,11 +67,9 @@ struct wldbg_resolved_message {
 };
 
 int wldbg_parse_message(struct wldbg_message *msg, struct wldbg_parsed_message *out);
+
 int wldbg_resolve_message(struct wldbg_message *msg,
 			  struct wldbg_resolved_message *out);
-char *
-wldbg_resolved_message_get_name(struct wldbg_resolved_message *msg,
-				char *buff, size_t maxlen);
 
 struct wldbg_resolved_arg *
 wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg);
@@ -79,7 +77,14 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg);
 void
 wldbg_resolved_message_reset_iterator(struct wldbg_resolved_message *msg);
 
+char *
+wldbg_resolved_message_get_name(struct wldbg_resolved_message *msg,
+				char *buff, size_t maxlen);
+
 size_t
 wldbg_get_message_name(struct wldbg_message *message, char *buff, size_t maxsize);
+
+void
+wldbg_message_print(struct wldbg_message *message);
 
 #endif /*  _WLDBG_PARSED_MESSAGE_H_ */

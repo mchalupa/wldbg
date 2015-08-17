@@ -32,7 +32,6 @@
 
 #include "wldbg.h"
 #include "interactive.h"
-#include "print.h"
 #include "util.h"
 
 static struct print_filter *
