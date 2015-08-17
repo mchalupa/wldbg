@@ -120,6 +120,32 @@ signature_get_type(const char *sig, unsigned int *nullable)
 	return sig;
 }
 
+static uint32_t *
+get_data_ptr(struct wldbg_resolved_message *msg)
+{
+	/* If this is a string or array that is empty,
+	 * set it to NULL, otherwise make it pointing
+	 * to the data */
+	if ((*msg->signature_position == 'a'
+	     || *msg->signature_position == 's')) {
+		/* msg->data_position points to the size of the
+		 * array/string, so here we check if the size of
+		 * array/string is 0 */
+		if (*msg->data_position == 0)
+			return NULL;
+		else
+			/* skip size argument and point
+			 * to the data itself */
+			return msg->data_position + 1;
+	} else {
+		/* if this is not a string or array, just
+		 * point to the data */
+		return msg->data_position;
+	}
+
+	assert(0 && "Should not be reached");
+}
+
 static void
 initialize_iterator(struct wldbg_resolved_message *msg)
 {
@@ -130,19 +156,7 @@ initialize_iterator(struct wldbg_resolved_message *msg)
 	msg->data_position = msg->base.data;
 
 	msg->cur_arg.type = *sig;
-	/* set pointer to data. If this is string or array that
-	 * is NULL, set it to NULL, otherwise make it pointing
-	 * to the data */
-	if ((*sig == 'a' || *sig == 's')) {
-		if (*msg->data_position == 0)
-			msg->cur_arg.data = NULL;
-		else
-			/* skip size argument and point
-			 * to data itself */
-			msg->cur_arg.data = msg->base.data + 1;
-	} else {
-		msg->cur_arg.data = msg->base.data;
-	}
+	msg->cur_arg.data = get_data_ptr(msg);
 
 	assert(!*sig || *sig == 'a' || *sig == 's' || msg->cur_arg.data);
 }
@@ -216,19 +230,9 @@ wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg)
 		fprintf(stderr, "Warning: unhandled type: %d (%c)\n", type, type);
 	}
 
-	/* ok, we now point to the current argument.
-	 * Check if it is string or array and set data */
-	type = msg->cur_arg.type;
-	if ((type == 'a' || type == 's')) {
-		/* msg->data_position is the size of string/array */
-		if (*msg->data_position == 0)
-			msg->cur_arg.data = NULL;
-		else
-			/* skip size argument and point
-			 * to data itself */
-			msg->cur_arg.data = msg->data_position + 1;
-	} else
-		msg->cur_arg.data = msg->data_position;
+	/* ok, we now have pointer to the data of
+	 * the current argument, so set it in the iterator */
+	msg->cur_arg.data = get_data_ptr(msg);
 
 	return &msg->cur_arg;
 }
