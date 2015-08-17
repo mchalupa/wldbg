@@ -35,6 +35,7 @@
 
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
+#include "wayland/wayland-private.h"
 #include "interactive/interactive.h"
 #include "wldbg-private.h"
 #include "wldbg-parse-message.h"
@@ -454,21 +455,78 @@ print_array(uint32_t *p, size_t len, size_t howmany)
 	}
 }
 
-/* roughly based on wl_closure_print from connection.c */
+void
+print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
+	  uint32_t pos, struct wldbg_message *message)
+{
+	const struct wl_interface *obj;
+	size_t len;
+
+	switch (arg->type) {
+	case 'u':
+		if (print_wl_keyboard_message(rm->wl_interface,
+					      rm->wl_message, pos + 2,
+					      *arg->data))
+			break;
+
+		if (print_wl_seat_message(rm->wl_interface,
+					  rm->wl_message, *arg->data))
+			break;
+
+		printf("%u", *arg->data);
+		break;
+	case 'i':
+		printf("%d", (int32_t) *arg->data);
+		break;
+	case 'f':
+		printf("%f", wl_fixed_to_double(*arg->data));
+		break;
+	case 's':
+		if (arg->data)
+			printf("%u:\"%s\"", *(arg->data - 1),
+			       (const char *) (arg->data));
+		else
+			printf("0:\"\"");
+		break;
+	case 'o':
+		obj = wldbg_message_get_object(message, *arg->data);
+		if (obj)
+			printf("%s@%u", obj->name, *arg->data);
+		else
+			printf("nil");
+		break;
+	case 'n':
+		printf("new id %s@", rm->wl_message->types[pos] ?
+			rm->wl_message->types[pos]->name : "[unknown]");
+
+		if (*arg->data != 0)
+			printf("%u", *arg->data);
+		else
+			printf("nil");
+		break;
+	case 'a':
+		if (arg->data)
+			len = DIV_ROUNDUP(*arg->data, sizeof(uint32_t));
+		else
+			len = 0;
+
+		printf("array:");
+		print_array(arg->data, len, 8);
+		break;
+	case 'h':
+		printf("fd");
+		break;
+	}
+}
+
 void
 print_bare_message(struct wldbg_message *message, struct wl_list *filters)
 {
-	int i, is_buggy = 0;
-	uint32_t pos, len, *p;
-	const struct wl_interface *interface, *obj;
-	const char *signature;
-	const struct wl_message *wl_message = NULL;
+	int is_buggy = 0;
+	uint32_t pos;
 	struct wldbg_connection *conn = message->connection;
-	struct wldbg_parsed_message pm;
-
-	wldbg_parse_message(message, &pm);
-	p = message->data;
-	interface = wldbg_message_get_object(message, pm.id);
+	struct wldbg_resolved_message rm;
+	struct wldbg_resolved_arg *arg;
 
 	if (filters && filter_match(filters, message))
 		return;
@@ -482,119 +540,55 @@ print_bare_message(struct wldbg_message *message, struct wl_list *filters)
 
 	printf("%c: ", message->from == SERVER ? 'S' : 'C');
 
-	/* if we do not know interface or the interface is
-	 * unknown_interface or free_entry */
-	if (!interface
-		|| (message->from == SERVER && !interface->event_count)
-		|| (message->from == CLIENT && !interface->method_count)) {
-		/* print at least fall-back description */
+	if (!wldbg_resolve_message(message, &rm)) {
+		if (!wldbg_parse_message(message, &rm.base)) {
+			printf("_failed_parsing_message_\n");
+			return;
+		}
+
 		printf("unknown@%u.[opcode %u][size %uB]\n",
-		       pm.id, pm.opcode, pm.size);
+		       rm.base.id, rm.base.opcode, rm.base.size);
 		return;
 	}
 
 	if (message->from == SERVER) {
-		if ((uint32_t) interface->event_count <= pm.opcode)
+		if ((uint32_t) rm.wl_interface->event_count <= rm.base.opcode)
 			is_buggy = 1;
-
-		wl_message = &interface->events[pm.opcode];
 	} else {
-		if ((uint32_t) interface->method_count <= pm.opcode)
+		if ((uint32_t) rm.wl_interface->method_count <= rm.base.opcode)
 			is_buggy = 1;
-
-		wl_message = &interface->methods[pm.opcode];
 	}
 
-	printf("%s@%u.", interface->name, pm.id);
+	printf("%s@%u.", rm.wl_interface->name, rm.base.id);
 
 	/* catch buggy events/requests. We don't want them to make
-	 * wldbg crash */
-	if (!wl_message || !wl_message->signature || is_buggy) {
+	 * wldbg crash. This means probably protocol versions mismatch */
+	if (is_buggy) {
 		printf("_buggy %s_",
 			message->from == SERVER ? "event" : "request");
-		printf("[opcode %u][size %uB]\n", pm.opcode, pm.size);
+		printf("[opcode %u][size %uB]\n", rm.base.opcode, rm.base.size);
 		return;
 	} else {
-		printf("%s(", wl_message->name);
+		printf("%s(", rm.wl_message->name);
 	}
 
 
-	/* 2 is position of the first argument */
-	pos = 2;
-	signature = wl_message->signature;
-	for (i = 0; signature[i] != '\0'; ++i) {
-		if (signature[i] == '?' || isdigit(signature[i]))
-			continue;
-
-		if (pos > 2)
+	pos = 0;
+	while((arg = wldbg_resolved_message_next_argument(&rm))) {
+		if (pos > 0)
 			printf(", ");
 
-		/* buffer has 4096 bytes and position jumps over 4 bytes */
-		if (pos >= 1024) {
+		/* currently we can have up to WL_CLOSURE_MAX_ARGS,
+		 * but if that changes we must update wayland-private.h */
+		if (pos >= WL_CLOSURE_MAX_ARGS) {
 			/* be kind to user... for now */
-			fflush(stdout);
-			fprintf(stderr, "Probably wrong %s, expect crash\n",
+			fprintf(stderr, "Probably wrong %s, too much arguments\n",
 				message->from == SERVER ? "event" : "request");
+			fflush(stdout);
 			break;
 		}
 
-		switch (signature[i]) {
-		case 'u':
-			if (print_wl_keyboard_message(interface,
-						      wl_message, pos, p[pos]))
-				break;
-
-			if (print_wl_seat_message(interface,
-						  wl_message, p[pos]))
-				break;
-
-			printf("%u", p[pos]);
-			break;
-		case 'i':
-			printf("%d", p[pos]);
-			break;
-		case 'f':
-			printf("%f", wl_fixed_to_double(p[pos]));
-			break;
-		case 's':
-			if (p[pos] > 0)
-				printf("%u:\"%s\"", p[pos],
-				       (const char *) (p + pos + 1));
-			else
-				printf("%u:\"\"", p[pos]);
-
-			pos += DIV_ROUNDUP(p[pos], sizeof(uint32_t));
-			break;
-		case 'o':
-			obj = wldbg_message_get_object(message, p[pos]);
-			if (obj)
-				printf("%s@%u", obj->name, p[pos]);
-			else
-				printf("nil");
-			break;
-		case 'n':
-			printf("new id %s@",
-				(wl_message->types[i]) ?
-					wl_message->types[i]->name :
-					"[unknown]");
-			if (p[pos] != 0)
-				printf("%u", p[pos]);
-			else
-				printf("nil");
-			break;
-		case 'a':
-			len = DIV_ROUNDUP(p[pos], sizeof(uint32_t));
-
-			printf("array:");
-			print_array(p + pos, len, 8);
-
-			pos += len;
-			break;
-		case 'h':
-			printf("fd");
-			break;
-		}
-
+		print_arg(arg, &rm, pos, message);
 		++pos;
 	}
 
