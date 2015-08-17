@@ -27,6 +27,7 @@
 #define _WLDBG_INTERACTIVE_H_
 
 #include <stdint.h>
+#include <regex.h>
 
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
@@ -61,7 +62,7 @@ struct wldbg_interactive {
 	struct wl_list breakpoints;
 
 	/* filters for printing messages */
-	struct wl_list print_filters;
+	struct wl_list filters;
 };
 
 struct command {
@@ -104,6 +105,17 @@ struct breakpoint {
 	uint64_t small_data;
 	/* function to destroy data */
 	void (*data_destr)(void *);
+};
+
+
+/* XXX we could use breakpoints to
+ * implement this */
+struct filter {
+	char *filter;
+	regex_t regex;
+	struct wl_list link;
+	int show_only;
+    unsigned int id;
 };
 
 #endif /* _WLDBG_INTERACTIVE_H_ */

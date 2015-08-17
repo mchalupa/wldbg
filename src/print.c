@@ -42,52 +42,6 @@
 #include "resolve.h"
 #include "util.h"
 
-
-/* return 1 if some of filters matches - thus hide the message */
-static int
-filter_match(struct wl_list *filters, struct wldbg_message *message)
-{
-	struct print_filter *pf;
-	char buf[128];
-	int ret, has_show_only = 0;
-
-	wl_list_for_each(pf, filters, link) {
-		ret = wldbg_get_message_name(message, buf, sizeof buf);
-		if (ret >= (int) sizeof buf) {
-			fprintf(stderr, "BUG: buffer too small for message name\n");
-			continue;
-		}
-
-		/* run regular expression */
-		ret = regexec(&pf->regex, buf, 0, NULL, 0);
-
-		/* got we match? */
-		if (ret == 0) {
-			vdbg("filter: '%s' <-> '%s' MATCH\n", pf->filter, buf);
-
-			/* If this filter is show_only,
-			 * we must return 0, because we'd like to show this message */
-			if (pf->show_only)
-				return 0;
-
-			return 1;
-		} else if (ret != REG_NOMATCH) {
-			fprintf(stderr, "Executing regexp failed!\n");
-			return 0;
-		}
-
-		if (pf->show_only)
-			has_show_only = 1;
-	}
-
-	/* if we haven't found filter match and we have some show_only filters,
-	 * we must return 1 so that this message will get hidden */
-	if (has_show_only)
-		return 1;
-
-	return 0;
-}
-
 static void
 print_key(uint32_t p)
 {
@@ -526,9 +480,6 @@ wldbg_message_print(struct wldbg_message *message)
 	struct wldbg_connection *conn = message->connection;
 	struct wldbg_resolved_message rm;
 	struct wldbg_resolved_arg *arg;
-
-	if (filters && filter_match(filters, message))
-		return;
 
 	if (conn->wldbg->flags.server_mode) {
 		if (conn->client.program)

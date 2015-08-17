@@ -34,11 +34,11 @@
 #include "interactive.h"
 #include "util.h"
 
-static struct print_filter *
+static struct filter *
 create_filter(const char *pattern)
 {
 	static unsigned int pf_id;
-	struct print_filter *pf;
+	struct filter *pf;
 
 	pf = malloc(sizeof *pf);
 	if (!pf) {
@@ -68,7 +68,7 @@ static int
 cmd_create_filter(struct wldbg_interactive *wldbgi,
 		  char *buf, int show_only)
 {
-	struct print_filter *pf;
+	struct filter *pf;
 	char filter[128];
 
 	sscanf(buf, "%s", filter);
@@ -78,7 +78,7 @@ cmd_create_filter(struct wldbg_interactive *wldbgi,
 		return CMD_CONTINUE_QUERY;
 
 	pf->show_only = show_only;
-	wl_list_insert(wldbgi->print_filters.next, &pf->link);
+	wl_list_insert(wldbgi->filters.next, &pf->link);
 
 	printf("Filtering messages: %s%s\n",
 	       show_only ? "" : "hide ", filter);
@@ -157,7 +157,7 @@ remove_filter(struct wldbg_interactive *wldbgi, char *buf)
 {
 	unsigned int id;
 	int found = 0;
-	struct print_filter *pf, *tmp;
+	struct filter *pf, *tmp;
 
 	if (!*buf || *buf == '\n') {
 		cmd_filter_help(0);
@@ -169,7 +169,7 @@ remove_filter(struct wldbg_interactive *wldbgi, char *buf)
 		return;
 	}
 
-	wl_list_for_each_safe(pf, tmp, &wldbgi->print_filters, link) {
+	wl_list_for_each_safe(pf, tmp, &wldbgi->filters, link) {
 		if (pf->id == id) {
 			found = 1;
 			wl_list_remove(&pf->link);

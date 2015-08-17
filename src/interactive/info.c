@@ -67,14 +67,14 @@ print_breakpoints(struct wldbg_interactive *wldbgi)
 static void
 print_filters(struct wldbg_interactive *wldbgi)
 {
-	struct print_filter *pf;
+	struct filter *pf;
 
-	if (wl_list_empty(&wldbgi->print_filters)) {
+	if (wl_list_empty(&wldbgi->filters)) {
 		printf("No filters\n");
 		return;
 	}
 
-	wl_list_for_each(pf, &wldbgi->print_filters, link) {
+	wl_list_for_each(pf, &wldbgi->filters, link) {
 		printf("%u: %s %s\n", pf->id,
 		       pf->show_only ? "show" : "hide",
 		       pf->filter);

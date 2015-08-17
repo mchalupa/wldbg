@@ -98,7 +98,52 @@ query_user(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 	}
 }
 
+/* return 1 if some of filters matches */
 static int
+filter_match(struct wl_list *filters, struct wldbg_message *message)
+{
+	struct filter *pf;
+	char buf[128];
+	int ret, has_show_only = 0;
+
+	wl_list_for_each(pf, filters, link) {
+		ret = wldbg_get_message_name(message, buf, sizeof buf);
+		if (ret >= (int) sizeof buf) {
+			fprintf(stderr, "BUG: buffer too small for message name\n");
+			continue;
+		}
+
+		/* run regular expression */
+		ret = regexec(&pf->regex, buf, 0, NULL, 0);
+
+		/* got we match? */
+		if (ret == 0) {
+			vdbg("filter: '%s' <-> '%s' MATCH\n", pf->filter, buf);
+
+			/* If this filter is show_only,
+			 * we must return 0, because we'd like to show this message */
+			if (pf->show_only)
+				return 0;
+
+			return 1;
+		} else if (ret != REG_NOMATCH) {
+			fprintf(stderr, "Executing regexp failed!\n");
+			return 0;
+		}
+
+		if (pf->show_only)
+			has_show_only = 1;
+	}
+
+	/* if we haven't found filter match and we have some show_only filters,
+	 * we must return 1 so that this message will get hidden */
+	if (has_show_only)
+		return 1;
+
+	return 0;
+}
+
+static void
 process_message(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 {
 	/* print message's description
@@ -117,8 +162,6 @@ process_message(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 		wldbgi->stop = 0;
 		query_user(wldbgi, message);
 	}
-
-	return 0;
 }
 
 static int
@@ -126,6 +169,7 @@ process_interactive(void *user_data, struct wldbg_message *message)
 {
 	struct wldbg_interactive *wldbgi = user_data;
 	struct breakpoint *b;
+	int skip_message = 0;
 
 	vdbg("Mesagge from %s\n",
 		message->from == SERVER ? "SERVER" : "CLIENT");
@@ -142,14 +186,23 @@ process_interactive(void *user_data, struct wldbg_message *message)
 		wldbgi->stop = 1;
 	}
 
+	/* if some filter matches, we will skip this message
+	 * unless some other condition tell us that we should
+	 * not skip it (like breakpoint or so) */
+	skip_message = filter_match(&wldbgi->filters, message);
+
 	wl_list_for_each(b, &wldbgi->breakpoints, link) {
 		if (b->applies(message, b)) {
 			wldbgi->stop = 1;
+			/* reset skip_message flag, we want
+			 * to stop on this message */
+			skip_message = 0;
 			break;
 		}
 	}
 
-	process_message(wldbgi, message);
+	if (!skip_message)
+		process_message(wldbgi, message);
 
 	/* This is always the last pass. Even when user will add
 	 * some passes interactively, they will be added before
@@ -167,7 +220,7 @@ wldbgi_destory(void *data)
 {
 	struct wldbg_interactive *wldbgi = data;
 	struct breakpoint *b, *btmp;
-	struct print_filter *pf, *pftmp;
+	struct filter *pf, *pftmp;
 
 	dbg("Destroying wldbgi\n");
 
@@ -181,7 +234,7 @@ wldbgi_destory(void *data)
 
 	wl_list_for_each_safe(b, btmp, &wldbgi->breakpoints, link)
 		free_breakpoint(b);
-	wl_list_for_each_safe(pf, pftmp, &wldbgi->print_filters, link) {
+	wl_list_for_each_safe(pf, pftmp, &wldbgi->filters, link) {
 		regfree(&pf->regex);
 		free(pf->filter);
 		free(pf);
@@ -226,7 +279,7 @@ interactive_init(struct wldbg *wldbg)
 
 	memset(wldbgi, 0, sizeof *wldbgi);
 	wl_list_init(&wldbgi->breakpoints);
-	wl_list_init(&wldbgi->print_filters);
+	wl_list_init(&wldbgi->filters);
 	wldbgi->wldbg = wldbg;
 
 	pass = alloc_pass("interactive");
