@@ -61,8 +61,8 @@ cmd_send(struct wldbg_interactive *wldbgi,
 {
 	struct wl_connection *conn;
 	uint32_t buffer[1024]; /* size of wl_connection buffer */
-	uint32_t size, opcode;
-	int where, interactive, i = 0;
+	uint32_t size, opcode, i = 0;
+	int where, interactive;
 	struct wldbg_message send_message;
 	char *endptr;
 	long val;
@@ -141,11 +141,16 @@ cmd_send(struct wldbg_interactive *wldbgi,
 		size = buffer[1] >> 16;
 	}
 
+
+	if (size != 4 * i)
+		printf("Warning: size given in header (%uB) does not match size of given message (%uB)\n",
+			size, i * 4);
+
 	if (size % 4)
 		printf("Warning: size is not a multiple of 4, this is buggy\n");
 
 	if (size > 1024)
-		printf("Message is too big...\n");
+		printf("Warning: Message is too big...\n");
 
 	send_message.connection = message->connection;
 	send_message.data = buffer;
