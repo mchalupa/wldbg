@@ -324,7 +324,7 @@ interactive_init(struct wldbg *wldbg)
 
 	vdbg("Adding interactive SIGINT handler (fd %d)\n", wldbgi->sigint_fd);
 	if (wldbg_monitor_fd(wldbg, wldbgi->sigint_fd,
-			     handle_sigint, wldbgi) < 0)
+			     handle_sigint, wldbgi) == NULL)
 		goto err_pass;
 
 	return 0;

@@ -104,7 +104,7 @@ wldbg_connection_create(struct wldbg *wldbg)
 	}
 
 	if (wldbg_monitor_fd(wldbg, conn->server.fd,
-			     dispatch_messages, conn) < 0) {
+			     dispatch_messages, conn) == NULL) {
 		destroy_resolved_objects(conn->resolved_objects);
 		free(conn);
 		close(fd);
@@ -182,48 +182,6 @@ wldbg_foreach_connection(struct wldbg *wldbg,
 
 	wl_list_for_each_safe(conn, tmp, &wldbg->connections, link)
 		func(conn);
-}
-
-struct wldbg_fd_callback {
-	int fd;
-	void *data;
-	int (*dispatch)(int fd, void *data);
-	struct wl_list link;
-};
-
-/**
- * Monitor filedescriptor for incoming events and
- * call set-up callbacks
- */
-int
-wldbg_monitor_fd(struct wldbg *wldbg, int fd,
-			int (*dispatch)(int fd, void *data),
-			void *data)
-{
-	struct epoll_event ev;
-	struct wldbg_fd_callback *cb;
-
-	cb = malloc(sizeof *cb);
-	if (!cb)
-		return -1;
-
-	ev.events = EPOLLIN;
-	ev.data.ptr = cb;
-	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_ADD, fd, &ev) == -1) {
-		perror("Failed adding fd to epoll");
-		free(cb);
-		return -1;
-	}
-
-	cb->fd = fd;
-	cb->data = data;
-	cb->dispatch = dispatch;
-
-	dbg("Adding fd '%d' to epoll (callback: %p)\n", fd, cb);
-
-	wl_list_insert(&wldbg->monitored_fds, &cb->link);
-
-	return 0;
 }
 
 /**
@@ -513,7 +471,7 @@ create_client_connection_for_fd(struct wldbg_connection *conn, int fd)
 	}
 
 	if (wldbg_monitor_fd(conn->wldbg, fd,
-			     dispatch_messages, conn) < 0) {
+			     dispatch_messages, conn) == NULL) {
 		wl_connection_destroy(conn->client.connection);
 		return -1;
 	}
@@ -743,7 +701,7 @@ wldbg_init(struct wldbg *wldbg)
 	}
 
 	if (wldbg_monitor_fd(wldbg, wldbg->signals_fd,
-			     dispatch_signals, wldbg) < 0)
+			     dispatch_signals, wldbg) == NULL)
 		goto err_signals;
 
 	wldbg->handled_signals = signals;
@@ -827,7 +785,7 @@ server_mode_init(struct wldbg *wldbg)
 	if (fd < 0)
 		return -1;
 
-	if (wldbg_monitor_fd(wldbg, fd, server_mode_accept, wldbg) < 0) {
+	if (wldbg_monitor_fd(wldbg, fd, server_mode_accept, wldbg) == NULL) {
 		close(fd);
 		return -1;
 	}

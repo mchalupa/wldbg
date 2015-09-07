@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <sys/signalfd.h>
 #include <sys/un.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "wldbg.h"
@@ -167,6 +168,13 @@ struct wldbg_connection {
 	struct wl_list link;
 };
 
+struct wldbg_fd_callback {
+	int fd;
+	void *data;
+	int (*dispatch)(int fd, void *data);
+	struct wl_list link;
+};
+
 struct resolved_objects_ids {
 	/* id's allocated by client */
 	struct wldbg_ids_map client_objects;
@@ -183,10 +191,5 @@ struct resolved_objects {
 	/* these are specific for connection */
 	struct wl_list additional_interfaces;
 };
-
-int
-wldbg_monitor_fd(struct wldbg *wldbg, int fd,
-                int (*dispatch)(int fd, void *data),
-                void *data);
 
 #endif /* _WLDBG_PRIVATE_H_ */

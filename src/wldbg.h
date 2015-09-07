@@ -66,4 +66,11 @@ wldbg_message_objects_iterate(struct wldbg_message *message,
 void
 wldbg_exit(struct wldbg *wldbg);
 
+struct wldbg_fd_callback;
+
+struct wldbg_fd_callback *
+wldbg_monitor_fd(struct wldbg *wldbg, int fd,
+                int (*dispatch)(int fd, void *data),
+                void *data);
+
 #endif /* _WLDBG_H_ */
