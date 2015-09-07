@@ -66,6 +66,16 @@ wldbg_message_objects_iterate(struct wldbg_message *message,
 void
 wldbg_exit(struct wldbg *wldbg);
 
+/*
+ * Set pass_whole_buffer flag in wldbg. If this flag is
+ * set, wldbg won't call passes on single messages but
+ * on whole buffer that it gots from server or client
+ * if state is 0 or 1, then the function sets the flag
+ * accordingly. If the state is -1, then the function
+ * returns current setting. Other state values are invalid */
+int
+wldbg_separate_messages(struct wldbg *wldbg, int state);
+
 struct wldbg_fd_callback;
 
 struct wldbg_fd_callback *

@@ -44,7 +44,6 @@ wldbg_monitor_fd(struct wldbg *wldbg, int fd,
 	return cb;
 }
 
-
 /**
  * Stop monitoring filedescriptor and its callback
  */
@@ -62,4 +61,14 @@ wldbg_remove_callback(struct wldbg *wldbg, struct wldbg_fd_callback *cb)
 	}
 
 	return 0;
+}
+
+int
+wldbg_separate_messages(struct wldbg *wldbg, int state)
+{
+	if (state == -1)
+		return wldbg->flags.pass_whole_buffer;
+
+	wldbg->flags.pass_whole_buffer = !!state;
+	return wldbg->flags.pass_whole_buffer;
 }
