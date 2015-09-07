@@ -31,6 +31,7 @@
 
 #include "wldbg.h"
 #include "wldbg-pass.h"
+#include "wldbg-parse-message.h"
 
 enum options {
 	SEPARATE		= 1 ,
@@ -42,6 +43,7 @@ enum options {
 	SERVERONLY		= 1 << 6,
 	STATS			= 1 << 7,
 	NOOUT			= 1 << 8,
+	HUMAN			= 1 << 9,
 };
 
 struct dump {
@@ -88,6 +90,14 @@ dump_message(struct wldbg_message *message, struct dump *dump)
 	if (options & DECODE)
 		options |= SEPARATE;
 
+	if (options & HUMAN)
+		wldbg_message_print(message);
+
+	if (!(options & RAW))
+		return;
+
+	printf("%s: ", message->from == CLIENT ? "CLIENT" : "SERVER");
+
 	for (i = 0; i < message->size / sizeof(uint32_t) ; ++i) {
 		if (options & SEPARATE) {
 			if (size == 0 && message->size > i + 1) {
@@ -127,10 +137,6 @@ dump_in(void *user_data, struct wldbg_message *message)
 	if (dump->options & CLIENTONLY && !(dump->options & SERVERONLY))
 		return PASS_NEXT;
 
-	/* if we have are _only_ dumping to file, don't print msg */
-	if (dump->options & (~TOFILE) && !(dump->options & NOOUT))
-		printf("SERVER: ");
-
 	dump_message(message, dump);
 
 	return PASS_NEXT;
@@ -148,10 +154,6 @@ dump_out(void *user_data, struct wldbg_message *message)
 
 	if (dump->options & SERVERONLY && !(dump->options & CLIENTONLY))
 		return PASS_NEXT;
-
-	/* if we have are _only_ dumping to file, don't print msg */
-	if (dump->options & (~TOFILE) && !(dump->options & NOOUT))
-		printf("CLIENT: ");
 
 	dump_message(message, dump);
 
@@ -171,6 +173,7 @@ print_help(void *user_data)
 	       "Available arguments:\n"
 	       /* XXX what should raw mean anyway? */
 	       "    raw          -- not implemented\n"
+	       "    human        -- print human readable output\n"
 	       "    decode       -- decode the header of message\n"
 	       "    decimal      -- print numbers in decimal format\n"
 	       "    client       -- dump only messages from client\n"
@@ -196,8 +199,10 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 	for (i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "raw") == 0)
 			flags |= RAW;
-		if (strcmp(argv[i], "decode") == 0)
+		else if (strcmp(argv[i], "decode") == 0)
 			flags |= DECODE;
+		else if (strcmp(argv[i], "human") == 0)
+			flags |= HUMAN;
 		else if (strcmp(argv[i], "separate") == 0)
 			flags |= SEPARATE;
 		else if (strcmp(argv[i], "decimal") == 0)
@@ -221,6 +226,12 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 			dump->file = argv[i + 1];
 		}
 	}
+
+	/* if user did not explicitly requests
+	 * humand readable output AND raw output, assume
+	 * that she/he wants only raw or only human output */
+	if (!(flags & HUMAN))
+		flags |= RAW;
 
 	if (flags & TOFILE) {
 		dump->file_fd = open(dump->file, O_WRONLY | O_CREAT | O_EXCL, 0755);
