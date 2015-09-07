@@ -44,3 +44,22 @@ wldbg_monitor_fd(struct wldbg *wldbg, int fd,
 	return cb;
 }
 
+
+/**
+ * Stop monitoring filedescriptor and its callback
+ */
+int
+wldbg_remove_callback(struct wldbg *wldbg, struct wldbg_fd_callback *cb)
+{
+	int fd = cb->fd;
+
+	wl_list_remove(&cb->link);
+	free(cb);
+
+	if (epoll_ctl(wldbg->epoll_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
+		perror("Failed removing fd from epoll");
+		return -1;
+	}
+
+	return 0;
+}

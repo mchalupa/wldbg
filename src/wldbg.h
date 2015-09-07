@@ -72,5 +72,7 @@ struct wldbg_fd_callback *
 wldbg_monitor_fd(struct wldbg *wldbg, int fd,
                 int (*dispatch)(int fd, void *data),
                 void *data);
+int
+wldbg_remove_callback(struct wldbg *wldbg, struct wldbg_fd_callback *cb);
 
 #endif /* _WLDBG_H_ */
