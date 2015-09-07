@@ -39,6 +39,7 @@ libwldbg_la_SOURCES = 		\
 	resolve.h		\
 	resolve.c		\
 	print.c			\
+	loop.c			\
 	parse-message.c
 
 include_HEADERS = 		\

@@ -61,4 +61,9 @@ wldbg_message_objects_iterate(struct wldbg_message *message,
 			                   void *data),
 			      void *data);
 
+/* mercifully exit wldbg from the pass
+ * and let it clean after itself */
+void
+wldbg_exit(struct wldbg *wldbg);
+
 #endif /* _WLDBG_H_ */
