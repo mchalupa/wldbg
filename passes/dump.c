@@ -160,11 +160,26 @@ dump_out(void *user_data, struct wldbg_message *message)
 
 
 static void
-print_help(int exit_st)
+print_help(void *user_data)
 {
-	printf("Help!\n");
+	(void) user_data;
 
-	exit(exit_st);
+	printf(" --- Dump data going via wire --- \n"
+	       "\n"
+	       "Usage: wldbg dump arg1 arg2 ...\n"
+	       "\n"
+	       "Available arguments:\n"
+	       /* XXX what should raw mean anyway? */
+	       "    raw          -- not implemented\n"
+	       "    decode       -- decode the header of message\n"
+	       "    decimal      -- print numbers in decimal format\n"
+	       "    client       -- dump only messages from client\n"
+	       "    server       -- dump only messages from server\n"
+	       "    stats        --\n"
+	       "    statistics   -- gather and print statistics on exit\n"
+	       "    no-output    -- do not print anything (except stats at exit)\n"
+	       "    help         -- print this help\n"
+	       "    to-file      -- dump raw data into file\n");
 }
 
 static int
@@ -197,9 +212,11 @@ dump_init(struct wldbg *wldbg, struct wldbg_pass *pass, int argc, const char *ar
 			flags |= STATS;
 		else if (strcmp(argv[i], "no-output") == 0)
 			flags |= NOOUT;
-		else if (strcmp(argv[i], "help") == 0)
-			print_help(0);
-		else if (strcmp(argv[i], "to-file") == 0) {
+		else if (strcmp(argv[i], "help") == 0) {
+			print_help(NULL);
+			/* let wldbg exit after loading the pass */
+			wldbg_exit(wldbg);
+		} else if (strcmp(argv[i], "to-file") == 0) {
 			flags |= TOFILE;
 			dump->file = argv[i + 1];
 		}
@@ -247,4 +264,7 @@ struct wldbg_pass wldbg_pass = {
 	.destroy = dump_destroy,
 	.server_pass = dump_in,
 	.client_pass = dump_out,
+	.help = print_help,
+	.description = "Dump data going through the wire",
+	0
 };
