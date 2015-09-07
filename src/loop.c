@@ -11,6 +11,12 @@ wldbg_exit(struct wldbg *wldbg)
 	wldbg->flags.exit = 1;
 }
 
+void
+wldbg_error(struct wldbg *wldbg)
+{
+	wldbg->flags.error = 1;
+}
+
 /**
  * Monitor filedescriptor for incoming events and
  * call set-up callbacks

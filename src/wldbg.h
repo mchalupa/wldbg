@@ -66,6 +66,11 @@ wldbg_message_objects_iterate(struct wldbg_message *message,
 void
 wldbg_exit(struct wldbg *wldbg);
 
+/* set error flag, wldbg will clean up
+ * and exit with error on next iteration */
+void
+wldbg_error(struct wldbg *wldbg);
+
 /*
  * Set pass_whole_buffer flag in wldbg. If this flag is
  * set, wldbg won't call passes on single messages but
