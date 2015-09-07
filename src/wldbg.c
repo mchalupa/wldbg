@@ -199,7 +199,7 @@ remove_connection(struct wldbg_connection *conn, struct wldbg_fd_callback *cb)
 	return wldbg->connections_num;
 }
 
-int
+static int
 wldbg_dispatch(struct wldbg *wldbg)
 {
 	struct epoll_event ev;
@@ -490,7 +490,7 @@ err:
 /**
  * Spawn client (program)
  */
-struct wldbg_connection *
+static struct wldbg_connection *
 spawn_client(struct wldbg *wldbg, char *path, char *argv[])
 {
 	char sockstr[8];
