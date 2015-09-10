@@ -17,6 +17,8 @@ hardcoded_passes =			\
 interactive_sources =				\
 	interactive/interactive.c		\
 	interactive/interactive.h		\
+	interactive/input.c		\
+	interactive/input.h		\
 	interactive/interactive-commands.c	\
 	interactive/interactive-commands.h	\
 	interactive/breakpoints.c		\

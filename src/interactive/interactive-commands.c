@@ -211,10 +211,10 @@ cmd_help(struct wldbg_interactive *wldbgi,
 	(void) wldbgi;
 	(void) message;
 
-	if (strcmp(buf, "all\n") == 0)
+	if (strcmp(buf, "all") == 0)
 		all = 1;
 
-	buf = skip_ws_to_newline(buf);
+	buf = skip_ws(buf);
 	if (!all && *buf) {
 		for (i = 0; i < sizeof commands / sizeof *commands; ++i) {
 			if (is_the_cmd(buf, &commands[i])) {

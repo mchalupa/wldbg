@@ -103,8 +103,8 @@ cmd_hide(struct wldbg_interactive *wldbgi,
 {
 	(void) message;
 
-	buf = skip_ws_to_newline(buf);
-	if (!*buf || *buf == '\n') {
+	buf = skip_ws(buf);
+	if (!*buf) {
 		cmd_hide_help(0);
 		return CMD_CONTINUE_QUERY;
 	}
@@ -131,8 +131,8 @@ cmd_showonly(struct wldbg_interactive *wldbgi,
 {
 	(void) message;
 
-	buf = skip_ws_to_newline(buf);
-	if (!*buf || *buf == '\n') {
+	buf = skip_ws(buf);
+	if (!*buf) {
 		cmd_showonly_help(0);
 		return CMD_CONTINUE_QUERY;
 	}
@@ -159,7 +159,7 @@ remove_filter(struct wldbg_interactive *wldbgi, char *buf)
 	int found = 0;
 	struct filter *pf, *tmp;
 
-	if (!*buf || *buf == '\n') {
+	if (!*buf) {
 		cmd_filter_help(0);
 		return;
 	}
@@ -193,9 +193,9 @@ cmd_filter(struct wldbg_interactive *wldbgi,
 
 	if (strncmp(buf, "delete", 6) == 0
 	    || strncmp(buf, "remove", 6) == 0)
-	    remove_filter(wldbgi, skip_ws_to_newline(buf + 6));
+	    remove_filter(wldbgi, skip_ws(buf + 6));
 	else if ((*buf == 'd' || *buf == 'r') && isspace(buf[1]))
-	    remove_filter(wldbgi, skip_ws_to_newline(buf + 1));
+	    remove_filter(wldbgi, skip_ws(buf + 1));
 	else
 		cmd_filter_help(0);
 

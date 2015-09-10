@@ -169,7 +169,7 @@ cmd_info(struct wldbg_interactive *wldbgi,
 	 struct wldbg_message *message, char *buf)
 {
 
-#define MATCH(buf, str) (strncmp((buf), (str "\n"), (sizeof((str)) + 1)) == 0)
+#define MATCH(buf, str) (strncmp((buf), (str), (sizeof((str)) + 1)) == 0)
 
 	if (MATCH(buf, "m") || MATCH(buf, "message")) {
 		printf("Sender: %s (no. %lu), size: %lu\n",

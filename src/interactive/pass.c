@@ -116,16 +116,13 @@ cmd_pass(struct wldbg_interactive *wldbgi,
 	(void) message;
 	(void) buf;
 
-	if (strncmp(buf, "list\n", 5) == 0) {
+	if (strcmp(buf, "list") == 0) {
 		list_passes(1);
-	} else if (strncmp(buf, "loaded\n", 5) == 0) {
+	} else if (strcmp(buf, "loaded") == 0) {
 		loaded_passes(wldbgi->wldbg);
 	} else if (strncmp(buf, "add ", 4) == 0) {
-		/* remove \n from it */
-		buf[strlen(buf) - 1] = '\0';
 		add_pass(wldbgi->wldbg, buf + 4);
 	} else if (strncmp(buf, "remove ", 7) == 0) {
-		buf[strlen(buf) - 1] = '\0';
 		remove_pass(wldbgi->wldbg, buf + 7);
 	} else
 		cmd_pass_help(0);

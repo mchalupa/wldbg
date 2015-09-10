@@ -62,7 +62,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 	struct wl_connection *conn;
 	uint32_t buffer[1024]; /* size of wl_connection buffer */
 	uint32_t size, opcode, i = 0;
-	int where, interactive;
+	int where, interactive, chr;
 	struct wldbg_message send_message;
 	char *endptr;
 	long val;
@@ -88,8 +88,8 @@ cmd_send(struct wldbg_interactive *wldbgi,
 		return CMD_CONTINUE_QUERY;
 	}
 
-	buf = skip_ws_to_newline(buf);
-	interactive = (*buf == '\n' || !*buf);
+	buf = skip_ws(buf);
+	interactive = !*buf;
 
 	if (where == SERVER)
 		conn = message->connection->server.connection;
@@ -112,7 +112,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 		size = i * sizeof(uint32_t);
 		buffer[1] = (size << 16) | (opcode & 0xffff);
 	} else {
-		while(*buf != '\n') {
+		while(*buf) {
 			errno = 0;
 			val = strtol(buf, &endptr, 16);
 			if (errno != 0) {
@@ -134,7 +134,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 			buffer[i] = (uint32_t) val;
 			++i;
 
-			buf = skip_ws_to_newline(endptr);
+			buf = skip_ws(endptr);
 		}
 
 		opcode = buffer[1] & 0xffff;
@@ -170,8 +170,9 @@ cmd_send(struct wldbg_interactive *wldbgi,
 
 out:
 	/* clean stdin buffer */
-	while (getchar() != '\n')
-		;
+	do {
+		chr = getchar();
+	} while (chr != '\n' || chr != EOF);
 
 	return CMD_CONTINUE_QUERY;
 }

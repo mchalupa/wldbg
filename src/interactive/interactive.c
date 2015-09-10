@@ -23,6 +23,8 @@
  * SOFTWARE.
  */
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,15 +34,21 @@
 #include <sys/signalfd.h>
 #include <regex.h>
 
+#ifdef HAVE_READLINE_HISTORY
+#include <readline/history.h>
+#endif
+
 #include "wldbg.h"
 #include "wldbg-pass.h"
 #include "wldbg-private.h"
 #include "wldbg-parse-message.h"
-#include "interactive.h"
 #include "resolve.h"
 #include "passes.h"
 #include "getopt.h"
 #include "util.h"
+
+#include "interactive.h"
+#include "input.h"
 
 /* defined in interactive-commands.c */
 int
@@ -49,44 +57,41 @@ cmd_quit(struct wldbg_interactive *wldbgi,
 
 void free_breakpoint(struct breakpoint *);
 
-#define INPUT_BUFFER_SIZE 512
 static void
 query_user(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 {
 	int ret;
-	char buf[INPUT_BUFFER_SIZE];
+	char *buf = NULL;
 	char *cmd;
 
 	while (1) {
+		/* free previous buffer, free(NULL) is a no-op */
+		free(buf);
+
 		if (wldbgi->wldbg->flags.exit
 			|| wldbgi->wldbg->flags.error) {
 			break;
 		}
 
-		/* print whatever should have been printed by now
-		 * and then print the prompt */
-		fflush(stdout);
-		printf("(wldbg) ");
-
-		if (fgets(buf, sizeof buf, stdin) == NULL) {
+		buf = wldbgi_read_input();
+		if (!buf) {
 			if(cmd_quit(wldbgi, NULL, NULL) == CMD_END_QUERY)
 				break;
 			else
 				continue;
 		}
 
-		cmd = skip_ws_to_newline(buf);
+		cmd = skip_ws(buf);
+		if (*cmd == '\0') {
+			cmd = wldbgi_get_last_command(wldbgi);
+		} else
+			wldbgi_add_history(wldbgi, cmd);
 
-		if (*cmd == '\n' && wldbgi->last_command) {
-			cmd = wldbgi->last_command;
-		} else if (*cmd == '\n') {
+		/* no last command? */
+		if (!cmd)
 			continue;
-		} else {
-			/* save last command */
-			free(wldbgi->last_command);
-			wldbgi->last_command = strdup(cmd);
-		}
 
+		dbg("Running command: '%s'\n", cmd);
 		ret = run_command(cmd, wldbgi, message);
 
 		if (ret == CMD_END_QUERY)
@@ -94,8 +99,10 @@ query_user(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 		else if (ret == CMD_CONTINUE_QUERY)
 			continue;
 		else
-			printf("Unknown command: %s", cmd);
+			printf("Unknown command: %s\n", cmd);
 	}
+
+	free(buf);
 }
 
 /* return 1 if some of filters matches */
@@ -240,6 +247,7 @@ wldbgi_destory(void *data)
 		free(pf);
 	}
 
+	wldbgi_clear_history(wldbgi);
 	free(wldbgi);
 }
 
@@ -321,6 +329,10 @@ interactive_init(struct wldbg *wldbg)
 
 	if (wldbgi->sigint_fd == -1)
 		goto err_pass;
+
+#ifdef HAVE_READLINE_HISTORY
+	using_history();
+#endif
 
 	vdbg("Adding interactive SIGINT handler (fd %d)\n", wldbgi->sigint_fd);
 	if (wldbg_monitor_fd(wldbg, wldbgi->sigint_fd,
