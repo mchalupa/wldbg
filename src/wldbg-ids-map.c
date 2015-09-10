@@ -47,31 +47,31 @@ wldbg_ids_map_release(struct wldbg_ids_map *map)
 
 void
 wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
-			const struct wl_interface *intf)
+		     void *data)
 {
-	const struct wl_interface **p;
+	void **p;
 	size_t size;
 
 	if (id >= map->count) {
-		size = (id - map->count + 1) * sizeof(struct wl_interface *);
+		size = (id - map->count + 1) * sizeof(void *);
 		p = wl_array_add(&map->data, size);
 
 		/* set newly allocated memory to 0s */
 		memset(p, 0, size);
 	}
 
-	p = ((const struct wl_interface **) map->data.data) + id;
+	p = ((void **) map->data.data) + id;
 	assert(p);
 
-	map->count = map->data.size / sizeof(struct wl_interface *);
-	*p = intf;
+	map->count = map->data.size / sizeof(void *);
+	*p = data;
 }
 
-const struct wl_interface *
+void *
 wldbg_ids_map_get(struct wldbg_ids_map *map, uint32_t id)
 {
 	if (id < map->count)
-		return ((struct wl_interface **) map->data.data)[id];
+		return ((void **) map->data.data)[id];
 
 	return NULL;
 }
