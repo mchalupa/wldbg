@@ -408,6 +408,15 @@ print_array(uint32_t *p, size_t len, size_t howmany)
 	}
 }
 
+static inline void
+print_id(uint32_t id)
+{
+	if (id >= WL_SERVER_ID_START)
+		printf("SRV%d", id - WL_SERVER_ID_START);
+	else
+		printf("%d", id);
+}
+
 static void
 print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 	  uint32_t pos, struct wldbg_message *message)
@@ -443,9 +452,10 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 		break;
 	case 'o':
 		obj = wldbg_message_get_object(message, *arg->data);
-		if (obj)
-			printf("%s@%u", obj->name, *arg->data);
-		else
+		if (obj) {
+			printf("%s@", obj->name);
+			print_id(*arg->data);
+		} else
 			printf("nil");
 		break;
 	case 'n':
@@ -453,7 +463,7 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 			rm->wl_message->types[pos]->name : "[unknown]");
 
 		if (*arg->data != 0)
-			printf("%u", *arg->data);
+			print_id(*arg->data);
 		else
 			printf("nil");
 		break;
@@ -496,8 +506,9 @@ wldbg_message_print(struct wldbg_message *message)
 			return;
 		}
 
-		printf("unknown@%u.[opcode %u][size %uB]\n",
-		       rm.base.id, rm.base.opcode, rm.base.size);
+		printf("unknown@");
+		print_id(rm.base.id);
+		printf(".[opcode %u][size %uB]\n", rm.base.opcode, rm.base.size);
 		return;
 	}
 
@@ -509,7 +520,9 @@ wldbg_message_print(struct wldbg_message *message)
 			is_buggy = 1;
 	}
 
-	printf("%s@%u.", rm.wl_interface->name, rm.base.id);
+	printf("%s@", rm.wl_interface->name);
+	print_id(rm.base.id);
+	putchar('.');
 
 	/* catch buggy events/requests. We don't want them to make
 	 * wldbg crash. This means probably protocol versions mismatch */
