@@ -54,6 +54,7 @@ cmd_send_help(int oneline)
 	       "will be send as it is given)\n");
 }
 
+#define is_blank(c) ((c) == 0 || isspace(c))
 int
 cmd_send(struct wldbg_interactive *wldbgi,
 	 struct wldbg_message *message,
@@ -62,7 +63,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 	struct wl_connection *conn;
 	uint32_t buffer[1024]; /* size of wl_connection buffer */
 	uint32_t size, opcode, i = 0;
-	int where, interactive, chr;
+	int where, interactive;
 	struct wldbg_message send_message;
 	char *endptr;
 	long val;
@@ -74,15 +75,15 @@ cmd_send(struct wldbg_interactive *wldbgi,
 	if (strncmp(buf, "server", 6) == 0) {
 		where = SERVER;
 		buf += 6;
-	} else if (buf[0] == 's' && isspace(buf[1])) {
+	} else if (buf[0] == 's' && is_blank(buf[1])) {
 		where = SERVER;
-		buf += 2;
+		++buf;
 	} else if (strncmp(buf, "client", 6) == 0) {
 		where = CLIENT;
 		buf += 6;
-	} else if (buf[0] == 'c' && isspace(buf[1])) {
+	} else if (buf[0] == 'c' && is_blank(buf[1])) {
 		where = CLIENT;
-		buf += 2;
+		++buf;
 	} else {
 		cmd_send_help(0);
 		return CMD_CONTINUE_QUERY;
@@ -106,8 +107,13 @@ cmd_send(struct wldbg_interactive *wldbgi,
 		i = 2;
 
 		printf("Data:\n");
-		while(scanf("%x", &buffer[i]) != -1)
+		while(scanf("%x", &buffer[i]) > 0) {
 			++i;
+			if (i >= sizeof buffer) {
+				printf("Data too big (buffer overflow)\n");
+				break;
+			}
+		}
 
 		size = i * sizeof(uint32_t);
 		buffer[1] = (size << 16) | (opcode & 0xffff);
@@ -125,7 +131,7 @@ cmd_send(struct wldbg_interactive *wldbgi,
 				goto out;
 			}
 
-			if (!isspace(*endptr)) {
+			if (!isspace(*endptr) && *endptr != '\0' ) {
 				printf("Invalid character in data\n");
 				goto out;
 			}
@@ -169,11 +175,6 @@ cmd_send(struct wldbg_interactive *wldbgi,
 		perror("Writing message to connection");
 
 out:
-	/* clean stdin buffer */
-	do {
-		chr = getchar();
-	} while (chr != '\n' || chr != EOF);
-
 	return CMD_CONTINUE_QUERY;
 }
 
