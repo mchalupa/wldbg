@@ -107,12 +107,11 @@ int str_to_uint(char *str)
 
 	/* skip ws to first digit or newline */
 	numtmp = num = skip_ws_to_newline(str);
-
-	if (*num == '\n')
+	if (!*num || *num == '\n')
 		return -1;
 
 	/* check that it is a number */
-	while (!isspace(*numtmp)) {
+	while (*numtmp && !isspace(*numtmp)) {
 		if (!isdigit(*numtmp))
 			return -1;
 
