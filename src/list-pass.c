@@ -38,8 +38,7 @@ list_dir(const char *path)
 	DIR *dir;
 	char *dot;
 
-	dir = opendir(path);
-	if (dir) {
+	if((dir = opendir(path))) {
 		while((entry = readdir(dir))) {
 			if (entry->d_type == DT_DIR)
 				continue;
@@ -50,9 +49,9 @@ list_dir(const char *path)
 			if (strcmp("so", dot + 1) == 0)
 				printf("    %s (%s)\n", entry->d_name, path);
 		}
-	}
 
-	closedir(dir);
+		closedir(dir);
+	}
 }
 
 void
