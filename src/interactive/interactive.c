@@ -70,6 +70,9 @@ query_user(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 
 		if (wldbgi->wldbg->flags.exit
 			|| wldbgi->wldbg->flags.error) {
+			/* we freed the buf, prevent free after
+			 * the loop to double-free the memory */
+			buf = NULL;
 			break;
 		}
 
@@ -102,6 +105,7 @@ query_user(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 			printf("Unknown command: %s\n", cmd);
 	}
 
+	/* free memory if we allocated it */
 	free(buf);
 }
 
