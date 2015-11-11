@@ -48,6 +48,7 @@ create_filter(const char *pattern)
 
 	pf->filter = strdup(pattern);
 	if (!pf->filter) {
+		free(pf);
 		fprintf(stderr, "No memory\n");
 		return NULL;
 	}
