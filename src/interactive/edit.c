@@ -182,6 +182,7 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 		read_message_from_tmpfile(msg_file, message);
 	}
 
+	free(cmd);
 	destroy_message_tmpfile(msg_file);
 	/* continue or end?? */
 	return CMD_CONTINUE_QUERY;
