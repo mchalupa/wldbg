@@ -240,8 +240,7 @@ wldbgi_destory(void *data)
 	if (wldbgi->client.path)
 		free(wldbgi->client.path);
 
-	if (wldbgi->last_command)
-		free(wldbgi->last_command);
+	wldbgi_clear_history(wldbgi);
 
 	wl_list_for_each_safe(b, btmp, &wldbgi->breakpoints, link)
 		free_breakpoint(b);
@@ -251,7 +250,6 @@ wldbgi_destory(void *data)
 		free(pf);
 	}
 
-	wldbgi_clear_history(wldbgi);
 	free(wldbgi);
 }
 
