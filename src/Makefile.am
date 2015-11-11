@@ -12,7 +12,8 @@ wayland_files =				\
 
 hardcoded_passes =			\
 	list-pass.c			\
-	resolve-pass.c
+	resolve-pass.c			\
+	objinfo-pass.c
 
 interactive_sources =				\
 	interactive/interactive.c		\
@@ -28,6 +29,14 @@ interactive_sources =				\
 	interactive/edit.c			\
 	interactive/send.c			\
 	interactive/autocmd.c
+
+objinfo_sources =				\
+	objinfo/objinfo.c			\
+	objinfo/objinfo-private.c		\
+	objinfo/objinfo-private.h		\
+	objinfo/xdg-objinfo.c			\
+	objinfo/wl_surface-objinfo.c		\
+	objinfo/wl_shm-objinfo.c
 
 # XXX do it conditional
 hardcoded_interfaces =				\
@@ -48,6 +57,7 @@ libwldbg_la_SOURCES = 		\
 include_HEADERS = 		\
 	wldbg.h			\
 	wldbg-pass.h		\
+	wldbg-objects-info.h	\
 	wldbg-parse-message.h
 
 AM_CPPFLAGS =			\
@@ -75,7 +85,8 @@ wldbg_SOURCES =			\
 	$(wayland_files)	\
 	$(hardcoded_passes)	\
 	$(hardcoded_interfaces)	\
-	$(interactive_sources)
+	$(interactive_sources)	\
+	$(objinfo_sources)
 
 if ENABLE_DEBUG
 # enable debugging fetures. That include debugging messages

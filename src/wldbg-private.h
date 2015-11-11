@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Marek Chalupa
+ * Copyright (c) 2014 - 2015 Marek Chalupa
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -101,6 +101,7 @@ struct wldbg {
 	struct wl_list monitored_fds;
 
 	unsigned int resolving_objects : 1;
+	unsigned int gathering_info    : 1;
 
 	struct {
         /* pass whole buffer to passes instead of just messages */
@@ -165,6 +166,7 @@ struct wldbg_connection {
 	} client;
 
 	struct resolved_objects *resolved_objects;
+	struct wldbg_objects_info *objects_info;
 	struct wl_list link;
 };
 
@@ -190,6 +192,13 @@ struct resolved_objects {
 
 	/* these are specific for connection */
 	struct wl_list additional_interfaces;
+};
+
+struct wldbg_objects_info {
+	/* id's allocated by client */
+	struct wldbg_ids_map client_objects;
+	/* id's allocated by server */
+	struct wldbg_ids_map server_objects;
 };
 
 #endif /* _WLDBG_PRIVATE_H_ */

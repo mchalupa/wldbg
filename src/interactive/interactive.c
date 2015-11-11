@@ -323,7 +323,8 @@ interactive_init(struct wldbg *wldbg)
 	if (!pass)
 		goto err_wldbgi;
 
-	wl_list_insert(wldbg->passes.next, &pass->link);
+	/* insert always at the end */
+	wl_list_insert(wldbg->passes.prev, &pass->link);
 
 	pass->wldbg_pass.init = NULL;
 	/* XXX ! */

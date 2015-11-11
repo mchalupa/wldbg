@@ -45,6 +45,7 @@
 #include "wldbg-pass.h"
 #include "wldbg-private.h"
 #include "resolve.h"
+#include "objinfo/objinfo.h"
 #include "sockets.h"
 #include "getopt.h"
 #include "wayland/wayland-private.h"
@@ -84,6 +85,14 @@ wldbg_connection_create(struct wldbg *wldbg)
 		return NULL;
 	}
 
+	/* FIXME: do this optional */
+	conn->objects_info = create_objects_info();
+	if (!conn->objects_info) {
+		destroy_resolved_objects(conn->resolved_objects);
+		free(conn);
+		return NULL;
+	}
+
 	conn->wldbg = wldbg;
 
 	if (wldbg->flags.server_mode) {
@@ -99,6 +108,7 @@ wldbg_connection_create(struct wldbg *wldbg)
 	fd = connect_to_wayland_server(conn, sock_name);
 	if (fd < 0) {
 		destroy_resolved_objects(conn->resolved_objects);
+		destroy_objects_info(conn->objects_info);
 		free(conn);
 		return NULL;
 	}
@@ -106,6 +116,7 @@ wldbg_connection_create(struct wldbg *wldbg)
 	if (wldbg_monitor_fd(wldbg, conn->server.fd,
 			     dispatch_messages, conn) == NULL) {
 		destroy_resolved_objects(conn->resolved_objects);
+		destroy_objects_info(conn->objects_info);
 		free(conn);
 		close(fd);
 		return NULL;
@@ -117,7 +128,10 @@ wldbg_connection_create(struct wldbg *wldbg)
 static void
 wldbg_connection_destroy(struct wldbg_connection *conn)
 {
-	destroy_resolved_objects(conn->resolved_objects);
+	if (conn->resolved_objects)
+		destroy_resolved_objects(conn->resolved_objects);
+	if (conn->objects_info)
+		destroy_objects_info(conn->objects_info);
 
 	wl_connection_destroy(conn->server.connection);
 	wl_connection_destroy(conn->client.connection);
@@ -701,6 +715,11 @@ wldbg_init(struct wldbg *wldbg)
 
 	/* init resolving wayland objects */
 	if (wldbg_add_resolve_pass(wldbg) < 0)
+		goto err_signals;
+
+	/* init gathering additional information about
+	 * the objects */
+	if (wldbg_add_objinfo_pass(wldbg) < 0)
 		goto err_signals;
 
 	return 0;

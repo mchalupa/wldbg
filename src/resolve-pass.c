@@ -51,9 +51,9 @@ resolved_objects_put(struct resolved_objects *ro,
 {
 	if (id >= WL_SERVER_ID_START)
 		wldbg_ids_map_insert(&ro->objects.server_objects,
-				     id - WL_SERVER_ID_START, intf);
+				     id - WL_SERVER_ID_START, (void *) intf);
 	else
-		wldbg_ids_map_insert(&ro->objects.client_objects, id, intf);
+		wldbg_ids_map_insert(&ro->objects.client_objects, id, (void *) intf);
 }
 
 /* this pass analyze the connection and translates object id
@@ -312,7 +312,7 @@ get_new_ids(struct resolved_objects *ro, uint32_t *data,
 		if (!new_intf)
 			new_intf = &unknown_interface;
 
-		resolved_objects_put(ro, new_id, (void *) new_intf);
+		resolved_objects_put(ro, new_id, new_intf);
 
 		dbg("RESOLVE: Got new id %u (%s)\n", new_id, new_intf->name);
 
@@ -533,7 +533,8 @@ wldbg_add_resolve_pass(struct wldbg *wldbg)
 		return -1;
 	}
 
-	wl_list_insert(wldbg->passes.next, &pass->link);
+	/* insert always at the begining */
+	wl_list_insert(&wldbg->passes, &pass->link);
 	wldbg->resolving_objects = 1;
 
 	return 0;
