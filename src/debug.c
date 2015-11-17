@@ -39,6 +39,7 @@
 #include <dlfcn.h>
 #include <stdarg.h>
 #include <execinfo.h>
+#include <signal.h>
 
 int debug = 0;
 int debug_verbose = 0;
@@ -98,7 +99,11 @@ check_failed(const char *msg, ...)
 	if (abort_on_check_failure)
 		abort();
 	else if (dbg_on_check_failure)
-		asm("int3");
+		#if defined(__amd64__) || defined(__i386__)
+			asm("int3");
+		#else
+			raise(SIGTRAP);
+		#endif
 	else {
 		err = errno; /* save for sure */
 
