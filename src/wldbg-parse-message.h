@@ -48,10 +48,10 @@ struct wldbg_resolved_arg {
 	/* can be null? */
 	unsigned int nullable;
 	/* pointer to the data of argument in the message.
-     * In the case of string or array, it points to
-     * the data itself, not to the size (which is the first byte
-     * of this data type) or is set to NULL if the string/array
-     * is empty */
+	 * In the case of string or array, it points to
+	 * the data itself, not to the size (which is the first byte
+	 * of this data type) or is set to NULL if the string/array
+	 * is empty */
 	uint32_t *data;
 };
 
