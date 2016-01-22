@@ -63,6 +63,9 @@ struct wldbg_interactive {
 
 	/* filters for printing messages */
 	struct wl_list filters;
+
+	/* auto commands */
+	struct wl_list autocmds;
 };
 
 struct command {
@@ -115,6 +118,18 @@ struct filter {
 	regex_t regex;
 	struct wl_list link;
 	int show_only;
+    unsigned int id;
+};
+
+struct autocmd {
+    /* command to be run */
+	char *cmd;
+    /* regexp that the messages must match to run this command,
+     * stored both as a string and as a regex object */
+	char *filter;
+	regex_t regex;
+
+	struct wl_list link;
     unsigned int id;
 };
 

@@ -175,11 +175,15 @@ process_message(struct wldbg_interactive *wldbgi, struct wldbg_message *message)
 	}
 }
 
+int
+message_match_autocmd(struct wldbg_message *msg, struct autocmd *ac);
+
 static int
 process_interactive(void *user_data, struct wldbg_message *message)
 {
 	struct wldbg_interactive *wldbgi = user_data;
 	struct breakpoint *b;
+	struct autocmd *ac;
 	int skip_message = 0;
 
 	vdbg("Mesagge from %s\n",
@@ -212,6 +216,15 @@ process_interactive(void *user_data, struct wldbg_message *message)
 		}
 	}
 
+	/* autocommands */
+	wl_list_for_each(ac, &wldbgi->autocmds, link) {
+		if (message_match_autocmd(message, ac)) {
+			dbg("Running auto command: '%s'\n", ac->cmd);
+			/* XXX what if something changes the message? */
+			run_command(ac->cmd, wldbgi, message);
+		}
+	}
+
 	if (!skip_message)
 		process_message(wldbgi, message);
 
@@ -227,11 +240,21 @@ void
 free_breakpoint(struct breakpoint *b);
 
 static void
+free_autocmd(struct autocmd *ac)
+{
+	regfree(&ac->regex);
+	free(ac->cmd);
+	free(ac->filter);
+	free(ac);
+}
+
+static void
 wldbgi_destory(void *data)
 {
 	struct wldbg_interactive *wldbgi = data;
 	struct breakpoint *b, *btmp;
 	struct filter *pf, *pftmp;
+	struct autocmd *ac, *actmp;
 
 	dbg("Destroying wldbgi\n");
 
@@ -249,6 +272,8 @@ wldbgi_destory(void *data)
 		free(pf->filter);
 		free(pf);
 	}
+	wl_list_for_each_safe(ac, actmp, &wldbgi->autocmds, link)
+		free_autocmd(ac);
 
 	free(wldbgi);
 }
@@ -290,6 +315,8 @@ interactive_init(struct wldbg *wldbg)
 	memset(wldbgi, 0, sizeof *wldbgi);
 	wl_list_init(&wldbgi->breakpoints);
 	wl_list_init(&wldbgi->filters);
+	wl_list_init(&wldbgi->autocmds);
+
 	wldbgi->wldbg = wldbg;
 
 	pass = alloc_pass("interactive");

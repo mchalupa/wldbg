@@ -65,6 +65,21 @@ print_breakpoints(struct wldbg_interactive *wldbgi)
 }
 
 static void
+print_autocmds(struct wldbg_interactive *wldbgi)
+{
+	struct autocmd *ac;
+
+	if (wl_list_empty(&wldbgi->autocmds)) {
+		printf("No autocommands\n");
+		return;
+	}
+
+	wl_list_for_each(ac, &wldbgi->autocmds, link) {
+		printf("%u: run '%s' on '%s'\n", ac->id, ac->cmd, ac->filter);
+	}
+}
+
+static void
 print_filters(struct wldbg_interactive *wldbgi)
 {
 	struct filter *pf;
@@ -183,6 +198,9 @@ cmd_info(struct wldbg_interactive *wldbgi,
 		print_breakpoints(wldbgi);
 	} else if (MATCH(buf, "f") || MATCH(buf, "filters")) {
 		print_filters(wldbgi);
+	} else if (MATCH(buf, "ac") || MATCH(buf, "autocmd")
+		   || MATCH(buf, "autocommands")) {
+		print_autocmds(wldbgi);
 	} else if (MATCH(buf, "p") || MATCH(buf, "proc")
 		   || MATCH(buf, "process")) {
 		info_wldbg(wldbgi);

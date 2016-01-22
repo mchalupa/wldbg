@@ -26,7 +26,8 @@ interactive_sources =				\
 	interactive/info.c			\
 	interactive/pass.c			\
 	interactive/edit.c			\
-	interactive/send.c
+	interactive/send.c			\
+	interactive/autocmd.c
 
 # XXX do it conditional
 hardcoded_interfaces =				\

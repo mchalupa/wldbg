@@ -155,6 +155,7 @@ cmd_help_help(int oneline)
 /* XXX keep sorted! (in the future I'd like to do
  * binary search in this array */
 const struct command commands[] = {
+	{"autocmd", NULL, cmd_autocmd, cmd_autocmd_help},
 	{"break", "b", cmd_break, cmd_break_help},
 	{"continue", "c", cmd_continue, cmd_continue_help},
 	{"edit", "e", cmd_edit, cmd_edit_help},

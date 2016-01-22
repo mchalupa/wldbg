@@ -81,4 +81,11 @@ cmd_send(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *
 void
 cmd_send_help(int oneline);
 
+/* defined in autocmd.c */
+void
+cmd_autocmd_help(int oneline);
+
+int
+cmd_autocmd(struct wldbg_interactive *wldbgi, struct wldbg_message *message, char *buf);
+
 #endif /* _WLDBG_INTERACTIVE_COMMANDS_H_ */
