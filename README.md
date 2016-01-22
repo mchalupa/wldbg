@@ -66,6 +66,9 @@ will continue in running. Other usefull commands are:
     i b(reakpoints)           --> info about breakpoints
     i objects                 --> info about objects
     i proc                    --> info about process
+'autocmd'                 -- run command after messages of intereset
+    autocmd add RE CMD        --> run CMD on every message matching RE
+    autocmd add '' i o        --> display info about objects after every message
 'h' or 'hide              -- hide specified messages matching REGEXP, e. g.:
     h wl_pointer.*            --> hide everything for/from wl_pointer
     h wl_display@.*done       --> hide done messages from wl_display
