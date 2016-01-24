@@ -64,7 +64,8 @@ interactive_init(struct wldbg *wldbg);
 
 /* defined in passes.c */
 int
-load_passes(struct wldbg *wldbg, struct wldbg_options *opts, int argc, const char *argv[]);
+load_passes(struct wldbg *wldbg, struct wldbg_options *opts,
+	    int argc, const char *argv[]);
 
 static int
 dispatch_messages(int fd, void *data);
