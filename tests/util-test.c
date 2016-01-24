@@ -19,6 +19,8 @@ TEST(skip_ws_test)
 	assert(skip_ws(str) == str);
 	char str2[] = {'\0', 'a', 'h'};
 	assert(skip_ws(str2) == str2);
+	char str3[] = {' ', ' ', ' ', '\0'};
+	assert(skip_ws(str3) == str3 + 3);
 }
 
 TEST(str_to_uint_test)
