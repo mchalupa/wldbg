@@ -591,6 +591,37 @@ wldbg_run(struct wldbg *wldbg)
 }
 
 static void
+free_server_mode_resources(struct wldbg *wldbg)
+{
+	if (wldbg->server_mode.fd_lock) {
+		close(wldbg->server_mode.fd_lock);
+		if (unlink(wldbg->server_mode.lock_addr) == -1) {
+			fprintf(stderr, "failed unlinking lock '%s': %s\n",
+				wldbg->server_mode.lock_addr,
+				strerror(errno));
+		}
+
+		if (!wldbg->server_mode.wldbg_socket_name)
+			if (unlink(wldbg->server_mode.wldbg_socket_path) == -1) {
+			fprintf(stderr, "failed unlinking socket '%s': %s\n",
+				wldbg->server_mode.wldbg_socket_path,
+				strerror(errno));
+			}
+	}
+
+	/* if we hit an error before creating the socket,
+	 * we could destroy some other socket without
+	 * this check */
+	if (wldbg->server_mode.wldbg_socket_name)
+		server_mode_change_sockets_back(wldbg);
+
+	free(wldbg->server_mode.old_socket_name);
+	free(wldbg->server_mode.wldbg_socket_name);
+	free(wldbg->server_mode.old_socket_path);
+	free(wldbg->server_mode.wldbg_socket_path);
+}
+
+static void
 wldbg_destroy(struct wldbg *wldbg)
 {
 	struct pass *pass, *pass_tmp;
@@ -615,27 +646,8 @@ wldbg_destroy(struct wldbg *wldbg)
 		free(cb);
 	}
 
-	if (wldbg->flags.server_mode) {
-		if (wldbg->server_mode.fd_lock) {
-			close(wldbg->server_mode.fd_lock);
-			unlink(wldbg->server_mode.lock_addr);
-
-			if (!wldbg->server_mode.wldbg_socket_name)
-				unlink(wldbg->server_mode.wldbg_socket_path);
-		}
-
-		/* if we hit an error before creating the socket,
-		 * we could destroy some other socket without
-		 * this check */
-		if (wldbg->server_mode.wldbg_socket_name) {
-			server_mode_change_sockets_back(wldbg);
-		}
-
-		free(wldbg->server_mode.old_socket_name);
-		free(wldbg->server_mode.wldbg_socket_name);
-		free(wldbg->server_mode.old_socket_path);
-		free(wldbg->server_mode.wldbg_socket_path);
-	}
+	if (wldbg->flags.server_mode)
+		free_server_mode_resources(wldbg);
 
 	/* if there are any connections left that haven't got
 	 * HUP, free them */
