@@ -97,7 +97,7 @@ handle_shm_pool_message(struct wldbg_objects_info *oi,
 			buff_info->format = *arg->data;
 
 			objects_info_put(oi, info->id, info);
-			printf("Created wl_buffer, id %u\n", info->id);
+			dbg("Created wl_buffer, id %u\n", info->id);
 		}
 	}
 }

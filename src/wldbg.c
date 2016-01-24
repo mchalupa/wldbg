@@ -718,12 +718,9 @@ wldbg_init(struct wldbg *wldbg)
 	wldbg->handled_signals = signals;
 
 	/* init resolving wayland objects */
+	/* FIXME: do it optional - it burns a lot of
+	 * processing time when we don't need it */
 	if (wldbg_add_resolve_pass(wldbg) < 0)
-		goto err_signals;
-
-	/* init gathering additional information about
-	 * the objects */
-	if (wldbg_add_objinfo_pass(wldbg) < 0)
 		goto err_signals;
 
 	return 0;
@@ -810,7 +807,8 @@ server_mode_init(struct wldbg *wldbg)
 }
 
 static int
-parse_opts(struct wldbg *wldbg, struct wldbg_options *options, int argc, char *argv[])
+parse_opts(struct wldbg *wldbg, struct wldbg_options *options,
+	   int argc, char *argv[])
 {
 	int pass_off, pass_num;
 
@@ -901,11 +899,18 @@ int main(int argc, char *argv[])
 	debug_init();
 #endif
 
-	memset(&options, 0 , sizeof options);
 	wldbg_init(&wldbg);
 
+	memset(&options, 0 , sizeof options);
 	if (parse_opts(&wldbg, &options, argc, argv) < 0)
 		goto err;
+
+	if (options.objinfo) {
+		/* init gathering additional information about
+		 * the objects */
+		if (wldbg_add_objinfo_pass(&wldbg) < 0)
+			goto err;
+	}
 
 #ifdef DEBUG
 	int i;

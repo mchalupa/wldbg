@@ -144,8 +144,11 @@ print_object_info(struct wldbg_message *msg, char *buf)
 	struct wldbg_objects_info *oi = msg->connection->objects_info;
 	int id;
 
-	if (!oi)
+	if (!msg->connection->wldbg->gathering_info) {
+		printf("Not gathering information about objects, "
+		       "run wldbg with -g or -objinfo option ;)\n");
 		return;
+	}
 
 	if (strncmp(buf, "all", 4) == 0) {
 		print_all_objinfo(oi);

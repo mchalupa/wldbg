@@ -75,6 +75,10 @@ set_opt(const char *arg, struct wldbg_options *opts)
 		dbg("Command line option: pass-whole-buffer\n");
 		opts->pass_whole_buffer = 1;
 		match = 1;
+	} else if (is_prefix_of(arg, "objinfo")) {
+		dbg("Command line option: objinfo\n");
+		opts->objinfo = 1;
+		match = 1;
 	}
 
 	if (!match) {
@@ -99,6 +103,13 @@ int get_opts(int argc, char *argv[], struct wldbg_options *opts)
 			if (!set_opt(argv[n] + 2, opts))
 				return -1;
 		} else if (is_prefix_of("-", argv[n])) {
+			/* -g is a synonym for objinfo */
+			if (argv[n][1] == 'g' && argv[n][2] == 0) {
+				/* objinfo */
+				set_opt("objinfo", opts);
+				continue;
+			}
+
 			if (!set_opt(argv[n] + 1, opts))
 				return -1;
 		} else

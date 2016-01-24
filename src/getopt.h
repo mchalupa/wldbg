@@ -26,12 +26,11 @@
 #ifndef _WLDBG_GETOPT_H_
 #define _WLDBG_GETOPT_H_
 
-#define _GNU_SOURCE
-
 struct wldbg_options {
-	unsigned int interactive;
-	unsigned int server_mode;
-	unsigned int pass_whole_buffer ;
+	unsigned int interactive       : 1;
+	unsigned int objinfo           : 1;
+	unsigned int server_mode       : 1;
+	unsigned int pass_whole_buffer : 1;
 
 	/* parsed path to the program and
 	 * its arguments */
