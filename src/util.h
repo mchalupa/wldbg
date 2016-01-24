@@ -26,6 +26,8 @@
 #ifndef _WLDBG_UTIL_H_
 #define _WLDBG_UTIL_H_
 
+#include <stdlib.h>
+
 #ifndef DIV_ROUNDUP
 #define DIV_ROUNDUP(n, a) ( ((n) + ((a) - 1)) / (a) )
 #endif
