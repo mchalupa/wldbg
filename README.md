@@ -79,6 +79,17 @@ will continue in running. Other usefull commands are:
 'q' or 'quit'             -- exit wldbg
 ```
 
+When wldbg is run with -g (-objinfo) option, it gathers information about objects.
+User then can just type:
+
+```
+(wldbg) i o ID
+```
+
+where ID is the id of object of interest and wldbg will dump information
+it gathered about it. NOTE: this is new and uncomplete feature and at this
+moment wldbg gathers information about xdg_surface, wl_surface and wl_buffer objects.
+
 Ctrl-C interrupts the program and prompts user for input.
 
 
