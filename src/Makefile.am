@@ -25,6 +25,7 @@ interactive_sources =				\
 	interactive/breakpoints.c		\
 	interactive/filters.c			\
 	interactive/info.c			\
+	interactive/objinfo-info.c		\
 	interactive/pass.c			\
 	interactive/edit.c			\
 	interactive/send.c			\

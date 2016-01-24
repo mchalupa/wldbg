@@ -57,7 +57,8 @@ create_wl_surface_info(struct wldbg_resolved_message *rm)
 		return NULL;
 	}
 
-	oi->wl_interface = rm->wl_interface;
+	/* type of new id - wl_surface_interface */
+	oi->wl_interface = rm->wl_message->types[0];
 	oi->info = info;
 	oi->destroy = destroy_wl_surface_info;
 
@@ -141,7 +142,8 @@ handle_wl_compositor_message(struct wldbg_objects_info *oi,
 		if (strcmp(rm->wl_message->name, "create_surface") == 0) {
 		       info = create_wl_surface_info(rm);
 			if (!info) {
-				fprintf(stderr, "Out of memory, loosing informaiton\n");
+				fprintf(stderr,
+					"Out of memory, loosing information\n");
 				return;
 			}
 
@@ -150,7 +152,7 @@ handle_wl_compositor_message(struct wldbg_objects_info *oi,
 			info->id = *arg->data;
 
 			objects_info_put(oi, info->id, info);
-			printf("Created wl_surface, id %u\n", info->id);
+			dbg("Created wl_surface, id %u\n", info->id);
 		}
 	}
 }

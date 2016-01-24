@@ -46,7 +46,8 @@ create_wl_buffer_info(struct wldbg_resolved_message *rm)
 		return NULL;
 	}
 
-	oi->wl_interface = rm->wl_interface;
+	/* types[0] should be wl_buffer_interface */
+	oi->wl_interface = rm->wl_message->types[0];
 	oi->info = info;
 	oi->destroy = free;
 

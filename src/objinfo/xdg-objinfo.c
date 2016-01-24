@@ -54,7 +54,8 @@ create_xdg_surface_info(struct wldbg_resolved_message *rm)
 		return NULL;
 	}
 
-	oi->wl_interface = rm->wl_interface;
+	/* types[0] should be xdg_surface_interface */
+	oi->wl_interface = rm->wl_message->types[0];
 	oi->info = info;
 	oi->destroy = destroy_xdg_surface_info;
 

@@ -30,7 +30,7 @@
 #include "interactive.h"
 #include "interactive-commands.h"
 #include "wldbg-private.h"
-#include "resolve.h"
+#include "util.h"
 
 static void
 print_object(uint32_t id, const struct wl_interface *intf, void *data)
@@ -105,6 +105,7 @@ info_wldbg(struct wldbg_interactive *wldbgi)
 
 	printf("Monitored fds num: %d\n", wl_list_length(&wldbg->monitored_fds));
 	printf("Resolving objects: %d\n", wldbg->resolving_objects);
+	printf("Gathering objinfo: %d\n", wldbg->gathering_info);
 	printf("Flags:"
 	       "\tpass_whole_buffer : %u\n"
 	       "\trunning           : %u\n"
@@ -172,6 +173,8 @@ cmd_info_help(int oneline)
 
 	printf("info WHAT (i WHAT)\n"
 	       "\n"
+	       "objects (o)\n"
+	       "objects (o) ID\n"
 	       "message (m)\n"
 	       "breakpoints (b)\n"
 	       "filters (f)\n"
@@ -179,11 +182,23 @@ cmd_info_help(int oneline)
 	       "connection (conn, c)\n");
 }
 
+void
+print_object_info(struct wldbg_message *msg, char *buf);
+
+static void
+print_objects_info(struct wldbg_message *message, char *buf)
+{
+	char *id = skip_ws(buf);
+	if (*id)
+		print_object_info(message, id);
+	else
+		print_objects(message);
+}
+
 int
 cmd_info(struct wldbg_interactive *wldbgi,
 	 struct wldbg_message *message, char *buf)
 {
-
 #define MATCH(buf, str) (strncmp((buf), (str), (sizeof((str)) + 1)) == 0)
 
 	if (MATCH(buf, "m") || MATCH(buf, "message")) {
@@ -192,8 +207,12 @@ cmd_info(struct wldbg_interactive *wldbgi,
 			message->from == SERVER ? wldbgi->statistics.server_msg_no
 						: wldbgi->statistics.client_msg_no,
 			message->size);
-	} else if (MATCH(buf, "o") || MATCH(buf, "objects")) {
-		print_objects(message);
+	} else if (strncmp(buf, "objects", 7) == 0) {
+		print_objects_info(message, buf + 7);
+	} else if (strncmp(buf, "object", 6) == 0) {
+		print_objects_info(message, buf + 6);
+	} else if (strncmp(buf, "o", 1) == 0) {
+		print_objects_info(message, buf + 1);
 	} else if (MATCH(buf, "b") || MATCH(buf, "breakpoints")) {
 		print_breakpoints(wldbgi);
 	} else if (MATCH(buf, "f") || MATCH(buf, "filters")) {

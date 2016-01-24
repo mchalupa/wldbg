@@ -44,68 +44,6 @@
 #include "util.h"
 #include "resolve.h"
 
-/* FIXME move to info.c
-static void
-print_wl_buffer_info(struct wldbg_wl_buffer_info *info)
-{
-	printf("  offset: %d\n", info->offset);
-	printf("  size: %dx%d\n", info->width, info->height);
-	printf("  stride: %d\n", info->stride);
-	printf("  format: %u\n", info->format);
-}
-
-static void
-print_wl_surface_info(struct wldbg_objects_info *oi, struct wldbg_wl_surface_info *info)
-{
-	if (info->commited) {
-		printf(" Commited ->\n");
-		print_wl_surface_info(oi, info->commited);
-		printf(" ---\n");
-	}
-
-	printf("  wl_buffer: %u\n", info->wl_buffer_id);
-	printf("  attached to: %ux%u\n", info->attached_x, info->attached_y);
-	printf("  buffer scale: %u\n", info->buffer_scale);
-	printf("  last frame id: %u\n", info->last_frame_id);
-
-	if (info->wl_buffer_id != 0) {
-		printf(" --- buffer:\n");
-		struct wldbg_object_info *bi = objects_info_get(oi, info->wl_buffer_id);
-		if (!bi)
-			printf("NO BUFFER!\n");
-		else
-			print_wl_buffer_info(bi->info);
-	}
-}
-
-
-static void
-print_xdg_surface_info(struct wldbg_objects_info *oi, struct wldbg_xdg_surface_info *xdg_info)
-{
-	uint8_t i = xdg_info->configures_num % 10;
-	uint8_t ord = 0;
-
-	printf("  Tile: '%s'\n", xdg_info->title);
-	printf("  App id: '%s'\n", xdg_info->app_id);
-	printf("  Last 10 configures (out of %lu):\n", xdg_info->configures_num);
-	for (; ord < 10; ++i, ++ord) {
-		i = i % 10;
-		printf("    [%-2u]: width: %5u, height: %5u, state: -- , serial: %5u, acked: %u\n",
-		       ord + 1, xdg_info->configures[i].width,
-		       xdg_info->configures[i].height,
-		       xdg_info->configures[i].serial,
-		       xdg_info->configures[i].acked);
-	}
-
-	struct wldbg_object_info *info = objects_info_get(oi, xdg_info->wl_surface_id);
-	assert (info && "has no wl_surface info in xdg_surface");
-	printf(" -- wl_surface:\n");
-	print_wl_surface_info(oi, info->info);
-}
-
-
-*/
-
 void
 handle_shm_pool_message(struct wldbg_objects_info *oi,
 			struct wldbg_resolved_message *rm, int from);
