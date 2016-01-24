@@ -79,18 +79,21 @@ wldbg_connection_create(struct wldbg *wldbg)
 	if (!conn)
 		return NULL;
 
-	conn->resolved_objects = create_resolved_objects();
-	if (!conn->resolved_objects) {
-		free(conn);
-		return NULL;
+	if (wldbg->resolving_objects) {
+		conn->resolved_objects = create_resolved_objects();
+		if (!conn->resolved_objects) {
+			free(conn);
+			return NULL;
+		}
 	}
 
-	/* FIXME: do this optional */
-	conn->objects_info = create_objects_info();
-	if (!conn->objects_info) {
-		destroy_resolved_objects(conn->resolved_objects);
-		free(conn);
-		return NULL;
+	if (wldbg->gathering_info) {
+		conn->objects_info = create_objects_info();
+		if (!conn->objects_info) {
+			destroy_resolved_objects(conn->resolved_objects);
+			free(conn);
+			return NULL;
+		}
 	}
 
 	conn->wldbg = wldbg;
