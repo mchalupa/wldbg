@@ -110,9 +110,18 @@ int str_to_uint(char *str)
 	if (!*num || *num == '\n')
 		return -1;
 
-	/* check that it is a number */
-	while (*numtmp && !isspace(*numtmp)) {
-		if (!isdigit(*numtmp))
+	/* check that following sequence of characters
+	 * is a number */
+	while (*numtmp) {
+		/* once we reach a space, we require
+		 * that there are spaces to the end of
+		 * string */
+		if (isspace(*numtmp)) {
+			if (*skip_ws(numtmp) != 0)
+				return -1;
+			else
+				break;
+		} else if (!isdigit(*numtmp))
 			return -1;
 
 		++numtmp;
