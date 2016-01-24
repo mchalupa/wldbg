@@ -78,18 +78,6 @@ free_arguments(char **argv)
 	free(arg_tmp);
 }
 
-/* skip white-space characters until
- * you reach non-ws character or new line */
-char *
-skip_ws_to_newline(char *str)
-{
-	char *p = str;
-	while (*p && *p != '\n' && isspace(*p))
-		++p;
-
-	return p;
-}
-
 /* skip white-space characters */
 char *
 skip_ws(char *str)
@@ -110,8 +98,8 @@ int str_to_uint(char *str)
 	char *num, *numtmp;
 
 	/* skip ws to first digit or newline */
-	numtmp = num = skip_ws_to_newline(str);
-	if (!*num || *num == '\n')
+	numtmp = num = skip_ws(str);
+	if (!*num)
 		return -1;
 
 	/* check that following sequence of characters

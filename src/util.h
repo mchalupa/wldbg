@@ -53,9 +53,6 @@ void
 free_arguments(char **argv);
 
 char *
-skip_ws_to_newline(char *str);
-
-char *
 skip_ws(char *str);
 
 int
