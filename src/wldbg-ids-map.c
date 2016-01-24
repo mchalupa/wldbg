@@ -24,6 +24,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -55,6 +56,13 @@ wldbg_ids_map_insert(struct wldbg_ids_map *map, uint32_t id,
 	if (id >= map->count) {
 		size = (id - map->count + 1) * sizeof(void *);
 		p = wl_array_add(&map->data, size);
+		if (!p) {
+			/* this function is supposed to always succeed,
+			 * so in this case we cannot do nothing better
+			 * than abort(). We can't pass this slicently */
+			fprintf(stderr, "Out of memory");
+			abort();
+		}
 
 		/* set newly allocated memory to 0s */
 		memset(p, 0, size);
