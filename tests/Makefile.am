@@ -7,7 +7,8 @@ test_runner =					\
 
 check_PROGRAMS = 				\
 	map-test				\
-	parse-message-test
+	parse-message-test			\
+	util-test
 
 TESTS = $(check_PROGRAMS)
 
@@ -34,3 +35,8 @@ parse_message_test_LDFLAGS =			\
 parse_message_test_SOURCES =			\
 	$(test_runner)				\
 	parse-message-test.c
+
+util_test_SOURCES =				\
+	$(test_runner)				\
+	util-test.c				\
+	$(top_builddir)/src/util.c
