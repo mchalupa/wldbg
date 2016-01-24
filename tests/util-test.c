@@ -3,6 +3,24 @@
 #include "test-runner.h"
 #include "util.h"
 
+TEST(skip_ws_test)
+{
+	char *str;
+
+	str = "  hell";
+	assert(skip_ws(str) == str + 2);
+	str = "a  hell";
+	assert(skip_ws(str) == str);
+	str = "hell  ";
+	assert(skip_ws(str) == str);
+	str = " hell  ";
+	assert(skip_ws(str) == str + 1);
+	str = "";
+	assert(skip_ws(str) == str);
+	char str2[] = {'\0', 'a', 'h'};
+	assert(skip_ws(str2) == str2);
+}
+
 TEST(str_to_uint_test)
 {
 	assert(str_to_uint("0") == 0);
