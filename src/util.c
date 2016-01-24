@@ -101,6 +101,10 @@ skip_ws(char *str)
 	return p;
 }
 
+/* convert unsigned decimal number given in string
+ * to integer. Return -1 if the string is not
+ * unsigned decimal number. String can be prefixed and
+ * suffixed with whitespaces */
 int str_to_uint(char *str)
 {
 	char *num, *numtmp;
