@@ -54,6 +54,9 @@ destroy_objects_info(struct wldbg_objects_info *oi)
 	unsigned int i;
 	struct wldbg_object_info *info;
 
+	if (!oi)
+		return;
+
 	for (i = 0; i < oi->client_objects.count; ++i) {
 		info = wldbg_ids_map_get(&oi->client_objects, i);
 		if (!info)

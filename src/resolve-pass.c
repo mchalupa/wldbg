@@ -444,12 +444,14 @@ destroy_resolved_objects(struct resolved_objects *ro)
 {
 	struct interface *intf, *tmp;
 
+	if (!ro)
+		return;
+
 	wldbg_ids_map_release(&ro->objects.client_objects);
 	wldbg_ids_map_release(&ro->objects.server_objects);
 
-	wl_list_for_each_safe(intf, tmp, &ro->additional_interfaces, link) {
+	wl_list_for_each_safe(intf, tmp, &ro->additional_interfaces, link)
 		free(intf);
-	}
 
 	free(ro);
 }
