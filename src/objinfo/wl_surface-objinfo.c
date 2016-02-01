@@ -85,7 +85,8 @@ handle_wl_surface_message(struct wldbg_objects_info *oi,
 	struct wldbg_resolved_arg *arg;
 	struct wldbg_object_info *info = objects_info_get(oi, rm->base.id);
 	if (!info) {
-		fprintf(stderr, "ERROR: no wl_surface that with id %d\n", rm->base.id);
+		fprintf(stderr, "ERROR: no wl_surface with id %d\n",
+			rm->base.id);
 		return;
 	}
 
@@ -124,7 +125,6 @@ handle_wl_surface_message(struct wldbg_objects_info *oi,
 			memset(surf_info, 0, sizeof *surf_info);
 			surf_info->commited = tmp;
 		} else if (strcmp(rm->wl_message->name, "destroy") == 0) {
-			free(surf_info->commited);
 			wldbg_object_info_free(oi, info);
 		}
 		/* TODO damage */
