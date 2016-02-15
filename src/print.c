@@ -384,6 +384,81 @@ print_wl_seat_message(const struct wl_interface *wl_interface,
 }
 
 static void
+print_actions(uint32_t act)
+{
+	if (act == WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE) {
+		printf("none");
+		return;
+	}
+
+	int n = 0;
+	if (act & WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY) {
+		printf("copy");
+		n = 1;
+	}
+
+	if (act & WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE) {
+		printf("%smove", n ? "|" : "");
+		n = 1;
+	}
+
+	if (act & WL_DATA_DEVICE_MANAGER_DND_ACTION_ASK) {
+		printf("%sask", n ? "|" : "");
+	}
+}
+
+static int
+print_wl_data_source_message(const struct wl_interface *wl_interface,
+			     const struct wl_message *wl_message,
+			     int pos, uint32_t p)
+{
+	if (strcmp(wl_interface->name, "wl_data_source") != 0)
+		return 0;
+
+	if (strcmp(wl_message->name, "action") == 0) {
+		assert(pos == 0 && "action event has only one argument");
+
+		print_actions(p);
+		return 1;
+	} else if (strcmp(wl_message->name, "set_actions") == 0) {
+		assert(pos == 0 && "set_actions has only one argument");
+
+		print_actions(p);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+print_wl_data_offer_message(const struct wl_interface *wl_interface,
+			    const struct wl_message *wl_message,
+			    int pos, uint32_t p)
+{
+	if (strcmp(wl_interface->name, "wl_data_offer") != 0)
+		return 0;
+
+	if (strcmp(wl_message->name, "action") == 0) {
+		assert(pos == 0 && "action event has only one argument");
+
+		print_actions(p);
+		return 1;
+	} else if (strcmp(wl_message->name, "set_actions") == 0) {
+		assert(pos <= 1 && "set_actions has max two arguments");
+
+		print_actions(p);
+		return 1;
+	} else if (strcmp(wl_message->name, "source_actions") == 0) {
+		assert(pos == 0 && "this event has only one argument");
+
+		print_actions(p);
+		return 1;
+	}
+
+	return 0;
+}
+
+static void
 print_array(uint32_t *p, size_t len, size_t howmany)
 {
 	size_t j;
@@ -426,6 +501,8 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 
 	switch (arg->type) {
 	case 'u':
+		/* FIXME: do this more efficient. We're also
+		 * comparing strings in these functions */
 		if (print_wl_keyboard_message(rm->wl_interface,
 					      rm->wl_message, pos + 2,
 					      *arg->data))
@@ -435,6 +512,17 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 					  rm->wl_message, *arg->data))
 			break;
 
+		if (print_wl_data_source_message(rm->wl_interface,
+						 rm->wl_message, pos,
+						 *arg->data))
+			break;
+
+		if (print_wl_data_offer_message(rm->wl_interface,
+						rm->wl_message, pos,
+						*arg->data))
+			break;
+
+		/* nothing worked? Then it is just a number */
 		printf("%u", *arg->data);
 		break;
 	case 'i':
