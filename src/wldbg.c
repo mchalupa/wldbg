@@ -340,6 +340,11 @@ process_data(struct wldbg_connection *conn,
 	struct wldbg_message *message = &wldbg->message;
 	char *buffer = wldbg->buffer;
 
+	if (len == 0) {
+		fprintf(stderr, "ERROR: Message with length 0\n");
+		return -1;
+	}
+
 	/* reset the message */
 	memset(message, 0, sizeof *message);
 
