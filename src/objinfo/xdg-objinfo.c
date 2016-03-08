@@ -144,9 +144,10 @@ handle_xdg_surface_message(struct wldbg_objects_info *oi,
 		} else if (strcmp(rm->wl_message->name, "ack_configure") == 0) {
 			arg = wldbg_resolved_message_next_argument(rm);
 			uint32_t serial = *arg->data;
+			uint8_t idx;
 
 			/* find serial */
-			for (uint8_t idx = 0; idx < 10; ++idx) {
+			for (idx = 0; idx < 10; ++idx) {
 				struct xdg_configure *c = &xdg_info->configures[idx];
 				if (c->serial == serial) {
 					c->acked = 1;
