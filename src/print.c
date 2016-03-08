@@ -32,6 +32,7 @@
 
 #include <linux/input.h>
 #include <wayland-client-protocol.h>
+#include <wayland-version.h>
 
 #include "wldbg.h"
 #include "wayland/wayland-util.h"
@@ -41,6 +42,15 @@
 #include "wldbg-parse-message.h"
 #include "resolve.h"
 #include "util.h"
+
+/* is wayland version greater or equal to given version? */
+#define WAYLAND_VERSION_GE(maj, min, mic)\
+    (((WAYLAND_VERSION_MAJOR > (maj))) ||\
+     ((WAYLAND_VERSION_MAJOR == (maj)) &&\
+      (WAYLAND_VERSION_MINOR > (min))) ||\
+     ((WAYLAND_VERSION_MAJOR == (maj)) &&\
+      (WAYLAND_VERSION_MINOR == (min)) &&\
+      (WAYLAND_VERSION_MICRO >= (mic))))
 
 static void
 print_key(uint32_t p)
@@ -383,6 +393,8 @@ print_wl_seat_message(const struct wl_interface *wl_interface,
 	return 0;
 }
 
+/* The actions were introduced in 1.9.91 */
+#if WAYLAND_VERSION_GE(1, 9, 91)
 static void
 print_actions(uint32_t act)
 {
@@ -457,6 +469,7 @@ print_wl_data_offer_message(const struct wl_interface *wl_interface,
 
 	return 0;
 }
+#endif /* WAYLAND_VERSION >= 1.9.91 */
 
 static void
 print_array(uint32_t *p, size_t len, size_t howmany)
@@ -512,6 +525,7 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 					  rm->wl_message, *arg->data))
 			break;
 
+#if WAYLAND_VERSION_GE(1, 9, 91)
 		if (print_wl_data_source_message(rm->wl_interface,
 						 rm->wl_message, pos,
 						 *arg->data))
@@ -521,6 +535,7 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 						rm->wl_message, pos,
 						*arg->data))
 			break;
+#endif /* WAYLAND_VERSION >= 1.9.91 */
 
 		/* nothing worked? Then it is just a number */
 		printf("%u", *arg->data);
