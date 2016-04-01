@@ -471,6 +471,62 @@ print_wl_data_offer_message(const struct wl_interface *wl_interface,
 }
 #endif /* WAYLAND_VERSION >= 1.9.91 */
 
+
+/* we have whole xdg-surface hardcoded now...
+ * FIXME */
+#ifndef XDG_SURFACE_STATE_ENUM
+#define XDG_SURFACE_STATE_ENUM
+enum xdg_surface_state {
+	XDG_SURFACE_STATE_MAXIMIZED = 1,
+	XDG_SURFACE_STATE_FULLSCREEN = 2,
+	XDG_SURFACE_STATE_RESIZING = 3,
+	XDG_SURFACE_STATE_ACTIVATED = 4,
+};
+#endif /* XDG_SURFACE_STATE_ENUM */
+
+static int
+print_xdg_surface_message(const struct wl_interface *wl_interface,
+			  const struct wl_message *wl_message, int pos,
+			  uint32_t *data, size_t len)
+{
+	int n;
+	uint32_t i;
+
+	if (strcmp(wl_interface->name, "xdg_surface") != 0)
+		return 0;
+
+	if (pos == 2 && strcmp(wl_message->name, "configure") == 0) {
+		/* print human readable configure states */
+		n = 0;
+		for (i = 0; i < len; ++i) {
+
+			switch(data[i]) {
+			case XDG_SURFACE_STATE_MAXIMIZED:
+				printf("%smaximized", n++ ? "|" : "");
+				break;
+			case XDG_SURFACE_STATE_FULLSCREEN:
+				printf("%sfullscreen", n++ ? "|" : "");
+				break;
+			case XDG_SURFACE_STATE_RESIZING:
+				printf("%sresizing", n++ ? "|" : "");
+				break;
+			case XDG_SURFACE_STATE_ACTIVATED:
+				printf("%sactivated", n++ ? "|" : "");
+				break;
+			default:
+				printf("%sunknown", n++ ? "|" : "");
+			}
+		}
+
+		if (n == 0)
+			printf("none");
+
+		return 1;
+	}
+
+	return 0;
+}
+
 static void
 print_array(uint32_t *p, size_t len, size_t howmany)
 {
@@ -572,9 +628,14 @@ print_arg(struct wldbg_resolved_arg *arg, struct wldbg_resolved_message *rm,
 		break;
 	case 'a':
 		if (arg->data)
-			len = DIV_ROUNDUP(*arg->data, sizeof(uint32_t));
+			len = DIV_ROUNDUP(*(arg->data - 1), sizeof(uint32_t));
 		else
 			len = 0;
+
+		if (len && print_xdg_surface_message(rm->wl_interface,
+						     rm->wl_message, pos,
+						     arg->data, len))
+			break;
 
 		printf("array:");
 		print_array(arg->data, len, 8);
