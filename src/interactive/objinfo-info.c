@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <wayland-client-protocol.h>
+
 #include "wayland/wayland-private.h"
 
 #include "interactive.h"
@@ -103,17 +105,60 @@ print_xdg_surface_info(struct wldbg_objects_info *oi,
 }
 
 static void
+print_capabilities(uint32_t p)
+{
+	int n = 0;
+	if (p & WL_SEAT_CAPABILITY_KEYBOARD) {
+		printf("keyboard");
+		n = 1;
+	}
+
+	if (p & WL_SEAT_CAPABILITY_POINTER) {
+		printf("%spointer", n ? " | " : "");
+		n = 1;
+	}
+
+	if (p & WL_SEAT_CAPABILITY_TOUCH) {
+		printf("%stouch", n ? " | " : "");
+		n = 1;
+	}
+
+	if (!n)
+		printf("none");
+}
+
+static void
+print_wl_seat_info(struct wldbg_wl_seat_info *info, int version, int ind)
+{
+	printf("%*s-- wl_seat --\n", ind, "");
+	printf("%*s  name: \"%s\"\n", ind, "", info->name);
+	printf("%*s  version: %u\n", ind, "", version);
+	printf("%*s  capabilities: ", ind, "");
+	print_capabilities(info->capabilities);
+	putchar('\n');
+}
+
+static void
 print_objinfo(struct wldbg_objects_info *oi, struct wldbg_object_info *info)
 {
+	assert(oi);
+	assert(info);
+
 	const char *name = info->wl_interface->name;
+	printf("Info about object: %u [%s]\n", info->id, name);
+
 	if (strcmp(name, "xdg_surface") == 0) {
 		print_xdg_surface_info(oi, info->info);
 	} else if (strcmp(name, "wl_buffer") == 0) {
 		print_wl_buffer_info(info->info, 0);
 	} else if (strcmp(name, "wl_surface") == 0) {
 		print_wl_surface_info(oi, info->info, 0);
+	} else if (strcmp(name, "wl_seat") == 0) {
+		print_wl_seat_info(info->info, info->version, 0);
 	} else {
-		fprintf(stderr, "Unhandled objinfo: %u\n", info->id);
+		fprintf(stderr, "Unhandled objinfo: %s\n",
+			info->wl_interface ?  info->wl_interface->name :
+					      "unknown interface");
 	}
 }
 

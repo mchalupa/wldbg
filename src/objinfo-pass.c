@@ -47,7 +47,6 @@
 void
 handle_shm_pool_message(struct wldbg_objects_info *oi,
 			struct wldbg_resolved_message *rm, int from);
-
 void
 handle_wl_buffer_message(struct wldbg_objects_info *oi,
 			 struct wldbg_resolved_message *rm, int from);
@@ -65,6 +64,14 @@ handle_xdg_shell_message(struct wldbg_objects_info *oi,
 void
 handle_xdg_surface_message(struct wldbg_objects_info *oi,
 			   struct wldbg_resolved_message *rm, int from);
+
+void
+handle_wl_registry_message(struct wldbg_objects_info *oi,
+			   struct wldbg_resolved_message *rm, int from);
+
+void
+handle_wl_seat_message(struct wldbg_objects_info *oi,
+		       struct wldbg_resolved_message *rm, int from);
 
 static int
 gather_info(void *user_data, struct wldbg_message *message)
@@ -90,6 +97,10 @@ gather_info(void *user_data, struct wldbg_message *message)
 		handle_shm_pool_message(oinf, &rm, message->from);
 	else if (strcmp(rm.wl_interface->name, "xdg_shell") == 0)
 		handle_xdg_shell_message(oinf, &rm, message->from);
+	else if (strcmp(rm.wl_interface->name, "wl_registry") == 0)
+		handle_wl_registry_message(oinf, &rm, message->from);
+	else if (strcmp(rm.wl_interface->name, "wl_seat") == 0)
+		handle_wl_seat_message(oinf, &rm, message->from);
 
 	return PASS_NEXT;
 }

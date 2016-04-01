@@ -38,6 +38,11 @@ struct wldbg_object_info {
     /* this is a key to map, but we need it as well
      * when we have just pointer to this struct */
     uint32_t id;
+    /* every object has a version, so we can
+     * keep it here, instead of in the real info.
+     * NOTE: the version may not be set,
+     * it depends solely on the object handler */
+    uint32_t version;
     /* the real info (according to interface) */
 	void *info;
     /* destroy data that are stored in info pointer */
@@ -76,6 +81,29 @@ struct wldbg_xdg_surface_info {
      * object destruction, we'll get NULL from map */
     uint32_t wl_surface_id;
     uint32_t parent_id;
+};
+
+struct wldbg_wl_seat_info {
+    uint32_t capabilities;
+    char *name;
+
+    /* FIXME: client can ask for more these objects
+    uint32_t pointer_id;
+    uint32_t keyboard_id;
+    uint32_t touch_id;
+    */
+};
+
+struct wldbg_wl_keyboard_info {
+    /* store last 20 keys */
+    uint32_t last_keys[20];
+
+    /* modifiers state */
+    struct modifiers {
+        uint32_t depressed;
+        uint32_t latched;
+        uint32_t locked;
+    } modifiers;
 };
 
 #endif /* _WLDBG_OBJECTS_INFO_H_ */

@@ -37,7 +37,9 @@ objinfo_sources =				\
 	objinfo/objinfo-private.h		\
 	objinfo/xdg-objinfo.c			\
 	objinfo/wl_surface-objinfo.c		\
-	objinfo/wl_shm-objinfo.c
+	objinfo/wl_shm-objinfo.c		\
+	objinfo/wl_registry-objinfo.c		\
+	objinfo/wl_seat-objinfo.c
 
 # XXX do it conditional
 hardcoded_interfaces =				\
