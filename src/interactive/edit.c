@@ -33,6 +33,7 @@
 #include "wayland/wayland-private.h"
 
 #include "wldbg-private.h"
+#include "wldbg-parse-message.h"
 #include "interactive.h"
 
 static char *
@@ -173,7 +174,7 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 		}
 	} while (!cmd);
 
-	printf("executing: %s\n", cmd);
+	dbg("executing: %s\n", cmd);
 	/* XXX maybe use popen? */
 	if (system(cmd) != 0) {
 		fprintf(stderr, "Executing edit command has returned"
@@ -181,6 +182,9 @@ cmd_edit(struct wldbg_interactive *wldbgi,
 	} else {
 		read_message_from_tmpfile(msg_file, message);
 	}
+
+	printf("message edited to: ");
+	wldbg_message_print(message);
 
 	free(cmd);
 	destroy_message_tmpfile(msg_file);
