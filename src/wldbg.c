@@ -290,15 +290,65 @@ run_passes(struct wldbg_message *message)
 }
 
 static int
+wl_connection_flush_checked(struct wl_connection *conn)
+{
+	int ret;
+	do {
+		ret = wl_connection_flush(conn);
+	} while (ret < 0 && errno == EAGAIN);
+
+	return ret;
+}
+
+static int
 process_one_by_one(struct wl_connection *write_conn,
 		   struct wldbg_message *message)
 {
-	int n = 0;
-	size_t rest = message->size;
+	int rest, n = 0;
 	struct wldbg *wldbg = message->connection->wldbg;
 
-	while (rest > 0) {
+	rest = message->size;
+
+	if (message->size % 4) {
+		fprintf(stderr, "Packed is missaligned, length %lu "
+				"not divisible by 4\n", message->size);
+		abort();
+	}
+
+	if (message->size < 8) {
+		fprintf(stderr, "Packet must be at least 8-bytes long, "
+				"but is %lu", message->size);
+		abort();
+	}
+
+	assert(rest > 0 && "BUG: wrong message length");
+	assert(rest <= 4096
+	       && "BUG: Rest is greater than available space in buffer");
+
+	while(rest > 0) {
+		assert(rest % 4 == 0 && "corrupted counter, misaligned");
+		assert(rest > 0 && rest <= 4096 && "bug: counter corruption");
+
 		message->size = ((uint32_t *) message->data)[1] >> 16;
+		/* the last message is not complete, will be dispatched
+		 * in next burst */
+		if (rest < (int) message->size) {
+			assert(n + message->size > 4096);
+			break;
+		}
+
+		/* these are wire-format corruption */
+		if (message->size % 4) {
+			fprintf(stderr, "message size misaligned: %lu\n",
+				message->size);
+			abort();
+		}
+
+		if (message->size < 8) {
+			fprintf(stderr, "Message must be at least 8-bytes long,"
+					" but is %lu", message->size);
+			abort();
+		}
 
 		run_passes(message);
 
@@ -315,17 +365,16 @@ process_one_by_one(struct wl_connection *write_conn,
 			return -1;
 		}
 
-		if (wl_connection_flush(write_conn) < 0) {
+		if (wl_connection_flush_checked(write_conn) < 0) {
 			perror("wl_connection_flush");
 			return -1;
 		}
 
-		message->data = message->data + message->size;
 		rest -= message->size;
-		++n;
+		message->data = message->data + message->size;
+		n += message->size;
+		assert(n <= 4096 && n >= 8 && n % 4 == 0);
 	}
-
-	assert(rest == 0 && "Bug!");
 
 	return n;
 }
@@ -341,16 +390,17 @@ process_data(struct wldbg_connection *conn,
 	char *buffer = wldbg->buffer;
 
 	if (len == 0) {
-		fprintf(stderr, "ERROR: Message with length 0\n");
+		fprintf(stderr, "ERROR: wrong message length: %d\n", len);
 		return -1;
 	}
 
 	/* reset the message */
 	memset(message, 0, sizeof *message);
 
+	/* get the message contents */
 	wl_connection_copy(wl_connection, buffer, len);
-	wl_connection_consume(wl_connection, len);
 
+	/* choose the right connection to write to */
 	if (wl_connection == conn->server.connection) {
 		write_wl_conn = conn->client.connection;
 		message->from = SERVER;
@@ -359,8 +409,10 @@ process_data(struct wldbg_connection *conn,
 		message->from = CLIENT;
 	}
 
+	/* copy filedescriptors between connections */
 	wl_connection_copy_fds(wl_connection, write_wl_conn);
 
+	/* construct the message */
 	message->data = buffer;
 	message->size = len;
 	message->connection = conn;
@@ -386,17 +438,21 @@ process_data(struct wldbg_connection *conn,
 			return -1;
 		}
 
-		if (wl_connection_flush(write_wl_conn) < 0) {
+		if (wl_connection_flush_checked(write_wl_conn) < 0) {
 			perror("wl_connection_flush");
 			return -1;
 		}
 
-		ret = 1;
+		/* we used whole message */
+		ret = len;
 	}
 
-	/* What if some pass reallocated the buffer? */
+	/* consume what we've used from the connection */
+	wl_connection_consume(wl_connection, ret);
 
-	return ret;
+	/* XXX: What if some pass reallocated the buffer? */
+
+	return ret > 0;
 }
 
 static int
@@ -418,8 +474,12 @@ dispatch_messages(int fd, void *data)
 	if (len < 0 && errno != EAGAIN) {
 		perror("wl_connection_read");
 		return -1;
-	} else if (len < 0 && errno == EAGAIN)
+	} else if (len < 0 && errno == EAGAIN) {
 		return 1;
+	} else if (len == 0) {
+		perror("wl_connection_read - empty message");
+		return -1;
+	}
 
 	return process_data(conn, wl_conn, len);
 }
