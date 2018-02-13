@@ -29,6 +29,7 @@
 #include <assert.h>
 
 #include "wldbg-private.h"
+#include "getopt.h"
 
 static int
 is_prefix_of(const char *what, const char *src)

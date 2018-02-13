@@ -36,6 +36,7 @@
 #include "wldbg-private.h"
 #include "util.h"
 #include "wldbg-pass.h"
+#include "getopt.h"
 
 /* hardcoded passes */
 extern struct wldbg_pass wldbg_pass_list;
