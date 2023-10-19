@@ -1,16 +1,21 @@
 ###  What is wldbg?
 
-Wldbg is a tool that allows you to hijack wayland's connection
-and do whatever you want with it. It can be easily extended
-by passes or it can run in interactive gdb-like mode.
+Wldbg is a tool that allows you to debug or modify events in
+Wayland connections. It works on the man-in-the-middle basis.
+When a Wayland client is run under wldbg, every message to or
+from the client is handed out to a pipeline of passes that can
+process the message. Passes are simple-to-write plugins.
+Wldbg has also an interactive gdb-like mode.
 
-### What is pass?
+### What is a pass?
 
-The calling pass is inspired by LLVM passes.
-Pass is a plugin that defines two functions - one for incoming
-messages from client and the other for messages from server.
-It can modify, print or take arbitrary action with the message and
-then pass the message to another pass and so on..
+The passes in wldbg are inspired by LLVM passes.
+A pass is a plugin that defines two functions - one for
+messages going from the client to the server and the another for
+messages from server to the client.
+It can analyze or arbitriraly modify the message and
+then pass the message to the next pass (or stop the whole pipeline)
+and so on..
 
 ### Using passes
 
@@ -29,17 +34,17 @@ If you do not know what passes are available, use:
   $ wldbg list
 ```
 
-To get better understanding how it works, there's exapmle pass
-in passes/example.c that is also compiled with other passes
-in that directory. Run it as follows:
+To get better understanding how it works, there's an example pass
+in `passes/example.c`. This pass is also compiled by default, so
+you can try it out as follows:
 
 ```
   $ wldbg example -- wayland_client
 ```
 
-### Using interactive mode
+### Using the interactive mode
 
-To run wldbg in interactive mode, just do:
+To run wldbg in the interactive mode, just do:
 
 ```
   $ wldbg -i wayland-client
@@ -54,7 +59,7 @@ If everything goes well, you'll see:
 ```
 
 wldbg is now waiting for your input. By typing 'c' or 'continue', the program
-will continue in running. Other usefull commands are:
+will continue running. Other usefull commands are:
 
 ```
 'help'                    -- show help message
@@ -86,18 +91,19 @@ User then can just type:
 (wldbg) i o ID
 ```
 
-where ID is the id of object of interest and wldbg will dump information
-it gathered about it. NOTE: this is new and uncomplete feature and at this
+where ID is the id of the object of interest and wldbg will dump information
+it gathered about it. NOTE: this is new and incomplete feature. At this
 moment wldbg gathers information about xdg_surface, wl_surface and wl_buffer objects.
 
 Ctrl-C interrupts the program and prompts user for input.
 
 ### Using server mode
 
-Wldbg can run is server mode in which every new connection is redirected to wldbg and
-already then to compositor. Upon first connection the user is prompted for an action, every other connection
-is connected automatically without stopping. Server mode is also interactive, so everythin that works
-in interactive mode, works in the server mode too. To start wldbg in the server mode, use -s switch:
+Wldbg can run in the server mode in which every new connection is redirected to wldbg and
+only then to the Wayland compositor. Upon the first connection, the user is prompted for an action,
+every other connection is then connected automatically without stopping.
+The server mode is interactive, so everything that works in the interactive mode,
+works in the server mode too. To start wldbg in the server mode, use the -s switch:
 
 ```
 $ wldbg -s
@@ -114,22 +120,23 @@ Stopped on the first message
 After another client is connected, the messages from both are just interleaved:
 
 ```
-[weston-terminal: 7874] S: wl_pointer@3.motion(2739198098, 197.000000, 142.000000)
-[weston-terminal: 7874] S: wl_pointer@3.frame()
-[weston-dnd     : 7930] S: wl_buffer@38.release()
-[weston-dnd     : 7930] S: wl_pointer@3.leave(166, wl_surface@14)
-[weston-dnd     : 7930] S: wl_pointer@3.frame()
-[weston-terminal: 7874] C: wl_surface@10.attach(wl_buffer@17, 0, 0)
-[weston-terminal: 7874] C: wl_surface@10.damage(0, 0, 9, 16)
-[weston-terminal: 7874] C: wl_surface@10.commit()
+[weston-terminal |7874] S: wl_pointer@3.motion(2739198098, 197.000000, 142.000000)
+[weston-terminal |7874] S: wl_pointer@3.frame()
+[weston-dnd      |7930] S: wl_buffer@38.release()
+[weston-dnd      |7930] S: wl_pointer@3.leave(166, wl_surface@14)
+[weston-dnd      |7930] S: wl_pointer@3.frame()
+[weston-terminal |7874] C: wl_surface@10.attach(wl_buffer@17, 0, 0)
+[weston-terminal |7874] C: wl_surface@10.damage(0, 0, 9, 16)
+[weston-terminal |7874] C: wl_surface@10.commit()
 ```
 
-Server mode is handy for example for debugging interaction of two clients,
-like two weston-dnd instances, dragging and dropping between them.
+Server mode is handy, for example, for debugging the interaction between two clients,
+like two weston-dnd instances dragging and dropping between them.
 
 ----------------------
 
-Wldbg is under hard (and slow :) developement and not all features are working yet
-(those described above should mostly work, though)
+An active development of Wldbg stopped some years ago, but it still should work.
+There are features missing and probably some bugs, but the features described above
+should mostly work.
 
 Author: Marek Chalupa <mchqwerty@gmail.com>
