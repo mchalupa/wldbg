@@ -128,6 +128,10 @@ struct wldbg {
 		int fd_lock;
 
 		const char *connect_to;
+
+        /* Alignment width of the names of clients.
+         * It is computed based on the longest name of clients out there */
+        int client_name_width;
 	} server_mode;
 
 	/* this will be list later */

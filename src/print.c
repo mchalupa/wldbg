@@ -657,9 +657,12 @@ wldbg_message_print(struct wldbg_message *message)
 
 	if (conn->wldbg->flags.server_mode) {
 		if (conn->client.program)
-			printf("[%-15s] ", conn->client.program);
+			printf("[%-*s |%-5d] ",
+			       conn->wldbg->server_mode.client_name_width,
+			       conn->client.program,
+			       conn->client.pid);
 		else
-			printf("[%-5d] ", conn->client.pid);
+			printf("[? |%-5d] ", conn->client.pid);
 	}
 
 	printf("%c: ", message->from == SERVER ? 'S' : 'C');

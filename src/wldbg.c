@@ -778,6 +778,15 @@ server_mode_accept(int fd, void *data)
 		goto err;
 	}
 
+	if (conn->client.program) {
+		/* Update the alignment for printing client names */
+		int name_len = strlen(conn->client.program);
+		if (name_len > wldbg->server_mode.client_name_width) {
+			wldbg->server_mode.client_name_width
+				= name_len > 20 ? 20 : name_len;
+		}
+	}
+
 	wldbg_add_connection(conn);
 	dbg("Created new connection to client: %s\n", name.sun_path);
 

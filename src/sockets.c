@@ -283,7 +283,7 @@ server_mode_change_sockets(struct wldbg *wldbg)
 	orig_socket = get_socket_path(wayland_display);
 	new_socket = get_socket_path(WLDBG_SERVER_MODE_SOCKET_NAME);
 
-	if (!orig_socket || ! new_socket)
+	if (!orig_socket || !new_socket)
 		goto err;
 
 	dbg("Renaming wayland socket: %s -> %s\n",
