@@ -76,9 +76,10 @@ wldbg_error(struct wldbg *wldbg);
  * Set pass_whole_buffer flag in wldbg. If this flag is
  * set, wldbg won't call passes on single messages but
  * on whole buffer that it gots from server or client
- * if state is 0 or 1, then the function sets the flag
- * accordingly. If the state is -1, then the function
- * returns current setting. Other state values are invalid */
+ * The function sets the flag to the value of `state`.
+ * If `state` is -1, then the function
+ * returns the current value of the flag.
+ * Values of `state` not in {-1, 0, 1} are invalid */
 int
 wldbg_separate_messages(struct wldbg *wldbg, int state);
 
