@@ -247,6 +247,7 @@ wldbg_dispatch(struct wldbg *wldbg)
 
 	if (ev.events & EPOLLHUP) {
 		/* if connections_num is 0, that we're done */
+		assert(cb->data != wldbg && "Not a connection callback");
 		return remove_connection(conn, cb);
 	}
 
@@ -260,8 +261,17 @@ wldbg_dispatch(struct wldbg *wldbg)
 
 	ret = cb->dispatch(cb->fd, cb->data);
 	if (ret <= 0) {
-		/* on error, remove connection */
-		return remove_connection(conn, cb);
+		/* On error, only remove the connection if this is a dispatch of
+		 * a connection.
+		 * This may be also a dispatch of server_mode_accept or signals
+		 * in which case cb->data == wldbg.
+		 * XXX: do this somewhat nicer, e.g., add a callback into 
+		 * wldbg_fd_callback that handles these cases.*/
+		if (cb->data != wldbg)
+			return remove_connection(conn, cb);
+
+		/* if this is not a connection, fail */
+		return -1;
 	}
 
 	return ret;
