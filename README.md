@@ -1,7 +1,8 @@
 ###  What is wldbg?
 
-Wldbg is a tool that allows you to hijack wayland's connection
-and do whatever you want with it. It can be easily extended
+Wldbg is a tool that works as a transparent proxy to a wayland server.
+It allows you to hijack wayland's connection(s)
+and analyze/modify the transmitted data. It can be easily extended
 by passes or it can run in interactive gdb-like mode.
 
 ### What is pass?
@@ -10,7 +11,7 @@ The calling pass is inspired by LLVM passes.
 Pass is a plugin that defines two functions - one for incoming
 messages from client and the other for messages from server.
 It can modify, print or take arbitrary action with the message and
-then pass the message to another pass and so on..
+then forward the message to another pass and so on..
 
 ### Using passes
 
@@ -20,7 +21,8 @@ Run wldbg with passes is very easy, just type on command-line:
   $ wldbg pass1 ARGUMENTS, pass2 ARGUMENTS -- wayland-client
 ```
 
-pass1 and pass2 are names of the passes without .so extension
+pass1 and pass2 are either paths to the .so files of the passes
+or names of the passes from the `passes/` directory without the .so extension
 (i. e. dump.so ~~> dump)
 
 If you do not know what passes are available, use:
