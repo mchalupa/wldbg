@@ -156,12 +156,17 @@ create_pass(const char *name)
 	if (strcmp(name, "list") == 0) {
 		wldbg_pass = &wldbg_pass_list;
 	} else {
-		/* try current directory */
-		if (build_path(path, "./", NULL, name) < 0)
-			return NULL;
+		/* first try if it is a path to a concrete .so file */
+		dbg("Trying '%s'\n", name);
+		wldbg_pass = load_pass(name);
+		if (!wldbg_pass && errno != EEXIST) {
+			/* try current directory */
+			if (build_path(path, "./", NULL, name) < 0)
+				return NULL;
 
-		dbg("Trying '%s'\n", path);
-		wldbg_pass = load_pass(path);
+			dbg("Trying '%s'\n", path);
+			wldbg_pass = load_pass(path);
+		}
 
 		/* try passes/ if we're in build directory */
 		if (!wldbg_pass && errno != EEXIST) {
