@@ -32,6 +32,8 @@ struct wldbg_options {
 	unsigned int server_mode       : 1;
 	unsigned int pass_whole_buffer : 1;
 
+    /* display to connect to (let empty for default options) */
+    const char *display;
 	/* parsed path to the program and
 	 * its arguments */
 	char *path;

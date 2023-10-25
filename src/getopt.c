@@ -52,19 +52,23 @@ is_prefix_of(const char *what, const char *src)
 	return 1;
 }
 
+/* set_opt returns the number of arguments to consume that are
+ * associated with the option. That is, if the option has no argument,
+ * 0 is returned. For one argument, 1 is returned. Negative value is returned
+ * on error.
+ *
+ * Note: ATM, unknown options are ignored. */
 static int
-set_opt(const char *arg, struct wldbg_options *opts)
+set_opt(const char *arg, const char *next_arg, struct wldbg_options *opts)
 {
 	int match = 0;
 
 	if (*arg == '\0') {
 		fprintf(stderr, "Error: empty option\n");
-		return 0;
+		return -1;
 	}
 
-	if (is_prefix_of(arg, "help")) {
-		return 0;
-	} else if (is_prefix_of(arg, "interactive")) {
+	if (is_prefix_of(arg, "interactive")) {
 		dbg("Command line option: interactive\n");
 		opts->interactive = 1;
 		match = 1;
@@ -80,18 +84,31 @@ set_opt(const char *arg, struct wldbg_options *opts)
 		dbg("Command line option: objinfo\n");
 		opts->objinfo = 1;
 		match = 1;
+	} else if (is_prefix_of(arg, "display")) {
+		dbg("Command line option: display\n");
+		opts->display = next_arg;
+		return 1;
 	}
 
 	if (!match) {
 		fprintf(stderr, "Ignoring unknown option: %s\n", arg);
 	}
 
-	return 1;
+	/* default shift of arguments by 1 */
+	return 0;
+}
+
+static inline
+const char *next_arg(int argc, char *argv[], int n) {
+	if (n + 1 < argc)
+		return argv[n + 1];
+	return NULL;
 }
 
 int get_opts(int argc, char *argv[], struct wldbg_options *opts)
 {
 	int n = 1;
+	int res;
 	for (; n < argc; ++n) {
 		/* separator */
 		if (strcmp("--", argv[n]) == 0) {
@@ -101,18 +118,35 @@ int get_opts(int argc, char *argv[], struct wldbg_options *opts)
 
 		/* options */
 		if (is_prefix_of("--", argv[n])) {
-			if (!set_opt(argv[n] + 2, opts))
+			if (is_prefix_of(argv[n] + 2, "help")) {
 				return -1;
+			}
+
+			res = set_opt(argv[n] + 2,
+				      next_arg(argc, argv, n),
+				      opts);
+			if (res < 0)
+				return -1;
+			n += res;
 		} else if (is_prefix_of("-", argv[n])) {
+			if (is_prefix_of(argv[n] + 1, "help")) {
+				return -1;
+			}
+
 			/* -g is a synonym for objinfo */
 			if (argv[n][1] == 'g' && argv[n][2] == 0) {
 				/* objinfo */
-				set_opt("objinfo", opts);
+				res = set_opt("objinfo", NULL, opts);
+				assert(res == 0);
 				continue;
 			}
 
-			if (!set_opt(argv[n] + 1, opts))
+			res = set_opt(argv[n] + 1,
+				      next_arg(argc, argv, n),
+				      opts);
+			if (res < 0)
 				return -1;
+			n += res;
 		} else
 			break;
 	}

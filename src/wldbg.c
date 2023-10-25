@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014 - 2015 Marek Chalupa
+ * Copyright (c) 2023 ISTA Austria
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -836,7 +837,27 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options,
 		wldbg->flags.pass_whole_buffer = 1;
 	}
 
-	if (options->interactive) {
+	if (options->server_mode) {
+		wldbg->flags.server_mode = 1;
+
+
+		if (server_mode_init(wldbg) < 0)
+			return -1;
+
+		/* server mode can be interactive too */
+		if (options->interactive) {
+			if (interactive_init(wldbg) < 0)
+				return -1;
+			pass_num = 1;
+		} else {
+			pass_num = load_passes(wldbg, options, argc - pass_off,
+					       (const char **) argv + pass_off);
+			if (pass_num == -1) {
+				fprintf(stderr, "Error occured while loading passes...\n");
+				return -1;
+			}
+		}
+	} else if (options->interactive) {
 		if (argc - pass_off < 1) {
 			fprintf(stderr, "Need client to run\n");
 			return -1;
@@ -862,25 +883,6 @@ parse_opts(struct wldbg *wldbg, struct wldbg_options *options,
 			return -1;
 
 		return 0;
-	} else if (options->server_mode) {
-		wldbg->flags.server_mode = 1;
-
-		if (argv[pass_off]) {
-			wldbg->server_mode.connect_to = argv[pass_off];
-			/* increase pass offset so that the passes will get
-			 * the right arguments */
-			++pass_off;
-		}
-
-		if (server_mode_init(wldbg) < 0)
-			return -1;
-
-		/* server mode is interactive too -- at least
-		 * ATM */
-		if (interactive_init(wldbg) < 0)
-			return -1;
-
-		pass_num = 1;
 	} else {
 		pass_num = load_passes(wldbg, options, argc - pass_off,
 				       (const char **) argv + pass_off);
