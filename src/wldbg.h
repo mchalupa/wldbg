@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014 - 2015 Marek Chalupa
+ * Copyright (c) 2023 ISTA Austria
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -33,7 +34,7 @@ struct wldbg;
 struct wldbg_connection;
 
 struct wldbg_message {
-	/* raw data in message */
+	/* raw data in the message */
 	void *data;
 
 	/* size of the message in bytes */

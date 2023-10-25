@@ -57,6 +57,7 @@ struct wldbg_resolved_arg {
 
 struct wldbg_resolved_message {
 	struct wldbg_parsed_message base;
+
 	const struct wl_interface *wl_interface;
 	const struct wl_message *wl_message;
 
@@ -69,7 +70,7 @@ struct wldbg_resolved_message {
 int wldbg_parse_message(struct wldbg_message *msg, struct wldbg_parsed_message *out);
 
 int wldbg_resolve_message(struct wldbg_message *msg,
-			  struct wldbg_resolved_message *out);
+                          struct wldbg_resolved_message *out);
 
 struct wldbg_resolved_arg *
 wldbg_resolved_message_next_argument(struct wldbg_resolved_message *msg);
