@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014 - 2015 Marek Chalupa
+ * Copyright (c) ISTA Austria
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -172,6 +173,11 @@ struct wldbg_connection {
 	struct resolved_objects *resolved_objects;
 	struct wldbg_objects_info *objects_info;
 	struct wl_list link;
+
+    void *user_data;
+    /* callback to destroy user data if needed.
+     * It is called as the first thing when destroying the connection */
+    void (*user_data_destroy_cb)(struct wldbg_connection *, void*);
 };
 
 struct wldbg_fd_callback {

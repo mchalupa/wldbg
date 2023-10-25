@@ -63,6 +63,15 @@ wldbg_message_objects_iterate(struct wldbg_message *message,
 			                   void *data),
 			      void *data);
 
+/* Sometimes it is handy to associate some data to connections.
+ * It can be done using these functions */
+void wldbg_connection_set_user_data(struct wldbg_connection *,
+                                    void *data,
+                                    void (*data_destroy_cb)(struct wldbg_connection *c, void *data));
+
+void *wldbg_connection_get_user_data(struct wldbg_connection *);
+
+
 /* mercifully exit wldbg from the pass
  * and let it clean after itself */
 void

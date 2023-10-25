@@ -71,6 +71,22 @@ load_passes(struct wldbg *wldbg, struct wldbg_options *opts,
 static int
 dispatch_messages(int fd, void *data);
 
+void
+wldbg_connection_set_user_data(struct wldbg_connection *connection,
+			       void *user_data,
+                               void (*data_destroy_cb)(struct wldbg_connection *c, void *data))
+{
+	connection->user_data = user_data;
+	connection->user_data_destroy_cb = data_destroy_cb;
+}
+
+void *
+wldbg_connection_get_user_data(struct wldbg_connection *connection)
+{
+	return connection->user_data;
+}
+
+
 static struct wldbg_connection *
 wldbg_connection_create(struct wldbg *wldbg)
 {
@@ -133,6 +149,9 @@ wldbg_connection_create(struct wldbg *wldbg)
 static void
 wldbg_connection_destroy(struct wldbg_connection *conn)
 {
+	if (conn->user_data_destroy_cb)
+		conn->user_data_destroy_cb(conn, conn->user_data);
+
 	if (conn->resolved_objects)
 		destroy_resolved_objects(conn->resolved_objects);
 	if (conn->objects_info)
@@ -149,6 +168,7 @@ wldbg_connection_destroy(struct wldbg_connection *conn)
 	if (close(conn->client.fd) < 0)
 		perror("wldbg_connectin_destroy: closing client fd");
 	*/
+
 
 	free(conn->client.program);
 	free(conn);
