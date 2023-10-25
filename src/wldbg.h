@@ -45,7 +45,7 @@ struct wldbg_message {
 		CLIENT
 	} from;
 
-	/* pointer to connectoin structure */
+	/* pointer to connection structure */
 	struct wldbg_connection *connection;
 };
 
