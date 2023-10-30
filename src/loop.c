@@ -78,3 +78,19 @@ wldbg_separate_messages(struct wldbg *wldbg, int state)
 	wldbg->flags.pass_whole_buffer = !!state;
 	return wldbg->flags.pass_whole_buffer;
 }
+
+void
+wldbg_connection_set_user_data(struct wldbg_connection *connection,
+			       void *user_data,
+                               void (*data_destroy_cb)(struct wldbg_connection *c, void *data))
+{
+	connection->user_data = user_data;
+	connection->user_data_destroy_cb = data_destroy_cb;
+}
+
+void *
+wldbg_connection_get_user_data(struct wldbg_connection *connection)
+{
+	return connection->user_data;
+}
+
