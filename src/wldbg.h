@@ -71,6 +71,7 @@ void wldbg_connection_set_user_data(struct wldbg_connection *,
 
 void *wldbg_connection_get_user_data(struct wldbg_connection *);
 
+int wldbg_connection_get_client_pid(struct wldbg_connection *);
 
 /* mercifully exit wldbg from the pass
  * and let it clean after itself */

@@ -94,3 +94,9 @@ wldbg_connection_get_user_data(struct wldbg_connection *connection)
 	return connection->user_data;
 }
 
+int
+wldbg_connection_get_client_pid(struct wldbg_connection *conn)
+{
+	return conn->client.pid;
+}
+
